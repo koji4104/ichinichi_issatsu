@@ -2,15 +2,26 @@ import 'dart:convert' as convert;
 import 'dart:convert';
 import 'dart:developer';
 import 'dart:io';
+import 'package:hooks_riverpod/hooks_riverpod.dart';
+import 'dart:async';
+import 'package:flutter/material.dart';
 
 import 'package:beautiful_soup_dart/beautiful_soup.dart';
 import 'package:charset_converter/charset_converter.dart';
 import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
 import 'package:path_provider/path_provider.dart';
+import 'package:path_provider/path_provider.dart';
 
 import '/models/book_data.dart';
 import '/models/epub_data.dart';
+
+class PermitInvalidCertification extends HttpOverrides {
+  @override
+  HttpClient createHttpClient(SecurityContext? context) {
+    return super.createHttpClient(context)..badCertificateCallback = (cert, host, port) => true;
+  }
+}
 
 enum MyEpubStatus {
   none,
@@ -19,8 +30,12 @@ enum MyEpubStatus {
   failed,
 }
 
-class MyEpubController {
-  MyEpubController() {}
+final epubProvider = ChangeNotifierProvider((ref) => EpubNotifier(ref));
+
+class EpubNotifier extends ChangeNotifier {
+  EpubNotifier(ref) {}
+
+  //MyEpubController() {}
   EpubData epub = new EpubData();
   MyEpubStatus status = MyEpubStatus.none;
 
@@ -57,12 +72,12 @@ class MyEpubController {
         IndexData ch = IndexData();
         ch.title = f.title ?? '';
         ch.index = f.chapNo;
-        ch.charCount = f.charCount;
+        ch.chars = f.chars;
         book.indexList.add(ch);
       }
     }
 
-    String jsonText = json.encode(book.toJson());
+    String jsonText = book.toJsonString();
     final file = File('${datadir}/${epub.bookId}/book.json');
     await file.writeAsString(jsonText, mode: FileMode.write, flush: true);
 
@@ -133,6 +148,9 @@ class MyEpubController {
     if (epub.urlList.length == 0) return;
     if (epub.bookId == null) return;
 
+    status = MyEpubStatus.downloading;
+    this.notifyListeners();
+
     String url = epub.urlList[0];
     http.Response res = await http.get(Uri.parse(url));
     if (res.statusCode == 200) {
@@ -147,6 +165,35 @@ class MyEpubController {
     } else {
       status = MyEpubStatus.failed;
     }
+    this.notifyListeners();
+  }
+
+  /// tag = '<a '  '<div'
+  String deleteTag(String text, String tag) {
+    for (int i = 0; i < 1000; i++) {
+      int s1 = text.indexOf(tag);
+      int e1 = (s1 >= 0) ? text.indexOf(r'>', s1 + tag.length) + 1 : 0;
+      if (s1 >= 0 && e1 > 0) {
+        text = text.substring(0, s1) + text.substring(e1);
+      } else {
+        break;
+      }
+    }
+    return text;
+  }
+
+  /// tag = '<h3'
+  String deleteClass(String text, String tag) {
+    for (int i = 0; i < 1000; i++) {
+      int s1 = text.indexOf(tag);
+      int e1 = (s1 >= 0) ? text.indexOf(r'>', s1 + tag.length) + 1 : 0;
+      if (s1 >= 0 && e1 > 0) {
+        text = text.substring(0, s1) + tag + r'>' + text.substring(e1);
+      } else {
+        break;
+      }
+    }
+    return text;
   }
 
   Future createAozoraFromText(String text1) async {
@@ -171,59 +218,65 @@ class MyEpubController {
     t1 = t1.replaceAll('<br>', '<br />');
 
     // delete div
-    for (int i = 0; i < 1000; i++) {
-      int s1 = t1.indexOf('<div');
-      int e1 = (s1 > 0) ? t1.indexOf(r'>', s1 + 4) + 1 : 0;
-      if (s1 > 0 && e1 > 0) {
-        t1 = t1.substring(0, s1) + t1.substring(e1);
-      } else {
-        break;
-      }
-    }
+    t1 = deleteTag(t1, '<div');
     t1 = t1.replaceAll('</div>', '');
 
-    String hd = '<h3';
-    List<String> textList3 = t1.split('<h3');
-    List<String> textList4 = t1.split('<h4');
-    if (textList3.length < textList4.length) hd = '<h4';
+    // delete '<a '
+    t1 = deleteTag(t1, '<a ');
+    t1 = t1.replaceAll('</a>', '');
 
-    List<String> listText = t1.split(hd);
-    if (listText.length <= 1) {
-      listText.clear();
-      for (int i = 0; i < 100; i++) {
-        if (t1.length < 50000) {
-          listText.add(t1);
-          break;
-        }
-        int sk = t1.indexOf('\n<br />', 20000) + 8;
-        listText.add(t1.substring(0, sk));
-        t1 = t1.substring(sk);
-      }
-      hd = '';
+    // delete class '<h3'
+    t1 = deleteClass(t1, '<h3');
+    t1 = deleteClass(t1, '<h4');
+
+    // <div class="jisage_3" style="margin-left: 3em"><h3 class="o-midashi"><a class="midashi_anchor" id="midashi400">第三の手記</a></h3></div>
+    // <br /><br />
+    // <div class="jisage_5" style="margin-left: 5em"><h4 class="naka-midashi"><a class="midashi_anchor" id="midashi410">一</a></h4></div>
+    // <br />
+
+    // <h3>第三の手記</h3>
+    // <br /><br />
+    // <h4>一</h4>
+    // <br />
+
+    String hd = 'h3';
+    List<String> listText = t1.split('<h3');
+    List<String> textList4 = t1.split('<h4');
+    if (listText.length <= 1 && textList4.length >= 2) {
+      t1 = t1.replaceAll('<h4', '<h3');
+      t1 = t1.replaceAll('</h4', '</h3');
+      listText = t1.split('<h3');
     }
 
-    for (int i = 0; i < listText.length; i++) {
-      String text = listText[i];
-      if (i == 0 && listText.length > 1) continue; // 0 is header
-      text = hd + text;
-      String title = '${i + 1}';
-
-      BeautifulSoup bs1 = BeautifulSoup(text);
-      Bs4Element? el1 = bs1.find('a');
-      if (el1 != null) {
-        title = el1!.innerHtml;
-      } else {
-        text += '<h3>${title}</h3>';
-      }
-
+    if (listText.length <= 1) {
       EpubFileData f = EpubFileData();
-
-      f.chapNo = listText.length == 1 ? 1 : i;
-      f.fileName = 'text/ch${f.chapNo000}.xhtml';
-      f.text = epub.head1 + text + epub.head2;
-      f.title = title;
-      f.charCount = text.length;
+      f.chapNo = 1;
+      f.fileName = 'text/ch${f.chapNo000}.txt';
+      f.text = t1;
+      f.title = epub.bookTitle;
+      f.chars = t1.length;
       epub.fileList.add(f);
+    } else {
+      for (int i = 0; i < listText.length; i++) {
+        String text = listText[i];
+        if (i == 0) continue; // 0 is header
+        text = r'<' + hd + text;
+        String title = '${i + 1}';
+
+        BeautifulSoup bs1 = BeautifulSoup(text);
+        Bs4Element? el1 = bs1.find(hd);
+        if (el1 != null) {
+          title = el1.innerHtml;
+        }
+
+        EpubFileData f = EpubFileData();
+        f.chapNo = listText.length == 1 ? 1 : i;
+        f.fileName = 'text/ch${f.chapNo000}.txt';
+        f.text = text;
+        f.title = title;
+        f.chars = text.length;
+        epub.fileList.add(f);
+      }
     }
   }
 
@@ -268,6 +321,9 @@ class MyEpubController {
   }
 
   Future<void> downloadKakuyomu() async {
+    status = MyEpubStatus.downloading;
+    this.notifyListeners();
+
     for (int i = 0; i < epub.urlList.length; i++) {
       if (i > 10) break;
       sleep(Duration(milliseconds: 500));
@@ -277,10 +333,14 @@ class MyEpubController {
       }
     }
     writeBook();
+
+    status = MyEpubStatus.succeeded;
+    this.notifyListeners();
   }
 
   Future createKakuyomuFromText(String text1, int chap) async {
     EpubFileData f = new EpubFileData();
+
     f.chapNo = chap;
     BeautifulSoup bs = BeautifulSoup(text1);
     Bs4Element? et = bs.find('p', class_: 'widget-episodeTitle');
@@ -291,14 +351,19 @@ class MyEpubController {
       String t1 = ec.innerHtml;
       t1 = t1.replaceAll('<br>', '<br />');
       t1 = t1.replaceAll('&nbsp;', '');
-      String title = '<h3>${f.title}</h3>';
-      f.text = epub.head1 + title + t1 + epub.head2;
-      f.charCount = t1.length;
+      String title = '<h3>${f.title}</h3>\n';
+
+      // delete <p>
+      t1 = deleteTag(t1, '<p ');
+      t1 = t1.replaceAll('</p>', '<br />');
+
+      f.text = title + t1;
+      f.chars = t1.length;
+      f.chapNo = chap;
+      f.fileName = 'text/ch${f.chapNo000}.txt';
+      epub.fileList.add(f);
     }
-    f.chapNo = chap;
-    f.fileName = 'text/ch${f.chapNo000}.xhtml';
-    epub.fileList.add(f);
-    return f;
+    return;
   }
 
   //-------
@@ -321,10 +386,13 @@ class MyEpubController {
   }
 
   Future<void> downloadNarou() async {
+    Map<String, String> headers = {'content-type': 'text/plain'};
+    HttpOverrides.global = PermitInvalidCertification();
+
     if (epub.urlList.length > 0) {
       for (int i = 0; i < epub.urlList.length; i++) {
         sleep(Duration(seconds: 2));
-        http.Response res1 = await http.get(Uri.parse(epub.urlList[i]));
+        http.Response res1 = await http.get(Uri.parse(epub.urlList[i]), headers: headers);
         log('${res1.statusCode}  ${epub.urlList[i]}');
         if (res1.statusCode == 200) {
           await createNarouFromText(res1.body, i + 1);
@@ -352,7 +420,7 @@ class MyEpubController {
       t1 = t1.replaceAll('&nbsp;', '');
       String title = '<h3>${f.title}</h3>';
       f.text = epub.head1 + title + t1 + epub.head2;
-      f.charCount = t1.length;
+      f.chars = t1.length;
     }
 
     f.chapNo = chap;
@@ -360,5 +428,26 @@ class MyEpubController {
 
     epub.fileList.add(f);
     return f;
+  }
+
+  //-------
+  // Hamel
+  //-------
+  Future<void> checkHamel(String url, String body) async {
+    epub.reset();
+    epub.bookId = url.substring(url.indexOf('syosetu.com/') + 12);
+
+    //<a href=./1.html style="text-decoration:none;">キッドナッシング</a>
+
+    BeautifulSoup bs = BeautifulSoup(body);
+    List<Bs4Element> els = bs.findAll('a', class_: 'p-eplist__subtitle');
+    for (Bs4Element e in els) {
+      String? s = e.getAttrValue('href');
+      if (s != null) {
+        //String u = 'https://ncode.syosetu.com' + s;
+        String u = 'http://ncode.syosetu.com' + s;
+        epub.urlList.add(u);
+      }
+    }
   }
 }

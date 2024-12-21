@@ -60,7 +60,7 @@ class ViewerScreen extends BaseScreen {
     double oldWidth = _width;
     _width = MediaQuery.of(context).size.width;
     if (_width != oldWidth) {
-      log('_width ${_width}');
+      log('width ${_width}');
       ref.read(viewerProvider).width = _width;
     }
 
@@ -68,7 +68,7 @@ class ViewerScreen extends BaseScreen {
     _height = MediaQuery.of(context).size.height;
     myTheme.appBarTheme.toolbarHeight;
     if (_height != oldHeight) {
-      log('_height ${_height}');
+      log('height ${_height}');
       ref.read(viewerProvider).height = _height;
     }
 
@@ -97,14 +97,13 @@ class ViewerScreen extends BaseScreen {
               icon: Icon(Icons.settings),
               onPressed: () => settingsBar(),
             ),
+          if (isTopBottomBar) SizedBox(width: 10)
         ],
       ),
       body: SafeArea(
         child: Stack(children: [
           Container(
-            padding: env.writing_mode.val == 0
-                ? EdgeInsets.fromLTRB(30, 0, 30, 0)
-                : EdgeInsets.fromLTRB(0, 40, 0, 40),
+            padding: env.writing_mode.val == 0 ? DEF_VIEW_PADDING_TB : DEF_VIEW_PADDING_RL,
             color: Color(env.getBack32Color()),
             child: Widget1(),
           ),
@@ -178,6 +177,7 @@ class ViewerScreen extends BaseScreen {
   }
 
   Widget topBar() {
+    return Container();
     double settingsHeight = 60;
     double ffBottom = 0;
     if (isTopBottomBar == false) {
@@ -218,10 +218,10 @@ class ViewerScreen extends BaseScreen {
   }
 
   Widget bottomBar() {
-    double settingsHeight = 44;
+    double bottomBarHeight = 80;
     double ffBottom = 0;
     if (isTopBottomBar == false) {
-      ffBottom = -1.0 * settingsHeight;
+      ffBottom = -1.0 * bottomBarHeight;
     } else {
       ffBottom = 0;
     }
@@ -234,24 +234,28 @@ class ViewerScreen extends BaseScreen {
       top: null,
       right: 0,
       bottom: ffBottom,
-      height: settingsHeight,
+      height: bottomBarHeight,
       child: bottomBar1(),
     );
   }
 
   Widget bottomBar1() {
-    String txt = ref.watch(viewerProvider).getProgress();
+    String title = ref.watch(viewerProvider).getTitle();
+    String subTitle = ref.watch(viewerProvider).getSubTitle();
+    String progress = ref.watch(viewerProvider).getProgress();
     return Container(
       color: myTheme.scaffoldBackgroundColor,
       child: Column(
         children: [
           SizedBox(height: 1, child: Container(color: myTheme.dividerColor)),
           SizedBox(height: 8),
-          Row(children: [
-            Expanded(flex: 1, child: SizedBox(width: 1)),
-            MyText(txt),
-            Expanded(flex: 1, child: SizedBox(width: 1)),
-          ]),
+          //Row(children: [
+          //Expanded(flex: 1, child: SizedBox(width: 1)),
+          MyText(title),
+          MyText(subTitle),
+          MyText(progress),
+          //Expanded(flex: 1, child: SizedBox(width: 1)),
+          //]),
           Expanded(child: SizedBox(height: 1)),
         ],
       ),
@@ -438,7 +442,7 @@ class ViewerScreen extends BaseScreen {
     for (int i = 0; i < book.indexList.length; i++) {
       int sum = 0;
       for (int j = 0; j <= i; j++) {
-        sum += book.indexList[j].charCount;
+        sum += book.indexList[j].chars;
       }
       String txt = '${book.indexList[i].title}  ${sum} chars';
 

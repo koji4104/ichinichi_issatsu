@@ -16,7 +16,7 @@ class BrowserScreen extends BaseScreen {
 
   GlobalKey webViewKey = GlobalKey();
   InAppWebViewController? webViewController;
-  MyEpubController ctrl = new MyEpubController();
+  //MyEpubController ctrl = new MyEpubController();
 
   bool isDownloadBar = false;
 
@@ -27,6 +27,7 @@ class BrowserScreen extends BaseScreen {
   Widget build(BuildContext context, WidgetRef ref) {
     super.build(context, ref);
     ref.watch(browserScreenProvider);
+    ref.watch(epubProvider);
 
     return PopScope(
       canPop: false,
@@ -74,8 +75,8 @@ class BrowserScreen extends BaseScreen {
     String? body = await webViewController!.getHtml();
     if (body == null) return;
 
-    await ctrl.checkHtml(url, body);
-    if (ctrl.epub.urlList.length > 0) {
+    await ref.read(epubProvider).checkHtml(url, body);
+    if (ref.read(epubProvider).epub.urlList.length > 0) {
       isDownloadBar = true;
       sleep(Duration(milliseconds: 100));
       redraw();
@@ -107,16 +108,18 @@ class BrowserScreen extends BaseScreen {
   }
 
   Widget downloadBar1() {
-    String title = 'Download ${ctrl.epub.bookId}';
-    if (ctrl.epub.urlList.length > 1) {
-      title += '(${ctrl.epub.urlList.length})';
+    String title = 'Download ${ref.watch(epubProvider).epub.bookId}';
+    if (ref.watch(epubProvider).epub.urlList.length > 1) {
+      title += '(${ref.watch(epubProvider).epub.urlList.length})';
     }
 
     String label = '';
-    if (ctrl.status == MyEpubStatus.succeeded) {
-      label = 'succeeded';
-    } else if (ctrl.status == MyEpubStatus.failed) {
+    if (ref.watch(epubProvider).status == MyEpubStatus.succeeded) {
+      label = 'done';
+    } else if (ref.watch(epubProvider).status == MyEpubStatus.failed) {
       label = 'failed';
+    } else if (ref.watch(epubProvider).status == MyEpubStatus.downloading) {
+      label = 'downloading';
     }
 
     return Container(
@@ -150,9 +153,7 @@ class BrowserScreen extends BaseScreen {
                 ? MyTextButton(
                     title: title,
                     onPressed: () {
-                      ctrl.download().then((_) {
-                        redraw();
-                      });
+                      ref.read(epubProvider).download();
                     },
                   )
                 : MyText(label),

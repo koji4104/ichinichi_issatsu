@@ -4,6 +4,16 @@ import 'dart:io';
 BorderRadiusGeometry DEF_BORDER_RADIUS = BorderRadius.circular(3);
 const EdgeInsetsGeometry DEF_MENU_PADDING = EdgeInsets.fromLTRB(8, 16, 8, 0);
 
+const double DEF_APPBAR_HEIGHT = 40.0;
+const double DEF_VIEW_SCROLL_WIDTH = 30.0;
+const double DEF_VIEW_PADDING_W = 30.0;
+const double DEF_VIEW_PADDING_H = 40.0;
+const EdgeInsetsGeometry DEF_VIEW_PADDING_TB = EdgeInsets.fromLTRB(DEF_VIEW_PADDING_W, 0, DEF_VIEW_PADDING_W, 0);
+const EdgeInsetsGeometry DEF_VIEW_PADDING_RL = EdgeInsets.fromLTRB(0, DEF_VIEW_PADDING_H, 0, DEF_VIEW_PADDING_H);
+
+const double DEF_VIEW_LINE_WIDTH = DEF_VIEW_PADDING_W + DEF_VIEW_PADDING_W + DEF_VIEW_SCROLL_WIDTH;
+const double DEF_VIEW_LINE_HEIGHT = DEF_VIEW_PADDING_H + DEF_VIEW_PADDING_H + DEF_VIEW_SCROLL_WIDTH + DEF_APPBAR_HEIGHT;
+
 // ON OFF button
 Color btnOn = Colors.white;
 Color btnNg = Colors.grey;
@@ -21,19 +31,13 @@ Color COL_LIGHT_BACK = Color(0xffe0e0e0);
 
 Color COL_TEST = Color(0xFF00FFFF);
 
-TextStyle TEXTSTYLE_DARK_SMALL =
-    ThemeData.dark().textTheme.bodySmall!.copyWith(fontSize: 12.0, color: COL_DARK_TEXT);
-TextStyle TEXTSTYLE_DARK_MEDIUM =
-    ThemeData.dark().textTheme.bodyMedium!.copyWith(fontSize: 14.0, color: COL_DARK_TEXT);
-TextStyle TEXTSTYLE_DARK_LARGE =
-    ThemeData.dark().textTheme.bodyLarge!.copyWith(fontSize: 16.0, color: COL_DARK_TEXT);
+TextStyle TEXTSTYLE_DARK_SMALL = ThemeData.dark().textTheme.bodySmall!.copyWith(fontSize: 12.0, color: COL_DARK_TEXT);
+TextStyle TEXTSTYLE_DARK_MEDIUM = ThemeData.dark().textTheme.bodyMedium!.copyWith(fontSize: 14.0, color: COL_DARK_TEXT);
+TextStyle TEXTSTYLE_DARK_LARGE = ThemeData.dark().textTheme.bodyLarge!.copyWith(fontSize: 16.0, color: COL_DARK_TEXT);
 
-TextStyle TEXTSTYLE_LIGHT_SMALL =
-    ThemeData.light().textTheme.bodySmall!.copyWith(fontSize: 12.0, color: COL_LIGHT_TEXT);
-TextStyle TEXTSTYLE_LIGHT_MEDIUM =
-    ThemeData.light().textTheme.bodyMedium!.copyWith(fontSize: 14.0, color: COL_LIGHT_TEXT);
-TextStyle TEXTSTYLE_LIGHT_LARGE =
-    ThemeData.light().textTheme.bodyLarge!.copyWith(fontSize: 16.0, color: COL_LIGHT_TEXT);
+TextStyle TEXTSTYLE_LIGHT_SMALL = ThemeData.light().textTheme.bodySmall!.copyWith(fontSize: 12.0, color: COL_LIGHT_TEXT);
+TextStyle TEXTSTYLE_LIGHT_MEDIUM = ThemeData.light().textTheme.bodyMedium!.copyWith(fontSize: 14.0, color: COL_LIGHT_TEXT);
+TextStyle TEXTSTYLE_LIGHT_LARGE = ThemeData.light().textTheme.bodyLarge!.copyWith(fontSize: 16.0, color: COL_LIGHT_TEXT);
 
 /// e.g.
 /// - myTheme.backgroundColor
@@ -85,7 +89,7 @@ ThemeData myDarkTheme = ThemeData.dark().copyWith(
   appBarTheme: AppBarTheme(
     backgroundColor: COL_DARK_BACK,
     titleTextStyle: ThemeData.dark().textTheme.bodyMedium!.copyWith(),
-    toolbarHeight: 40.0,
+    toolbarHeight: DEF_APPBAR_HEIGHT,
   ),
 );
 
@@ -129,13 +133,12 @@ ThemeData myLightTheme = ThemeData.light().copyWith(
   snackBarTheme: SnackBarThemeData(
     backgroundColor: Color(0xFFeeeeee),
     actionTextColor: COL_LIGHT_TEXT,
-    contentTextStyle:
-        ThemeData.dark().textTheme.bodyMedium!.copyWith(fontSize: 14.0, color: COL_LIGHT_TEXT),
+    contentTextStyle: ThemeData.dark().textTheme.bodyMedium!.copyWith(fontSize: 14.0, color: COL_LIGHT_TEXT),
   ),
   appBarTheme: AppBarTheme(
     backgroundColor: COL_LIGHT_BACK,
     titleTextStyle: ThemeData.light().textTheme.bodyMedium!.copyWith(),
-    toolbarHeight: 40.0,
+    toolbarHeight: DEF_APPBAR_HEIGHT,
   ),
 );
 
@@ -248,13 +251,7 @@ Widget MyTextButton({
 /// - onPressed
 /// - multiline: null or true
 /// - radio: null or true or false
-Widget MyListTile(
-    {required Widget title1,
-    Widget? title2,
-    Function()? onPressed,
-    bool? multiline,
-    bool? radio,
-    bool? textonly}) {
+Widget MyListTile({required Widget title1, Widget? title2, Function()? onPressed, bool? multiline, bool? radio, bool? textonly}) {
   Widget e = Expanded(child: SizedBox(width: 8));
   if (multiline != null) e = SizedBox(width: 8);
   Widget w = SizedBox(width: 8);

@@ -7,7 +7,7 @@ class EpubFileData {
   String? text;
   String? fileName;
   int chapNo = -1;
-  int charCount = 0;
+  int chars = 0;
 
   String get chapNo000 {
     return chapNo.toString().padLeft(3, '0');

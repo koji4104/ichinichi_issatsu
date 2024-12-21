@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:ichinichi_issatsu/controllers/env_controller.dart';
+import 'package:ichinichi_issatsu/controllers/epub_controller.dart';
 import 'package:xml/xpath.dart';
 import 'dart:io';
 import 'dart:async';
@@ -12,6 +13,8 @@ import 'dart:convert';
 
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 import '/models/book_data.dart';
+import '/models/epub_data.dart';
+import '/commons/widgets.dart';
 
 final viewerProvider = ChangeNotifierProvider((ref) => ViewerNotifier(ref));
 
@@ -37,10 +40,11 @@ class ViewerNotifier extends ChangeNotifier {
 
   late String datadir;
 
+  double scrollWidth = DEF_VIEW_SCROLL_WIDTH;
   double width = 1000.0;
-  double _widthPad = 60 + 20;
+  double _widthPad = DEF_VIEW_LINE_WIDTH;
   double height = 1000.0;
-  double _heightPad = 120 + 60;
+  double _heightPad = DEF_VIEW_LINE_HEIGHT;
 
   int type = 1;
 
@@ -73,18 +77,50 @@ class ViewerNotifier extends ChangeNotifier {
 
         for (int i = 0; i < 1000; i++) {
           String path1 =
-              '${datadir}/${book!.bookId}/text/ch${(i + 1).toString().padLeft(3, '0')}.xhtml';
+              '${datadir}/${book!.bookId}/text/ch${(i + 1).toString().padLeft(3, '0')}.txt';
           if (File(path1).existsSync()) {
             String text = await File(path1).readAsStringSync();
-            text = text.replaceAll('</body>', '<br /><br /></body>');
-            listText.add(text);
+            String body = text;
+            EpubData e = new EpubData();
 
+            String text1 = e.head1 + text + e.head2;
+            text1 = text1.replaceAll('<style>', '<style>${getStyle(env)}');
+            listText.add(text1);
+
+            // chars
             int fsize = env.font_size.val;
-            double line = (env.writing_mode.val == 0) ? (width - _widthPad) : (height - _heightPad);
-            double numChar = line / fsize;
-            double numLine = (text.length * 1.2) / numChar;
-            double calcWidth = numLine * fsize;
-            listWidth.add(calcWidth);
+            double w = (env.writing_mode.val == 0) ? (width - _widthPad) : (height - _heightPad);
+            int chars = (w / fsize).toInt();
+
+            body = body.replaceAll('\n', '');
+
+            // delete ruby
+            // <ruby><rb>獅子</rb><rp>（</rp><rt>しし</rt><rp>）</rp></ruby>
+            String tag1 = '<ruby';
+            String tag2 = '</ruby>';
+            for (int i = 0; i < 1000; i++) {
+              int s1 = body.indexOf(tag1);
+              int e1 = (s1 >= 0) ? body.indexOf(tag2, s1 + tag1.length) + tag2.length : 0;
+              if (s1 >= 0 && e1 > 0 && e1 - s1 < 120) {
+                body = body.substring(0, s1) + body.substring(e1);
+              } else {
+                break;
+              }
+            }
+
+            List<String> list1 = body.split('<br />');
+
+            int lines = 0;
+            for (String s in list1) {
+              int d = (s.length / chars).toInt() + 1;
+              lines += d;
+            }
+
+            double dh = env.line_height.val / 100.0;
+            double calcWidth = lines.toDouble() * (fsize * dh);
+            // chars
+
+            listWidth.add(calcWidth + scrollWidth);
 
             listState.add(0);
             listWebViewController.add(null);
@@ -120,43 +156,39 @@ class ViewerNotifier extends ChangeNotifier {
   }
 
   Future jumpToIndex(int index, int rate) async {
-    if (scrollController.hasClients == false) return;
+    if (scrollController.hasClients == false) {
+      this.notifyListeners();
+      await Future.delayed(Duration(milliseconds: 100));
+      if (scrollController.hasClients == false) {
+        log('jumpTo index return [${index}] ${(rate / 100).toInt()}%');
+        return;
+      }
+    }
     if (listWidth.length == 0) return;
     if (isLoading) return;
     if (index > listWidth.length - 1) index = listWidth.length - 1;
     isLoading = true;
 
-    double dx1 = 0;
-    for (int i = 0; i < index + 1; i++) {
-      if (listState.length > i && listState[i] == 0) {
-        scrollController.jumpTo(dx1);
-        for (int j = 0; j < 20; j++) {
-          await Future.delayed(Duration(milliseconds: 32));
-          if (listState[i] == 1) {
-            log('listState[${i}]==1  j=${j}');
-            break;
-          }
-        }
-      }
-      dx1 += listWidth[i];
-    }
+    double curdx = scrollController.position.pixels;
+    double maxdx = scrollController.position.maxScrollExtent;
 
     double dx = 0;
     for (int i = 0; i < index; i++) {
       dx += listWidth[i];
-      if (listState[i] == 0) {
-        log('listState[${i}]=${listState[i]}');
+      if (curdx < dx && dx < maxdx) {
+        curdx = dx;
+        scrollController.jumpTo(dx);
       }
     }
     dx += listWidth[index] * rate / 10000;
 
-    log('jumpTo index ${index} ${(rate / 100).toInt()}% ${dx.toInt()}px');
-    if (dx > scrollController.position.maxScrollExtent)
-      dx = scrollController.position.maxScrollExtent;
+    log('jumpTo index [${index}] ${(rate / 100).toInt()}% ${dx.toInt()}px ${scrollController.position.pixels.toInt()}/${scrollController.position.maxScrollExtent.toInt()}');
+    if (dx > maxdx) {
+      log('jumpTo index dx>max ${dx.toInt()} > ${maxdx.toInt()}');
+      dx = maxdx;
+    }
     scrollController.jumpTo(dx);
     isLoading = false;
-    lastTime = DateTime.now().add(Duration(seconds: -5));
-    scrollingListener();
     this.notifyListeners();
   }
 
@@ -247,12 +279,16 @@ class ViewerNotifier extends ChangeNotifier {
     c += '  font-family: ${fontFamily};\n';
     c += '  ${writing_mode};\n';
     c += '  word-break: break-all;\n';
+    c += '  line-height: ${env.line_height.val}%;\n';
     c += '}\n';
     c += 'p {\n';
     c += '  margin: 0;\n';
     c += '}\n';
     c += 'h1, h2, h3 {\n';
     c += '  font-size: 1.2em;\n';
+    c += '}\n';
+    c += 'h4, h5 {\n';
+    c += '  font-size: 1.1em;\n';
     c += '}\n';
     return c;
   }
@@ -297,7 +333,7 @@ class ViewerNotifier extends ChangeNotifier {
         listWebViewController[index] = controller;
       },
       onLoadStart: (controller, url) async {
-        await updateStylesheet(index, env);
+        //await updateStylesheet(index, env);
       },
       onLoadStop: (controller, url) async {
         try {
@@ -314,16 +350,16 @@ class ViewerNotifier extends ChangeNotifier {
             webHeight = double.parse('${vh}');
           }
 
-          if (env.writing_mode.val == 0 && webWidth > 100) {
+          if (env.writing_mode.val == 0 && webHeight > 100) {
             if (listWidth[index] != webHeight) {
-              log('onLoadStop height ${index} ${listWidth[index].toInt()} -> ${webHeight.toInt()}');
-              listWidth[index] = webHeight;
+              log('onLoadStop height [${index}] ${env.font_size.val}px ${env.line_height.val}% ${listWidth[index].toInt()} -> ${webHeight.toInt()}');
+              listWidth[index] = webHeight + scrollWidth;
               listState[index] = 1;
             }
-          } else if (webHeight > 100) {
+          } else if (webWidth > 100) {
             if (listWidth[index] != webWidth) {
-              log('onLoadStop width ${index} ${listWidth[index].toInt()} -> ${webWidth.toInt()}');
-              listWidth[index] = webWidth;
+              log('onLoadStop width [${index}] ${env.font_size.val}px ${env.line_height.val}% ${listWidth[index].toInt()} -> ${webWidth.toInt()}');
+              listWidth[index] = webWidth + scrollWidth;
               listState[index] = 1;
             }
           }
@@ -349,10 +385,10 @@ class ViewerNotifier extends ChangeNotifier {
     allowsLinkPreview: false,
     alwaysBounceVertical: false,
     alwaysBounceHorizontal: false,
-    verticalScrollBarEnabled: true,
-    horizontalScrollBarEnabled: true,
+    verticalScrollBarEnabled: false,
+    horizontalScrollBarEnabled: false,
     disableVerticalScroll: false,
-    disableHorizontalScroll: false,
+    disableHorizontalScroll: true,
     useWideViewPort: true,
     disableContextMenu: true,
     disableInputAccessoryView: true,

@@ -18,12 +18,17 @@ class BookData {
         'indexList': getIndexListJson(),
       };
 
-  String getIndexListJson() {
+  String toJsonString() {
+    String j = json.encode(toJson());
+    return j.replaceAll('}', '}\n');
+  }
+
+  List<Map<String, dynamic>> getIndexListJson() {
     List<Map<String, dynamic>> dlist = [];
     for (IndexData d in indexList) {
       dlist.add(d.toJson());
     }
-    return json.encode(dlist);
+    return dlist;
   }
 
   BookData.fromJson(Map<String, dynamic> j) {
@@ -35,16 +40,13 @@ class BookData {
       title = bookId;
     }
 
-    String? txt = j['indexList'];
-    if (txt != null) {
-      var list = json.decode(txt);
-      for (var d in list) {
-        IndexData c = IndexData();
-        c.index = d['index'] ?? -1;
-        c.title = d['title'] ?? '';
-        c.charCount = d['charCount'] ?? 1;
-        indexList.add(c);
-      }
+    var list = j['indexList'];
+    for (var d in list) {
+      IndexData c = IndexData();
+      c.index = d['index'] ?? -1;
+      c.title = d['title'] ?? '';
+      c.chars = d['chars'] ?? 1;
+      indexList.add(c);
     }
   }
 }
@@ -52,12 +54,12 @@ class BookData {
 class IndexData {
   int index = 0;
   String title = '';
-  int charCount = 0;
+  int chars = 0;
 
   Map<String, dynamic> toJson() => {
         'index': index,
         'title': title,
-        'charCount': charCount,
+        'chars': chars,
       };
 }
 

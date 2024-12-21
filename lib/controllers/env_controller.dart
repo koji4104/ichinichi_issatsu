@@ -57,6 +57,13 @@ class Environment {
     name: 'font_size',
   );
 
+  EnvData line_height = EnvData(
+    val: 150,
+    vals: [140, 150, 160],
+    keys: ['140', '150', '160'],
+    name: 'line_height',
+  );
+
   /// 0=sans-serif 1=serif
   EnvData font_family = EnvData(
     val: 0,
@@ -133,6 +140,7 @@ class Environment {
         language_code.name: language_code.val,
         font_size.name: font_size.val,
         font_family.name: font_family.val,
+        line_height.name: line_height.val,
         ui_font_size.name: ui_font_size.val,
         dark_mode.name: dark_mode.val,
         back_color.name: back_color.val,
@@ -143,6 +151,7 @@ class Environment {
     fromJsonSub(j, language_code);
     fromJsonSub(j, font_size);
     fromJsonSub(j, font_family);
+    fromJsonSub(j, line_height);
     fromJsonSub(j, ui_font_size);
     fromJsonSub(j, dark_mode);
     fromJsonSub(j, back_color);
@@ -150,8 +159,10 @@ class Environment {
   }
 
   fromJsonSub(Map<String, dynamic> j, EnvData data) {
-    data.val = j[data.name] ?? '';
-    data.round(data.val);
+    if (j.containsKey(data.name)) {
+      data.val = j[data.name] ?? '';
+      data.round(data.val);
+    }
   }
 }
 
@@ -165,6 +176,7 @@ class EnvNotifier extends ChangeNotifier {
     list.add(env.language_code);
     list.add(env.font_size);
     list.add(env.font_family);
+    list.add(env.line_height);
     list.add(env.ui_font_size);
     list.add(env.dark_mode);
     list.add(env.back_color);

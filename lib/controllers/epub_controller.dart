@@ -6,6 +6,8 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'dart:async';
 import 'package:flutter/material.dart';
 
+import 'package:flutter_inappwebview/flutter_inappwebview.dart';
+
 import 'package:beautiful_soup_dart/beautiful_soup.dart';
 import 'package:charset_converter/charset_converter.dart';
 import 'package:flutter/services.dart';
@@ -35,7 +37,6 @@ final epubProvider = ChangeNotifierProvider((ref) => EpubNotifier(ref));
 class EpubNotifier extends ChangeNotifier {
   EpubNotifier(ref) {}
 
-  //MyEpubController() {}
   EpubData epub = new EpubData();
   MyEpubStatus status = MyEpubStatus.none;
 
@@ -114,6 +115,11 @@ class EpubNotifier extends ChangeNotifier {
     }
   }
 
+  Map<String, String> headers = {
+    'user-agent':
+        'Mozilla/5.0 (iPhone; CPU iPhone OS 15_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148'
+  };
+
   //--------
   // Aozora
   //--------
@@ -152,7 +158,7 @@ class EpubNotifier extends ChangeNotifier {
     this.notifyListeners();
 
     String url = epub.urlList[0];
-    http.Response res = await http.get(Uri.parse(url));
+    http.Response res = await http.get(Uri.parse(url), headers: headers);
     if (res.statusCode == 200) {
       try {
         String text1 = await CharsetConverter.decode("Shift_JIS", res.bodyBytes);
@@ -327,7 +333,7 @@ class EpubNotifier extends ChangeNotifier {
     for (int i = 0; i < epub.urlList.length; i++) {
       if (i > 10) break;
       sleep(Duration(milliseconds: 500));
-      http.Response res1 = await http.get(Uri.parse(epub.urlList[i]));
+      http.Response res1 = await http.get(Uri.parse(epub.urlList[i]), headers: headers);
       if (res1.statusCode == 200) {
         await createKakuyomuFromText(res1.body, i + 1);
       }
@@ -372,6 +378,7 @@ class EpubNotifier extends ChangeNotifier {
 
   Future<void> checkNarou(String url, String body) async {
     epub.reset();
+    epub.contentUrl = url;
     epub.bookId = url.substring(url.indexOf('syosetu.com/') + 12);
 
     BeautifulSoup bs = BeautifulSoup(body);
@@ -386,30 +393,32 @@ class EpubNotifier extends ChangeNotifier {
   }
 
   Future<void> downloadNarou() async {
-    Map<String, String> headers = {'content-type': 'text/plain'};
-    HttpOverrides.global = PermitInvalidCertification();
+    status = MyEpubStatus.downloading;
+    this.notifyListeners();
 
     if (epub.urlList.length > 0) {
       for (int i = 0; i < epub.urlList.length; i++) {
-        sleep(Duration(seconds: 2));
+        if (i > 5) break;
+        sleep(Duration(seconds: 1));
         http.Response res1 = await http.get(Uri.parse(epub.urlList[i]), headers: headers);
         log('${res1.statusCode}  ${epub.urlList[i]}');
         if (res1.statusCode == 200) {
           await createNarouFromText(res1.body, i + 1);
-          break;
         } else {
           break;
         }
       }
     }
     writeBook();
+    status = MyEpubStatus.succeeded;
+    this.notifyListeners();
   }
 
   Future createNarouFromText(String text1, int chap) async {
     EpubFileData f = new EpubFileData();
     f.chapNo = chap;
     BeautifulSoup bs = BeautifulSoup(text1);
-    Bs4Element? et = bs.find('h1', class_: 'p-novel__title p-novel__title--rensai');
+    Bs4Element? et = bs.find('div', class_: 'p-novel__subtitle-episode');
     if (et != null) f.title = et.innerHtml;
 
     //<div class="js-novel-text p-novel__text">
@@ -418,13 +427,18 @@ class EpubNotifier extends ChangeNotifier {
       String t1 = ec.innerHtml;
       t1 = t1.replaceAll('<br>', '<br />');
       t1 = t1.replaceAll('&nbsp;', '');
-      String title = '<h3>${f.title}</h3>';
-      f.text = epub.head1 + title + t1 + epub.head2;
+      String title = '<h3>${f.title}</h3>\n';
+
+      // delete <p>
+      t1 = deleteTag(t1, '<p ');
+      t1 = t1.replaceAll('</p>', '<br />');
+
+      f.text = title + t1;
       f.chars = t1.length;
     }
 
     f.chapNo = chap;
-    f.fileName = 'text/ch${f.chapNo000}.xhtml';
+    f.fileName = 'text/ch${f.chapNo000}.txt';
 
     epub.fileList.add(f);
     return f;

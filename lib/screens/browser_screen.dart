@@ -16,7 +16,6 @@ class BrowserScreen extends BaseScreen {
 
   GlobalKey webViewKey = GlobalKey();
   InAppWebViewController? webViewController;
-  //MyEpubController ctrl = new MyEpubController();
 
   bool isDownloadBar = false;
 
@@ -53,7 +52,7 @@ class BrowserScreen extends BaseScreen {
 
   Widget browser() {
     PlatformInAppWebViewController.debugLoggingSettings.enabled = false;
-    log('${selectedUrl}');
+    //log('${selectedUrl}');
 
     return InAppWebView(
       key: webViewKey,

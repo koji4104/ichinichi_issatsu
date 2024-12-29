@@ -17,8 +17,6 @@ class BrowserScreen extends BaseScreen {
   GlobalKey webViewKey = GlobalKey();
   InAppWebViewController? webViewController;
 
-  bool isDownloadBar = false;
-
   @override
   Future init() async {}
 
@@ -73,23 +71,14 @@ class BrowserScreen extends BaseScreen {
     if (url == null) return;
     String? body = await webViewController!.getHtml();
     if (body == null) return;
-
     await ref.read(epubProvider).checkHtml(url, body);
-    if (ref.read(epubProvider).epub.urlList.length > 0) {
-      isDownloadBar = true;
-      sleep(Duration(milliseconds: 100));
-      redraw();
-    } else {
-      isDownloadBar = false;
-      redraw();
-    }
   }
 
   Widget downloadBar() {
-    double settingsHeight = 240;
+    double barHeight = 200;
     double ffBottom = 0;
-    if (isDownloadBar == false) {
-      ffBottom = -1.0 * settingsHeight;
+    if (ref.watch(epubProvider).status == MyEpubStatus.none) {
+      ffBottom = -1.0 * barHeight;
     } else {
       ffBottom = 0;
     }
@@ -101,24 +90,30 @@ class BrowserScreen extends BaseScreen {
       top: null,
       right: 1,
       bottom: ffBottom,
-      height: settingsHeight,
+      height: barHeight,
       child: downloadBar1(),
     );
   }
 
   Widget downloadBar1() {
-    String title = 'Download ${ref.watch(epubProvider).epub.bookId}';
-    if (ref.watch(epubProvider).epub.urlList.length > 1) {
-      title += '(${ref.watch(epubProvider).epub.urlList.length})';
-    }
-
     String label = '';
-    if (ref.watch(epubProvider).status == MyEpubStatus.succeeded) {
+
+    if (ref.watch(epubProvider).status == MyEpubStatus.downloadable) {
+      label = '${ref.watch(epubProvider).epub.bookTitle ?? ref.watch(epubProvider).epub.bookId}';
+      if (ref.watch(epubProvider).epub.urlList.length > 1) {
+        label += ' (${ref.watch(epubProvider).epub.urlList.length})';
+      }
+    } else if (ref.watch(epubProvider).status == MyEpubStatus.succeeded) {
       label = 'done';
     } else if (ref.watch(epubProvider).status == MyEpubStatus.failed) {
       label = 'failed';
     } else if (ref.watch(epubProvider).status == MyEpubStatus.downloading) {
       label = 'downloading';
+      int done = ref.watch(epubProvider).downloaded;
+      int all = ref.watch(epubProvider).epub.urlList.length;
+      if (done > 0 && all > 1) {
+        label += ' ${done}/${all}';
+      }
     }
 
     return Container(
@@ -130,8 +125,7 @@ class BrowserScreen extends BaseScreen {
               icon: Icon(Icons.close),
               iconSize: 20,
               onPressed: () async {
-                isDownloadBar = false;
-                redraw();
+                ref.read(epubProvider).setStatusNone();
               },
             ),
             Expanded(flex: 1, child: SizedBox(width: 1)),
@@ -139,23 +133,35 @@ class BrowserScreen extends BaseScreen {
               icon: Icon(Icons.close),
               iconSize: 20,
               onPressed: () async {
-                isDownloadBar = false;
-                redraw();
+                ref.read(epubProvider).setStatusNone();
               },
             ),
           ]),
           //SizedBox(height: 1, child: Container(color: myTheme.dividerColor)),
+          //--------
           SizedBox(height: 4),
           Row(children: [
             Expanded(flex: 1, child: SizedBox(width: 1)),
-            label == ''
-                ? MyTextButton(
-                    title: title,
-                    onPressed: () {
-                      ref.read(epubProvider).download();
-                    },
-                  )
-                : MyText(label),
+            MyText(label),
+            Expanded(flex: 1, child: SizedBox(width: 1)),
+          ]),
+          //--------
+          SizedBox(height: 4),
+          Row(children: [
+            Expanded(flex: 1, child: SizedBox(width: 1)),
+            MyTextButton(
+              title: 'Cancel',
+              onPressed: () {
+                ref.read(epubProvider).setStatusNone();
+              },
+            ),
+            SizedBox(width: 20),
+            MyTextButton(
+              title: 'Download',
+              onPressed: () {
+                ref.read(epubProvider).download();
+              },
+            ),
             Expanded(flex: 1, child: SizedBox(width: 1)),
           ]),
           Expanded(child: SizedBox(height: 1)),

@@ -82,6 +82,50 @@ class BookInfoData {
   }
 }
 
+class BookClipData {
+  BookClipData();
+
+  List<ClipData> list = [];
+
+  String toJsonString() {
+    Map<String, dynamic> j = {'list': getClipListJson()};
+    String j1 = json.encode(j);
+    return j1.replaceAll('}', '}\n');
+  }
+
+  List<Map<String, dynamic>> getClipListJson() {
+    List<Map<String, dynamic>> dlist = [];
+    for (ClipData d in list) {
+      dlist.add(d.toJson());
+    }
+    return dlist;
+  }
+
+  BookClipData.fromJson(dynamic jsonList) {
+    var list1 = jsonList['list'];
+    for (var j in list1) {
+      ClipData c = ClipData();
+      c.index = j['index'] ?? -1;
+      c.rate = j['rate'] ?? '';
+      c.text = j['text'] ?? 1;
+      list.add(c);
+    }
+  }
+}
+
+class ClipData {
+  ClipData() {}
+  int index = 0;
+  int rate = 0;
+  String text = '';
+
+  Map<String, dynamic> toJson() => {
+        'index': index,
+        'rate': rate,
+        'text': text,
+      };
+}
+
 class SettingsData {
   int appId = 0;
   List<int> listMark = [];

@@ -75,7 +75,7 @@ class BaseScreen extends ConsumerWidget {
           content: msg,
           actions: <Widget>[
             MyTextButton(
-              title: l10n('Cancel'),
+              title: l10n('cancel'),
               width: w,
               cancelStyle: true,
               onPressed: () {
@@ -86,6 +86,89 @@ class BaseScreen extends ConsumerWidget {
             MyTextButton(
               title: l10n('OK'),
               width: w,
+              onPressed: () {
+                ret = true;
+                Navigator.of(context).pop();
+              },
+            ),
+          ],
+        );
+      },
+    );
+    return ret;
+  }
+
+  Future<bool> saveDialog() async {
+    bool ret = false;
+    Text msg = Text(l10n(''));
+    double width = 110;
+    await showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: DEF_BORDER_RADIUS),
+          titlePadding: EdgeInsets.all(0.0),
+          actionsPadding: EdgeInsets.all(18.0),
+          buttonPadding: EdgeInsets.all(0.0),
+          contentPadding: EdgeInsets.all(0.0),
+          iconPadding: EdgeInsets.all(0.0),
+          backgroundColor: myTheme.cardColor,
+          content: msg,
+          actions: <Widget>[
+            MyTextButton(
+              title: l10n('cancel'),
+              width: width,
+              cancelStyle: true,
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+            ),
+            SizedBox(width: 16),
+            MyTextButton(
+              title: l10n('save'),
+              width: width,
+              onPressed: () {
+                ret = true;
+                Navigator.of(context).pop();
+              },
+            ),
+          ],
+        );
+      },
+    );
+    return ret;
+  }
+
+  Future<bool> deleteDialog() async {
+    bool ret = false;
+    Text msg = Text(l10n(''));
+    double width = 110;
+    await showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: DEF_BORDER_RADIUS),
+          titlePadding: EdgeInsets.all(0.0),
+          actionsPadding: EdgeInsets.all(18.0),
+          buttonPadding: EdgeInsets.all(0.0),
+          contentPadding: EdgeInsets.all(0.0),
+          iconPadding: EdgeInsets.all(0.0),
+          backgroundColor: myTheme.cardColor,
+          content: msg,
+          actions: <Widget>[
+            MyTextButton(
+              title: l10n('cancel'),
+              width: width,
+              cancelStyle: true,
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+            ),
+            SizedBox(width: 16),
+            MyTextButton(
+              title: l10n('delete'),
+              width: width,
+              deleteStyle: true,
               onPressed: () {
                 ret = true;
                 Navigator.of(context).pop();

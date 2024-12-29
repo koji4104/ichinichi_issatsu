@@ -78,7 +78,7 @@ class BookListScreen extends BaseScreen {
             },
           ),
           startActionPane: ActionPane(
-            extentRatio: 0.3,
+            extentRatio: 0.2,
             motion: const ScrollMotion(),
             children: [
               SlidableAction(
@@ -86,17 +86,17 @@ class BookListScreen extends BaseScreen {
                 backgroundColor: Colors.blue,
                 //foregroundColor: AppColor.backgroundColor,
                 //icon: AppIcon.draftsOutlined,
-                label: 'Read',
+                label: '',
               )
             ],
           ),
           endActionPane: ActionPane(
-            extentRatio: 0.3,
+            extentRatio: 0.2,
             motion: const StretchMotion(),
             children: [
               SlidableAction(
                 onPressed: (_) {
-                  okDialog().then((ret) {
+                  deleteDialog().then((ret) {
                     if (ret) {
                       log('delette');
                       String dir = datadir + '/${bookList[index].bookId}';
@@ -110,7 +110,7 @@ class BookListScreen extends BaseScreen {
                 backgroundColor: Colors.red,
                 //foregroundColor: AppColor.backgroundColor,
                 icon: Icons.delete,
-                label: 'Trash',
+                label: null,
               ),
             ],
           ),

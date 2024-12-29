@@ -38,6 +38,9 @@ class Localized {
       'dark_mode': 'Dark mode',
       'vertical-rl': 'Vertical',
       'horizontal-tb': 'Horizontal',
+      'save': 'Save',
+      'delete': 'Delete',
+      'cancel': 'Cancel',
     },
     'ja': {
       'app_name': '一日一冊',
@@ -55,6 +58,9 @@ class Localized {
       'dark_mode': '外観',
       'vertical-rl': '縦書き',
       'horizontal-tb': '横書き',
+      'save': '保存',
+      'delete': '削除',
+      'cancel': 'キャンセル',
     },
   };
 

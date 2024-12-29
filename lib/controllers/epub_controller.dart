@@ -27,6 +27,7 @@ class PermitInvalidCertification extends HttpOverrides {
 
 enum MyEpubStatus {
   none,
+  downloadable,
   downloading,
   succeeded,
   failed,
@@ -39,6 +40,7 @@ class EpubNotifier extends ChangeNotifier {
 
   EpubData epub = new EpubData();
   MyEpubStatus status = MyEpubStatus.none;
+  int downloaded = 0;
 
   Future writeBook() async {
     if (epub.bookId == null) return;
@@ -57,7 +59,6 @@ class EpubNotifier extends ChangeNotifier {
     String datadir = appdir + '/data';
     await Directory('${datadir}/${epub.bookId}').create(recursive: true);
     await Directory('${datadir}/${epub.bookId}/text').create(recursive: true);
-    //await Directory('${datadir}/${epub.bookId}/styles').create(recursive: true);
     for (EpubFileData f in epub.fileList) {
       List<int> content = convert.utf8.encode(f.text!);
       final file = File('${datadir}/${epub.bookId}/${f.fileName}');
@@ -67,9 +68,9 @@ class EpubNotifier extends ChangeNotifier {
     BookData book = BookData();
     book.title = epub.bookTitle ?? epub.bookId!;
     book.bookId = epub.bookId!;
-    book.author = epub.bookAuther ?? '';
+    book.author = epub.bookAuthor ?? '';
     for (EpubFileData f in epub.fileList) {
-      if (f.chapNo > 0) {
+      if (f.chapNo >= 0) {
         IndexData ch = IndexData();
         ch.title = f.title ?? '';
         ch.index = f.chapNo;
@@ -79,7 +80,7 @@ class EpubNotifier extends ChangeNotifier {
     }
 
     String jsonText = book.toJsonString();
-    final file = File('${datadir}/${epub.bookId}/book.json');
+    final file = File('${datadir}/${epub.bookId}/book_data.json');
     await file.writeAsString(jsonText, mode: FileMode.write, flush: true);
 
     BookInfoData bi = BookInfoData();
@@ -90,7 +91,6 @@ class EpubNotifier extends ChangeNotifier {
 
   Future checkHtml(String url, String body) async {
     epub.reset();
-    status = MyEpubStatus.none;
 
     if (url.toString().contains('www.aozora.gr.jp/cards/')) {
       await checkAozora(url, body);
@@ -99,11 +99,21 @@ class EpubNotifier extends ChangeNotifier {
     } else if (url.toString().contains('ncode.syosetu.com/')) {
       await checkNarou(url, body);
     }
+
+    if (epub.bookId != null && epub.urlList.isNotEmpty) {
+      status = MyEpubStatus.downloadable;
+      this.notifyListeners();
+    } else if (status != MyEpubStatus.none) {
+      status = MyEpubStatus.none;
+      this.notifyListeners();
+    }
   }
 
   Future<void> download() async {
     if (epub.urlList.length == 0 || epub.contentUrl == null) {
       log('urlList.length == 0');
+      status = MyEpubStatus.failed;
+      this.notifyListeners();
       return;
     }
     if (epub.contentUrl.toString().contains('www.aozora.gr.jp/cards/')) {
@@ -112,7 +122,40 @@ class EpubNotifier extends ChangeNotifier {
       await downloadKakuyomu();
     } else if (epub.contentUrl.toString().contains('ncode.syosetu.com/')) {
       await downloadNarou();
+    } else {
+      status = MyEpubStatus.failed;
+      this.notifyListeners();
     }
+  }
+
+  /// tag = '<a '  '<div'
+  String deleteTag(String text, String tag) {
+    int s1 = 0;
+    for (int i = 0; i < 1000; i++) {
+      s1 = text.indexOf(tag);
+      int e1 = (s1 >= 0) ? text.indexOf(r'>', s1 + tag.length) + 1 : 0;
+      if (s1 >= 0 && e1 > 0) {
+        text = text.substring(0, s1) + text.substring(e1);
+      } else {
+        break;
+      }
+    }
+    return text;
+  }
+
+  /// tag = '<h3'
+  String deleteClassAttr(String text, String tag) {
+    int s1 = 0;
+    for (int i = 0; i < 1000; i++) {
+      s1 = text.indexOf(tag, s1);
+      int e1 = (s1 >= 0) ? text.indexOf(r'>', s1 + tag.length) + 1 : 0;
+      if (s1 >= 0 && e1 > 0) {
+        text = text.substring(0, s1) + tag + r'>' + text.substring(e1);
+      } else {
+        break;
+      }
+    }
+    return text;
   }
 
   Map<String, String> headers = {
@@ -120,12 +163,19 @@ class EpubNotifier extends ChangeNotifier {
         'Mozilla/5.0 (iPhone; CPU iPhone OS 15_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148'
   };
 
+  setStatusNone() {
+    epub.reset();
+    if (status != MyEpubStatus.none) {
+      status = MyEpubStatus.none;
+      this.notifyListeners();
+    }
+  }
+
   //--------
   // Aozora
   //--------
 
   Future checkAozora(String url, String body) async {
-    epub.reset();
     epub.contentUrl = url;
 
     //https://www.aozora.gr.jp/cards/000148/card773.html
@@ -156,15 +206,21 @@ class EpubNotifier extends ChangeNotifier {
 
     status = MyEpubStatus.downloading;
     this.notifyListeners();
+    downloaded = 0;
 
     String url = epub.urlList[0];
     http.Response res = await http.get(Uri.parse(url), headers: headers);
     if (res.statusCode == 200) {
       try {
         String text1 = await CharsetConverter.decode("Shift_JIS", res.bodyBytes);
-        createAozoraFromText(text1);
-        writeBook();
-        status = MyEpubStatus.succeeded;
+        createAozoraText(text1);
+
+        if (epub.fileList.length >= 2) {
+          writeBook();
+          status = MyEpubStatus.succeeded;
+        } else {
+          status = MyEpubStatus.failed;
+        }
       } catch (_) {
         status = MyEpubStatus.failed;
       }
@@ -174,38 +230,10 @@ class EpubNotifier extends ChangeNotifier {
     this.notifyListeners();
   }
 
-  /// tag = '<a '  '<div'
-  String deleteTag(String text, String tag) {
-    for (int i = 0; i < 1000; i++) {
-      int s1 = text.indexOf(tag);
-      int e1 = (s1 >= 0) ? text.indexOf(r'>', s1 + tag.length) + 1 : 0;
-      if (s1 >= 0 && e1 > 0) {
-        text = text.substring(0, s1) + text.substring(e1);
-      } else {
-        break;
-      }
-    }
-    return text;
-  }
-
-  /// tag = '<h3'
-  String deleteClass(String text, String tag) {
-    for (int i = 0; i < 1000; i++) {
-      int s1 = text.indexOf(tag);
-      int e1 = (s1 >= 0) ? text.indexOf(r'>', s1 + tag.length) + 1 : 0;
-      if (s1 >= 0 && e1 > 0) {
-        text = text.substring(0, s1) + tag + r'>' + text.substring(e1);
-      } else {
-        break;
-      }
-    }
-    return text;
-  }
-
-  Future createAozoraFromText(String text1) async {
+  Future createAozoraText(String body) async {
     if (epub.bookId == null) return;
 
-    BeautifulSoup bs = BeautifulSoup(text1);
+    BeautifulSoup bs = BeautifulSoup(body);
     String bookId = epub.bookId!;
     epub.bookTitle = bookId;
     Bs4Element? elTitle = bs.find('meta', attrs: {'name': 'DC.Title'});
@@ -213,27 +241,26 @@ class EpubNotifier extends ChangeNotifier {
       epub.bookTitle = elTitle['content'] ?? bookId;
     }
 
-    String bookAuthor = bookId;
     Bs4Element? elAuthor = bs.find('meta', attrs: {'name': 'DC.Creator'});
     if (elAuthor != null) {
-      bookAuthor = elAuthor['content'] ?? '';
+      epub.bookAuthor = elAuthor['content'] ?? '';
     }
 
     Bs4Element? el = bs.find('div', class_: 'main_text');
-    String t1 = el!.innerHtml;
-    t1 = t1.replaceAll('<br>', '<br />');
+    String text = el!.innerHtml;
+    text = text.replaceAll('<br>', '<br />');
 
     // delete div
-    t1 = deleteTag(t1, '<div');
-    t1 = t1.replaceAll('</div>', '');
+    text = deleteTag(text, '<div');
+    text = text.replaceAll('</div>', '');
 
     // delete '<a '
-    t1 = deleteTag(t1, '<a ');
-    t1 = t1.replaceAll('</a>', '');
+    text = deleteTag(text, '<a ');
+    text = text.replaceAll('</a>', '');
 
     // delete class '<h3'
-    t1 = deleteClass(t1, '<h3');
-    t1 = deleteClass(t1, '<h4');
+    text = deleteClassAttr(text, '<h3');
+    text = deleteClassAttr(text, '<h4');
 
     // <div class="jisage_3" style="margin-left: 3em"><h3 class="o-midashi"><a class="midashi_anchor" id="midashi400">第三の手記</a></h3></div>
     // <br /><br />
@@ -246,29 +273,57 @@ class EpubNotifier extends ChangeNotifier {
     // <br />
 
     String hd = 'h3';
-    List<String> listText = t1.split('<h3');
-    List<String> textList4 = t1.split('<h4');
-    if (listText.length <= 1 && textList4.length >= 2) {
-      t1 = t1.replaceAll('<h4', '<h3');
-      t1 = t1.replaceAll('</h4', '</h3');
-      listText = t1.split('<h3');
+    text = text.replaceAll('<h4', '<h3');
+    text = text.replaceAll('</h4', '</h3');
+
+    List<String> listText1 = text.split('<h3');
+    List<String> listText = [];
+    if (listText1.length == 1) {
+      listText.add(listText1[0]);
+    } else if (listText1.length > 1) {
+      for (int i = 0; i < listText1.length; i++) {
+        String t1 = listText1[i];
+        if (i > 0) {
+          t1 = '<h3' + t1;
+          if (i < listText1.length - 1) {
+            if (t1.length < 100) {
+              String t2 = listText1[i + 1];
+              t2 = '<h3' + t2;
+              t2 = t2.replaceAll('<h3', '<h4');
+              t2 = t2.replaceAll('</h3', '</h4');
+              t1 += t2;
+              i++;
+            }
+          }
+        }
+        listText.add(t1);
+      }
     }
 
-    if (listText.length <= 1) {
+    String text0 = '';
+    text0 += '<h2>' + (epub.bookTitle ?? epub.bookId!) + '</h2>\n';
+    text0 += epub.bookAuthor != null ? '<h2>' + epub.bookAuthor! + '</h2>\n' : '';
+    EpubFileData f0 = EpubFileData();
+    f0.chapNo = 0;
+    f0.fileName = 'text/ch${f0.chapNo000}.txt';
+    f0.title = epub.bookTitle;
+    f0.text = text0;
+    f0.chars = text0.length;
+    epub.fileList.add(f0);
+
+    if (listText.length == 1) {
       EpubFileData f = EpubFileData();
       f.chapNo = 1;
       f.fileName = 'text/ch${f.chapNo000}.txt';
-      f.text = t1;
+      f.text = text;
       f.title = epub.bookTitle;
-      f.chars = t1.length;
+      f.chars = text.length;
       epub.fileList.add(f);
-    } else {
-      for (int i = 0; i < listText.length; i++) {
+    } else if (listText.length > 1) {
+      for (int i = 1; i < listText.length; i++) {
         String text = listText[i];
-        if (i == 0) continue; // 0 is header
-        text = r'<' + hd + text;
-        String title = '${i + 1}';
 
+        String title = '${i + 1}';
         BeautifulSoup bs1 = BeautifulSoup(text);
         Bs4Element? el1 = bs1.find(hd);
         if (el1 != null) {
@@ -276,7 +331,7 @@ class EpubNotifier extends ChangeNotifier {
         }
 
         EpubFileData f = EpubFileData();
-        f.chapNo = listText.length == 1 ? 1 : i;
+        f.chapNo = i;
         f.fileName = 'text/ch${f.chapNo000}.txt';
         f.text = text;
         f.title = title;
@@ -291,7 +346,6 @@ class EpubNotifier extends ChangeNotifier {
   //----------
 
   Future<void> checkKakuyomu(String url, String body) async {
-    epub.reset();
     epub.contentUrl = url;
     epub.bookId = url.substring(url.indexOf('works/') + 6);
 
@@ -314,7 +368,7 @@ class EpubNotifier extends ChangeNotifier {
                     epub.bookTitle = value['title'] ?? epub.bookId;
                     var aut = value['author'];
                     var ref = aut['__ref'] ?? '';
-                    epub.bookAuther =
+                    epub.bookAuthor =
                         ref.toString().substring(ref.toString().indexOf('UserAccount:') + 12);
                   }
                 }
@@ -329,42 +383,63 @@ class EpubNotifier extends ChangeNotifier {
   Future<void> downloadKakuyomu() async {
     status = MyEpubStatus.downloading;
     this.notifyListeners();
+    downloaded = 0;
+
+    String text0 = '';
+    text0 += '<h2>' + (epub.bookTitle ?? epub.bookId!) + '</h2>\n';
+    text0 += epub.bookAuthor != null ? '<h2>' + epub.bookAuthor! + '</h2>\n' : '';
+    EpubFileData f0 = EpubFileData();
+    f0.chapNo = 0;
+    f0.fileName = 'text/ch${f0.chapNo000}.txt';
+    f0.title = epub.bookTitle;
+    f0.text = text0;
+    f0.chars = text0.length;
+    epub.fileList.add(f0);
 
     for (int i = 0; i < epub.urlList.length; i++) {
-      if (i > 10) break;
-      sleep(Duration(milliseconds: 500));
+      sleep(Duration(milliseconds: 200));
       http.Response res1 = await http.get(Uri.parse(epub.urlList[i]), headers: headers);
       if (res1.statusCode == 200) {
-        await createKakuyomuFromText(res1.body, i + 1);
+        await createKakuyomuText(res1.body, i + 1);
+      } else {
+        break;
+      }
+      downloaded = i;
+      if (downloaded % 4 == 1) {
+        this.notifyListeners();
       }
     }
-    writeBook();
 
-    status = MyEpubStatus.succeeded;
+    if (epub.fileList.length >= 2) {
+      writeBook();
+      status = MyEpubStatus.succeeded;
+    } else {
+      status = MyEpubStatus.failed;
+    }
     this.notifyListeners();
   }
 
-  Future createKakuyomuFromText(String text1, int chap) async {
+  Future createKakuyomuText(String body, int chap) async {
     EpubFileData f = new EpubFileData();
 
     f.chapNo = chap;
-    BeautifulSoup bs = BeautifulSoup(text1);
+    BeautifulSoup bs = BeautifulSoup(body);
     Bs4Element? et = bs.find('p', class_: 'widget-episodeTitle');
     if (et != null) f.title = et.innerHtml;
 
     Bs4Element? ec = bs.find('div', class_: 'widget-episodeBody js-episode-body');
     if (ec != null) {
-      String t1 = ec.innerHtml;
-      t1 = t1.replaceAll('<br>', '<br />');
-      t1 = t1.replaceAll('&nbsp;', '');
+      String text = ec.innerHtml;
+      text = text.replaceAll('<br>', '<br />');
+      text = text.replaceAll('&nbsp;', '');
       String title = '<h3>${f.title}</h3>\n';
 
       // delete <p>
-      t1 = deleteTag(t1, '<p ');
-      t1 = t1.replaceAll('</p>', '<br />');
+      text = deleteTag(text, '<p ');
+      text = text.replaceAll('</p>', '<br />');
 
-      f.text = title + t1;
-      f.chars = t1.length;
+      f.text = title + text;
+      f.chars = text.length;
       f.chapNo = chap;
       f.fileName = 'text/ch${f.chapNo000}.txt';
       epub.fileList.add(f);
@@ -377,7 +452,6 @@ class EpubNotifier extends ChangeNotifier {
   //-------
 
   Future<void> checkNarou(String url, String body) async {
-    epub.reset();
     epub.contentUrl = url;
     epub.bookId = url.substring(url.indexOf('syosetu.com/') + 12);
 
@@ -395,17 +469,21 @@ class EpubNotifier extends ChangeNotifier {
   Future<void> downloadNarou() async {
     status = MyEpubStatus.downloading;
     this.notifyListeners();
+    downloaded = 0;
 
     if (epub.urlList.length > 0) {
       for (int i = 0; i < epub.urlList.length; i++) {
-        if (i > 5) break;
-        sleep(Duration(seconds: 1));
+        sleep(Duration(milliseconds: 200));
         http.Response res1 = await http.get(Uri.parse(epub.urlList[i]), headers: headers);
         log('${res1.statusCode}  ${epub.urlList[i]}');
         if (res1.statusCode == 200) {
-          await createNarouFromText(res1.body, i + 1);
+          await createNarouText(res1.body, i + 1);
         } else {
           break;
+        }
+        downloaded = i;
+        if (downloaded % 4 == 1) {
+          this.notifyListeners();
         }
       }
     }
@@ -414,33 +492,31 @@ class EpubNotifier extends ChangeNotifier {
     this.notifyListeners();
   }
 
-  Future createNarouFromText(String text1, int chap) async {
+  Future createNarouText(String body, int chap) async {
     EpubFileData f = new EpubFileData();
     f.chapNo = chap;
-    BeautifulSoup bs = BeautifulSoup(text1);
+    BeautifulSoup bs = BeautifulSoup(body);
     Bs4Element? et = bs.find('div', class_: 'p-novel__subtitle-episode');
     if (et != null) f.title = et.innerHtml;
 
     //<div class="js-novel-text p-novel__text">
     Bs4Element? ec = bs.find('div', class_: 'js-novel-text p-novel__text');
     if (ec != null) {
-      String t1 = ec.innerHtml;
-      t1 = t1.replaceAll('<br>', '<br />');
-      t1 = t1.replaceAll('&nbsp;', '');
+      String text = ec.innerHtml;
+      text = text.replaceAll('<br>', '<br />');
+      text = text.replaceAll('&nbsp;', '');
       String title = '<h3>${f.title}</h3>\n';
 
       // delete <p>
-      t1 = deleteTag(t1, '<p ');
-      t1 = t1.replaceAll('</p>', '<br />');
+      text = deleteTag(text, '<p ');
+      text = text.replaceAll('</p>', '<br />');
 
-      f.text = title + t1;
-      f.chars = t1.length;
+      f.text = title + text;
+      f.chars = text.length;
+      f.fileName = 'text/ch${f.chapNo000}.txt';
+      epub.fileList.add(f);
     }
 
-    f.chapNo = chap;
-    f.fileName = 'text/ch${f.chapNo000}.txt';
-
-    epub.fileList.add(f);
     return f;
   }
 
@@ -448,11 +524,9 @@ class EpubNotifier extends ChangeNotifier {
   // Hamel
   //-------
   Future<void> checkHamel(String url, String body) async {
-    epub.reset();
     epub.bookId = url.substring(url.indexOf('syosetu.com/') + 12);
 
     //<a href=./1.html style="text-decoration:none;">キッドナッシング</a>
-
     BeautifulSoup bs = BeautifulSoup(body);
     List<Bs4Element> els = bs.findAll('a', class_: 'p-eplist__subtitle');
     for (Bs4Element e in els) {

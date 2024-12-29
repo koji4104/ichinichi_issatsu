@@ -24,8 +24,17 @@ class stateNotifier extends ChangeNotifier {
   List<double> listWidth = [];
 }
 
+enum BottomBarType {
+  none,
+  tocBar,
+  bottomBar,
+  settingsBar,
+  clipTextBar,
+  clipListBar,
+}
+
 class ViewerScreen extends BaseScreen {
-  ViewerScreen({required BookData this.book});
+  ViewerScreen({required BookData this.book}) {}
 
   BookData book;
 
@@ -38,6 +47,7 @@ class ViewerScreen extends BaseScreen {
   bool isTocFlushbar = false;
   bool isTocFlushbarInit = false;
   bool isTopBottomBar = false;
+  BottomBarType bottomBarType = BottomBarType.none;
 
   bool isAppBar = true;
 
@@ -48,19 +58,21 @@ class ViewerScreen extends BaseScreen {
 
   @override
   Future init() async {
-    await reload();
+    reload();
+  }
+
+  bool isActionBar() {
+    return bottomBarType == BottomBarType.bottomBar ||
+        bottomBarType == BottomBarType.settingsBar ||
+        bottomBarType == BottomBarType.clipTextBar;
   }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    super.build(context, ref);
-    ref.watch(viewerProvider);
-    ref.watch(stateProvider);
-
     double oldWidth = _width;
     _width = MediaQuery.of(context).size.width;
     if (_width != oldWidth) {
-      log('width ${_width}');
+      log('width ${_width.toInt()}');
       ref.read(viewerProvider).width = _width;
     }
 
@@ -68,8 +80,17 @@ class ViewerScreen extends BaseScreen {
     _height = MediaQuery.of(context).size.height;
     myTheme.appBarTheme.toolbarHeight;
     if (_height != oldHeight) {
-      log('height ${_height}');
+      log('height ${_height.toInt()}');
       ref.read(viewerProvider).height = _height;
+    }
+
+    super.build(context, ref);
+    ref.watch(viewerProvider);
+    ref.watch(stateProvider);
+
+    if (ref.watch(viewerProvider).changeedClipText) {
+      ref.watch(viewerProvider).changeedClipText = false;
+      bottomBarType = BottomBarType.clipTextBar;
     }
 
     return Scaffold(
@@ -82,22 +103,43 @@ class ViewerScreen extends BaseScreen {
               icon: Icon(Icons.arrow_back_ios_new),
               onPressed: () => Navigator.of(context).pop(),
             ),
-            if (isTopBottomBar) SizedBox(width: 10),
-            if (isTopBottomBar)
+            if (isActionBar()) SizedBox(width: 10),
+            if (isActionBar())
               IconButton(
                 icon: Icon(Icons.list),
-                onPressed: () => tocBar(),
+                onPressed: () {
+                  bottomBarType = BottomBarType.tocBar;
+                  redraw();
+                },
               ),
           ],
         ),
-        title: (isTopBottomBar == false) ? MyText('${book.title}') : null,
+        title: (isActionBar() == false) ? MyText('${book.title}') : null,
         actions: [
-          if (isTopBottomBar)
+          if (isActionBar())
+            IconButton(
+              icon: Icon(Icons.article),
+              onPressed: () {
+                bottomBarType = BottomBarType.clipListBar;
+                redraw();
+              },
+            ),
+          if (isActionBar()) SizedBox(width: 10),
+          if (isActionBar())
+            IconButton(
+              icon: Icon(Icons.search),
+              onPressed: () => ref.read(viewerProvider).find(0, '写真'),
+            ),
+          if (isActionBar()) SizedBox(width: 10),
+          if (isActionBar())
             IconButton(
               icon: Icon(Icons.settings),
-              onPressed: () => settingsBar(),
+              onPressed: () {
+                bottomBarType = BottomBarType.settingsBar;
+                redraw();
+              },
             ),
-          if (isTopBottomBar) SizedBox(width: 10)
+          if (isActionBar()) SizedBox(width: 10)
         ],
       ),
       body: SafeArea(
@@ -108,8 +150,6 @@ class ViewerScreen extends BaseScreen {
             child: Widget1(),
           ),
           if (ref.watch(viewerProvider).isLoading) loadingWidget(),
-          topBar(),
-          bottomBar(),
           Container(
             padding: EdgeInsets.fromLTRB(1, 1, 1, 1),
             child: RawGestureDetector(
@@ -122,12 +162,17 @@ class ViewerScreen extends BaseScreen {
                       ..onTapUp = (TapUpDetails details) {
                         double dx = details.globalPosition.dx;
                         if (dx < 120) {
-                          scrollRight();
+                          //scrollRight();
                         } else if (dx > _width - 120) {
-                          scrollLeft();
+                          //scrollLeft();
                         } else {
-                          isTopBottomBar = !isTopBottomBar;
-                          redraw();
+                          if (bottomBarType != BottomBarType.bottomBar) {
+                            bottomBarType = BottomBarType.bottomBar;
+                            redraw();
+                          } else {
+                            bottomBarType = BottomBarType.none;
+                            redraw();
+                          }
                         }
                       }
                       ..onTapDown = (TapDownDetails details) {}
@@ -139,13 +184,18 @@ class ViewerScreen extends BaseScreen {
               child: Container(),
             ),
           ),
-          settingsWidget(),
+          tocBar(),
+          bottomBar(),
+          clipTextBar(),
+          settingsBar(),
+          clipListBar(),
         ]),
       ),
     );
   }
 
   Widget Widget1() {
+    PlatformInAppWebViewController.debugLoggingSettings.enabled = false;
     return ref.read(viewerProvider).viewer(env);
   }
 
@@ -218,14 +268,11 @@ class ViewerScreen extends BaseScreen {
   }
 
   Widget bottomBar() {
-    double bottomBarHeight = 80;
-    double ffBottom = 0;
-    if (isTopBottomBar == false) {
-      ffBottom = -1.0 * bottomBarHeight;
-    } else {
+    double barHeight = 80;
+    double ffBottom = -1.0 * barHeight;
+    if (bottomBarType == BottomBarType.bottomBar) {
       ffBottom = 0;
     }
-    if (isTocFlushbar == true) ffBottom = 0;
 
     return AnimatedPositioned(
       duration: const Duration(milliseconds: 100),
@@ -234,7 +281,7 @@ class ViewerScreen extends BaseScreen {
       top: null,
       right: 0,
       bottom: ffBottom,
-      height: bottomBarHeight,
+      height: barHeight,
       child: bottomBar1(),
     );
   }
@@ -262,34 +309,89 @@ class ViewerScreen extends BaseScreen {
     );
   }
 
-  void settingsBar() {
-    isSettingsBar = !isSettingsBar;
-    redraw();
-  }
-
-  Widget settingsWidget() {
-    double settingsHeight = 300;
-    double ffBottom = 0;
-    if (isSettingsBar == false) {
-      ffBottom = -1.0 * settingsHeight;
-    } else {
+  Widget clipTextBar() {
+    double barHeight = 200;
+    double ffBottom = -1.0 * barHeight;
+    if (bottomBarType == BottomBarType.clipTextBar) {
       ffBottom = 0;
     }
-    if (isTocFlushbar == true) ffBottom = -1.0 * settingsHeight;
 
     return AnimatedPositioned(
-      duration: const Duration(milliseconds: 100),
+      duration: const Duration(milliseconds: 300),
       curve: Curves.linear,
-      left: 1,
+      left: 0,
       top: null,
-      right: 1,
+      right: 0,
       bottom: ffBottom,
-      height: settingsHeight,
-      child: settingsWidget1(),
+      height: barHeight,
+      child: clipTextBar1(),
     );
   }
 
-  Widget settingsWidget1() {
+  Widget clipTextBar1() {
+    String text = ref.watch(viewerProvider).clipText;
+    return Container(
+      color: myTheme.scaffoldBackgroundColor,
+      child: Column(
+        children: [
+          SizedBox(height: 1, child: Container(color: myTheme.dividerColor)),
+          closeButtonRow(),
+          MyTextButton(
+            title: l10n('save'),
+            width: 120,
+            onPressed: () async {
+              saveDialog().then((ret) {
+                if (ret) {
+                  ref.read(viewerProvider).saveClip(text);
+                }
+              });
+            },
+          ),
+          Expanded(child: Text(text, overflow: TextOverflow.clip)),
+        ],
+      ),
+    );
+  }
+
+  IconButton closeButton() {
+    return IconButton(
+      icon: Icon(Icons.close),
+      iconSize: 18,
+      onPressed: () async {
+        bottomBarType = BottomBarType.none;
+        redraw();
+      },
+    );
+  }
+
+  Widget closeButtonRow() {
+    return Row(children: [
+      closeButton(),
+      Expanded(flex: 1, child: SizedBox(width: 1)),
+      closeButton(),
+    ]);
+  }
+
+  Widget settingsBar() {
+    double barHeight = 280;
+    double ffBottom = -1.0 * barHeight;
+    if (bottomBarType == BottomBarType.settingsBar) {
+      ffBottom = 0;
+    }
+
+    return AnimatedPositioned(
+      duration: const Duration(milliseconds: 200),
+      curve: Curves.linear,
+      left: 0,
+      top: null,
+      right: 0,
+      bottom: ffBottom,
+      height: barHeight,
+      child: settingsBar1(),
+    );
+  }
+
+  Widget settingsBar1() {
     return Container(
       decoration: BoxDecoration(
         color: myTheme.cardColor,
@@ -298,29 +400,11 @@ class ViewerScreen extends BaseScreen {
       ),
       child: Column(
         children: [
-          Row(children: [
-            IconButton(
-              icon: Icon(Icons.close),
-              iconSize: 20,
-              onPressed: () async {
-                isSettingsBar = false;
-                redraw();
-              },
-            ),
-            Expanded(flex: 1, child: SizedBox(width: 1)),
-            IconButton(
-              icon: Icon(Icons.close),
-              iconSize: 20,
-              onPressed: () async {
-                isSettingsBar = false;
-                redraw();
-              },
-            ),
-          ]),
+          closeButtonRow(),
           Row(children: [
             Expanded(flex: 1, child: SizedBox(width: 1)),
-            MyIconButton(
-              icon: Icons.remove,
+            IconButton(
+              icon: Icon(Icons.remove),
               iconSize: 20,
               onPressed: () async {
                 env.font_size.val -= 2;
@@ -332,8 +416,8 @@ class ViewerScreen extends BaseScreen {
             SizedBox(width: 16),
             MyText('${env.font_size.val}'),
             SizedBox(width: 16),
-            MyIconButton(
-              icon: Icons.add,
+            IconButton(
+              icon: Icon(Icons.add),
               iconSize: 20,
               onPressed: () async {
                 env.font_size.val += 2;
@@ -434,9 +518,26 @@ class ViewerScreen extends BaseScreen {
     );
   }
 
-  tocBar() {
-    if (isTocFlushbar == true) return;
-    isSettingsBar = false;
+  Widget tocBar() {
+    double barHeight = _height / 2;
+    double ffBottom = -1.0 * barHeight;
+    if (bottomBarType == BottomBarType.tocBar) {
+      ffBottom = 0;
+    }
+
+    return AnimatedPositioned(
+      duration: const Duration(milliseconds: 400),
+      curve: Curves.linear,
+      left: 0,
+      top: null,
+      right: 0,
+      bottom: ffBottom,
+      height: barHeight,
+      child: tocBar1(),
+    );
+  }
+
+  Widget tocBar1() {
     List<Widget> list = [];
 
     for (int i = 0; i < book.indexList.length; i++) {
@@ -456,33 +557,70 @@ class ViewerScreen extends BaseScreen {
       );
     }
 
-    Widget sw = Container(
-      width: 300,
-      height: _height / 2,
-      child: SingleChildScrollView(
-        child: Column(children: list),
+    return Container(
+      decoration: BoxDecoration(
+        color: myTheme.cardColor,
+        borderRadius: DEF_BORDER_RADIUS,
+        border: Border.all(color: myTheme.dividerColor),
+      ),
+      child: Column(
+        children: [
+          closeButtonRow(),
+          Expanded(
+            child: SingleChildScrollView(
+              child: Column(children: list),
+            ),
+          ),
+        ],
       ),
     );
+  }
 
-    return Flushbar(
-      borderColor: myTheme.textTheme.bodyMedium!.color!,
-      backgroundColor: myTheme.scaffoldBackgroundColor,
-      key: tocFlushbarKey,
-      titleText: MyText('-'),
-      messageText: sw,
-      onStatusChanged: (FlushbarStatus? status) {
-        if (status == null) return;
-        switch (status) {
-          case FlushbarStatus.SHOWING:
-          case FlushbarStatus.IS_APPEARING:
-            isTocFlushbar = true;
-            break;
-          case FlushbarStatus.IS_HIDING:
-          case FlushbarStatus.DISMISSED:
-            isTocFlushbar = false;
-            break;
-        }
-      },
-    ).show(context);
+  Widget clipListBar() {
+    double barHeight = _height / 2;
+    double ffBottom = -1.0 * barHeight;
+    if (bottomBarType == BottomBarType.clipListBar) {
+      ffBottom = 0;
+    }
+
+    return AnimatedPositioned(
+      duration: const Duration(milliseconds: 400),
+      curve: Curves.linear,
+      left: 0,
+      top: null,
+      right: 0,
+      bottom: ffBottom,
+      height: barHeight,
+      child: clipListBar1(),
+    );
+  }
+
+  Widget clipListBar1() {
+    BookClipData d = ref.watch(viewerProvider).readClip();
+
+    List<Widget> list = [];
+    for (int i = 0; i < d.list.length; i++) {
+      list.add(
+        Text(d.list[i].text, overflow: TextOverflow.clip),
+      );
+    }
+    if (list.length == 0) return Container();
+    return Container(
+      decoration: BoxDecoration(
+        color: myTheme.cardColor,
+        borderRadius: DEF_BORDER_RADIUS,
+        border: Border.all(color: myTheme.dividerColor),
+      ),
+      child: Column(
+        children: [
+          closeButtonRow(),
+          Expanded(
+            child: SingleChildScrollView(
+              child: Column(children: list),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }

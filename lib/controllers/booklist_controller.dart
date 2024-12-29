@@ -37,9 +37,9 @@ class BookListNotifier extends ChangeNotifier {
       if (FileSystemEntity.isDirectorySync(e.path) == true) {
         log('readBookList ${e.path}');
         String bookId = basename(e.path);
-        if (File('${e.path}/book.json').existsSync()) {
+        if (File('${e.path}/book_data.json').existsSync()) {
           try {
-            String? txt = await File('${e.path}/book.json').readAsString();
+            String? txt = await File('${e.path}/book_data.json').readAsString();
             Map<String, dynamic> j = json.decode(txt);
             BookData book = BookData();
             book = BookData.fromJson(j);

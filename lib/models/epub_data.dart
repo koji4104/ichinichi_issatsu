@@ -18,7 +18,7 @@ class EpubData {
   EpubData() {}
   String? bookId;
   String? bookTitle;
-  String? bookAuther;
+  String? bookAuthor;
 
   List<EpubFileData> fileList = [];
   List<String> urlList = [];
@@ -27,7 +27,7 @@ class EpubData {
   reset() {
     bookId = null;
     bookTitle = null;
-    bookAuther = null;
+    bookAuthor = null;
     contentUrl = null;
     fileList.clear();
     urlList.clear();

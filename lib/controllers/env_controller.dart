@@ -16,11 +16,7 @@ class EnvData {
   List<String> keys = [];
   String name = '';
 
-  EnvData(
-      {required int this.val,
-      required List<int> this.vals,
-      required List<String> this.keys,
-      required String this.name}) {
+  EnvData({required int this.val, required List<int> this.vals, required List<String> this.keys, required String this.name}) {
     round(val);
   }
 
@@ -101,9 +97,9 @@ class Environment {
 
   String getFrontCssColor() {
     String col = '#000';
-    if (back_color == 1) {
+    if (back_color.val == 1) {
       col = '#FFF';
-    } else if (back_color == 2) {
+    } else if (back_color.val == 2) {
       col = '#FFF';
     }
     return col;
@@ -111,9 +107,9 @@ class Environment {
 
   String getBackCssColor() {
     String col = '#FFF';
-    if (back_color == 1) {
+    if (back_color.val == 1) {
       col = '#333';
-    } else if (back_color == 2) {
+    } else if (back_color.val == 2) {
       col = '#000';
     }
     return col;
@@ -121,9 +117,9 @@ class Environment {
 
   int getBack32Color() {
     int col = 0xffFFFFFF;
-    if (back_color == 1) {
+    if (back_color.val == 1) {
       col = 0xff333333;
-    } else if (back_color == 2) {
+    } else if (back_color.val == 2) {
       col = 0xFF000000;
     }
     return col;

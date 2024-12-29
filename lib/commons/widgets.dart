@@ -5,14 +5,14 @@ BorderRadiusGeometry DEF_BORDER_RADIUS = BorderRadius.circular(3);
 const EdgeInsetsGeometry DEF_MENU_PADDING = EdgeInsets.fromLTRB(8, 16, 8, 0);
 
 const double DEF_APPBAR_HEIGHT = 40.0;
-const double DEF_VIEW_SCROLL_WIDTH = 30.0;
+const double DEF_VIEW_SCROLL_WIDTH = 40.0;
 const double DEF_VIEW_PADDING_W = 30.0;
 const double DEF_VIEW_PADDING_H = 40.0;
 const EdgeInsetsGeometry DEF_VIEW_PADDING_TB = EdgeInsets.fromLTRB(DEF_VIEW_PADDING_W, 0, DEF_VIEW_PADDING_W, 0);
 const EdgeInsetsGeometry DEF_VIEW_PADDING_RL = EdgeInsets.fromLTRB(0, DEF_VIEW_PADDING_H, 0, DEF_VIEW_PADDING_H);
 
-const double DEF_VIEW_LINE_WIDTH = DEF_VIEW_PADDING_W + DEF_VIEW_PADDING_W + DEF_VIEW_SCROLL_WIDTH;
-const double DEF_VIEW_LINE_HEIGHT = DEF_VIEW_PADDING_H + DEF_VIEW_PADDING_H + DEF_VIEW_SCROLL_WIDTH + DEF_APPBAR_HEIGHT;
+const double DEF_VIEW_LINE_WIDTH = DEF_VIEW_PADDING_W + DEF_VIEW_PADDING_W;
+const double DEF_VIEW_LINE_HEIGHT = DEF_VIEW_PADDING_H + DEF_VIEW_PADDING_H + DEF_APPBAR_HEIGHT;
 
 // ON OFF button
 Color btnOn = Colors.white;
@@ -182,11 +182,12 @@ Widget MyIconButton({
   required void Function()? onPressed,
 }) {
   if (iconSize == null) iconSize = 24;
-
   return IconButton(
     icon: Icon(icon),
     style: IconButton.styleFrom(
       iconSize: iconSize,
+      //fixedSize: Size(21, 21),
+      //maximumSize: Size(22, 22),
       foregroundColor: myTheme.cardColor,
       backgroundColor: myTheme.textTheme.bodyMedium!.color!,
       padding: EdgeInsets.all(0),
@@ -204,9 +205,9 @@ Widget MyTextButton({
   required String title,
   required void Function()? onPressed,
   double? width,
+  Icon? icon,
   bool? cancelStyle,
   bool? deleteStyle,
-  Icon? icon,
 }) {
   Color fgcol = myTheme.cardColor;
   Color bgcol = myTheme.textTheme.bodyMedium!.color!;
@@ -215,7 +216,8 @@ Widget MyTextButton({
     fgcol = Color(0xFFFFFFFF);
     bgcol = Color(0xFF707070);
   } else if (deleteStyle != null) {
-    fgcol = Colors.redAccent;
+    fgcol = Color(0xFFFFFFFF);
+    bgcol = Colors.redAccent;
   }
   return Container(
     width: width != null ? width : 300,

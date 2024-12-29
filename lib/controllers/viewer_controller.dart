@@ -10,6 +10,8 @@ import 'package:path/path.dart';
 import 'package:flutter/material.dart';
 import 'package:path_provider/path_provider.dart';
 import 'dart:convert';
+import 'package:flutter/services.dart';
+import 'dart:convert';
 
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 import '/models/book_data.dart';
@@ -20,14 +22,20 @@ final viewerProvider = ChangeNotifierProvider((ref) => ViewerNotifier(ref));
 
 class ViewerNotifier extends ChangeNotifier {
   ViewerNotifier(ref) {
-    scrollController = ScrollController();
-    scrollController.addListener(scrollingListener);
+    Future.delayed(const Duration(seconds: 1), () {
+      onTimer();
+    });
   }
 
+  @override
+  void dispose() {}
+
+  Environment env1 = Environment();
   BookData? book;
-  late ScrollController scrollController;
-  bool _inited = false;
+  ScrollController? scrollController;
   bool isLoading = false;
+
+  //Timer? _timer;
 
   List<String> listText = [];
   List<double> listWidth = [];
@@ -37,21 +45,22 @@ class ViewerNotifier extends ChangeNotifier {
   List<int> listRead = [];
   List<InAppWebViewController?> listWebViewController = [];
   List<GlobalKey> listKey = [];
+  List<FindInteractionController?> listFindController = [];
 
-  late String datadir;
+  String? datadir;
 
   double scrollWidth = DEF_VIEW_SCROLL_WIDTH;
   double width = 1000.0;
-  double _widthPad = DEF_VIEW_LINE_WIDTH;
+  double _widthPad =
+      Platform.isIOS ? DEF_VIEW_LINE_WIDTH : DEF_VIEW_LINE_WIDTH + DEF_VIEW_SCROLL_WIDTH;
   double height = 1000.0;
-  double _heightPad = DEF_VIEW_LINE_HEIGHT;
-
-  int type = 1;
+  double _heightPad =
+      Platform.isIOS ? DEF_VIEW_LINE_HEIGHT : DEF_VIEW_LINE_HEIGHT + DEF_VIEW_SCROLL_WIDTH;
 
   Future load(Environment env, BookData book1, double w, double h) async {
+    log('load()');
+    env1 = env;
     this.book = book1;
-
-    _inited = true;
     String appdir = (await getApplicationDocumentsDirectory()).path;
     if (!Platform.isIOS && !Platform.isAndroid) {
       appdir = appdir + '/test';
@@ -61,12 +70,15 @@ class ViewerNotifier extends ChangeNotifier {
     width = w;
     height = h;
     try {
-      _inited = false;
       listText.clear();
       listWidth.clear();
       listWebViewController.clear();
       listKey.clear();
       listState.clear();
+      listFindController.clear();
+
+      scrollController = new ScrollController();
+      scrollController!.addListener(scrollingListener);
 
       try {
         String appdir = (await getApplicationDocumentsDirectory()).path;
@@ -76,13 +88,18 @@ class ViewerNotifier extends ChangeNotifier {
         datadir = appdir + '/data';
 
         for (int i = 0; i < 1000; i++) {
-          String path1 =
-              '${datadir}/${book!.bookId}/text/ch${(i + 1).toString().padLeft(3, '0')}.txt';
+          String path1 = '${datadir}/${book!.bookId}/text/ch${(i).toString().padLeft(3, '0')}.txt';
           if (File(path1).existsSync()) {
             String text = await File(path1).readAsStringSync();
             String body = text;
-            EpubData e = new EpubData();
 
+            if (env.writing_mode.val == 1) {
+              VerticalRotated.map.forEach((String key, String value) {
+                text = text.replaceAll(key, value);
+              });
+            }
+
+            EpubData e = new EpubData();
             String text1 = e.head1 + text + e.head2;
             text1 = text1.replaceAll('<style>', '<style>${getStyle(env)}');
             listText.add(text1);
@@ -91,22 +108,19 @@ class ViewerNotifier extends ChangeNotifier {
             int fsize = env.font_size.val;
             double w = (env.writing_mode.val == 0) ? (width - _widthPad) : (height - _heightPad);
             int chars = (w / fsize).toInt();
-
             body = body.replaceAll('\n', '');
+            body = body.replaceAll('</h3>', '<br /><br />');
 
             // delete ruby
             // <ruby><rb>獅子</rb><rp>（</rp><rt>しし</rt><rp>）</rp></ruby>
-            String tag1 = '<ruby';
-            String tag2 = '</ruby>';
-            for (int i = 0; i < 1000; i++) {
-              int s1 = body.indexOf(tag1);
-              int e1 = (s1 >= 0) ? body.indexOf(tag2, s1 + tag1.length) + tag2.length : 0;
-              if (s1 >= 0 && e1 > 0 && e1 - s1 < 120) {
-                body = body.substring(0, s1) + body.substring(e1);
-              } else {
-                break;
-              }
-            }
+            body = body.replaceAll('<ruby>', '');
+            body = body.replaceAll('</ruby>', '');
+            body = body.replaceAll('<rb>', '');
+            body = body.replaceAll('</rb>', '');
+            body = body.replaceAll('<rp>', '');
+            body = body.replaceAll('</rp>', '');
+            body = body.replaceAll('<rt>', '');
+            body = body.replaceAll('</rt>', '');
 
             List<String> list1 = body.split('<br />');
 
@@ -118,78 +132,151 @@ class ViewerNotifier extends ChangeNotifier {
 
             double dh = env.line_height.val / 100.0;
             double calcWidth = lines.toDouble() * (fsize * dh);
+            calcWidth += scrollWidth;
+            if (!Platform.isIOS && calcWidth > 10000) calcWidth = 10000;
             // chars
 
-            listWidth.add(calcWidth + scrollWidth);
-
+            listWidth.add(calcWidth);
             listState.add(0);
             listWebViewController.add(null);
             listKey.add(GlobalKey());
+
+            if (Platform.isIOS || Platform.isAndroid) {
+              FindInteractionController findCtrl = FindInteractionController(
+                onFindResultReceived:
+                    (controller, activeMatchOrdinal, numberOfMatches, isDoneCounting) async {
+                  if (isDoneCounting) {
+                    //setState(() {
+                    String textFound =
+                        numberOfMatches > 0 ? '${activeMatchOrdinal + 1} of $numberOfMatches' : '';
+                    log('textFound = ${textFound}');
+                    //});
+                    if (numberOfMatches == 0) {
+                      //ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                      //  content: Text('No matches found for "${await findInteractionController.getSearchText()}"'),
+                      //));
+                    }
+                  }
+                },
+              );
+              listFindController.add(findCtrl);
+            } else {
+              listFindController.add(null);
+            }
           } else {
-            break;
+            if (i > 0) break;
           }
         }
-        jumpToIndex(book!.info.lastIndex, book!.info.lastRate);
+        //isLoading = true;
+        await Future.delayed(Duration(milliseconds: 1000));
         this.notifyListeners();
+        await Future.delayed(Duration(milliseconds: 1000));
+        jumpToIndex(book!.info.lastIndex, book!.info.lastRate);
       } on Exception catch (e) {
         print('-- PreviewScreen.init ${e.toString()}');
       }
-      _inited = true;
     } on Exception catch (e) {
       print('-- PreviewScreen.init ${e.toString()}');
     }
   }
 
   scrollRight() {
-    if (scrollController.hasClients == false) return;
-    var px = scrollController.position.pixels + 400.0;
+    if (scrollController == null) return;
+    if (scrollController!.hasClients == false) return;
+    var px = scrollController!.position.pixels + 400.0;
     if (px < 0) px = 0;
-    scrollController.animateTo(px, duration: Duration(milliseconds: 600), curve: Curves.linear);
+    scrollController!.animateTo(px, duration: Duration(milliseconds: 600), curve: Curves.linear);
   }
 
   scrollLeft() {
-    if (scrollController.hasClients == false) return;
-    var px = scrollController.position.pixels - 400.0;
-    final maxpx = scrollController.position.maxScrollExtent;
+    if (scrollController == null) return;
+    if (scrollController!.hasClients == false) return;
+    var px = scrollController!.position.pixels - 400.0;
+    final maxpx = scrollController!.position.maxScrollExtent;
     if (px > maxpx) px = maxpx;
-    scrollController.animateTo(px, duration: Duration(milliseconds: 600), curve: Curves.linear);
+    scrollController!.animateTo(px, duration: Duration(milliseconds: 600), curve: Curves.linear);
+  }
+
+  Future find(int index, String text) async {
+    if (listFindController.length < index) return;
+    if (listFindController[index] == null) return;
+    if (listState[index] == 0) return;
+    await listFindController[index]!.findAll(find: text);
+  }
+
+  Future findNext(int index) async {
+    if (listFindController.length < index) return;
+    if (listFindController[index] == null) return;
+    if (listState[index] == 0) return;
+    listFindController[index]!.findNext();
+  }
+
+  Future next(int index) async {
+    if (listWebViewController.length < index) return;
+    if (listWebViewController[index] == null) return;
+    if (Platform.isIOS || Platform.isAndroid) {
+      String? st = await listWebViewController[index]!.getSelectedText();
+      if (st != null) log('next ${st}');
+    }
   }
 
   Future jumpToIndex(int index, int rate) async {
-    if (scrollController.hasClients == false) {
-      this.notifyListeners();
-      await Future.delayed(Duration(milliseconds: 100));
-      if (scrollController.hasClients == false) {
-        log('jumpTo index return [${index}] ${(rate / 100).toInt()}%');
-        return;
+    if (scrollController == null) return;
+    for (int k = 0; k < 5; k++) {
+      if (scrollController!.hasClients == false) {
+        log('scrollController.hasClients == false k = ${k}');
+        this.notifyListeners();
+        await Future.delayed(Duration(milliseconds: 100));
       }
+    }
+    if (scrollController!.hasClients == false) {
+      log('return jumpTo index [${index}] ${(rate / 100).toInt()}%');
+      return;
     }
     if (listWidth.length == 0) return;
     if (isLoading) return;
     if (index > listWidth.length - 1) index = listWidth.length - 1;
     isLoading = true;
 
-    double curdx = scrollController.position.pixels;
-    double maxdx = scrollController.position.maxScrollExtent;
+    double curdx = scrollController!.position.pixels;
+    double maxdx = scrollController!.position.maxScrollExtent;
+
+    isLoading = true;
 
     double dx = 0;
-    for (int i = 0; i < index; i++) {
-      dx += listWidth[i];
-      if (curdx < dx && dx < maxdx) {
-        curdx = dx;
-        scrollController.jumpTo(dx);
+    for (int i = 0; i < index + 1; i++) {
+      if (listState[i] == 0) {
+        double sdx = dx;
+        curdx = scrollController!.position.pixels;
+        maxdx = scrollController!.position.maxScrollExtent;
+        if (sdx > maxdx) sdx = maxdx;
+        if (sdx > curdx) scrollController!.jumpTo(sdx);
+        await Future.delayed(Duration(milliseconds: 100));
+        this.notifyListeners();
+        for (int k = 0; k < 10; k++) {
+          if (listState[i] == 0) {
+            if (k > 2) scrollController!.jumpTo(sdx += 100);
+            log('jumpTo ${sdx.toInt()} max ${maxdx.toInt()} k ${k}');
+            await Future.delayed(Duration(milliseconds: 100));
+          }
+        }
       }
+      if (i < index) dx += listWidth[i];
     }
     dx += listWidth[index] * rate / 10000;
 
-    log('jumpTo index [${index}] ${(rate / 100).toInt()}% ${dx.toInt()}px ${scrollController.position.pixels.toInt()}/${scrollController.position.maxScrollExtent.toInt()}');
+    curdx = scrollController!.position.pixels;
+    maxdx = scrollController!.position.maxScrollExtent;
+
+    log('jumpTo index [${index}] ${(rate / 100).toInt()}% ${dx.toInt()}px ${curdx.toInt()}/${maxdx.toInt()}');
     if (dx > maxdx) {
       log('jumpTo index dx>max ${dx.toInt()} > ${maxdx.toInt()}');
       dx = maxdx;
     }
-    scrollController.jumpTo(dx);
-    isLoading = false;
+    scrollController!.jumpTo(dx);
+    await Future.delayed(Duration(milliseconds: 100));
     this.notifyListeners();
+    isLoading = false;
   }
 
   DateTime lastTime = DateTime.now();
@@ -205,10 +292,10 @@ class ViewerNotifier extends ChangeNotifier {
   }
 
   void scrollingListener() async {
-    if (scrollController.hasClients == false) return;
-    if (_inited == false) return;
+    if (scrollController == null) return;
+    if (scrollController!.hasClients == false) return;
 
-    double px = scrollController.position.pixels;
+    double px = scrollController!.position.pixels;
     final past = DateTime.now().add(Duration(seconds: -1));
     if (lastTime.compareTo(past) > 0 && (lastPixel - px).abs() > 100) {
       return;
@@ -224,7 +311,7 @@ class ViewerNotifier extends ChangeNotifier {
       }
       px -= listWidth[i];
     }
-    nowPixel = scrollController.position.pixels.toInt();
+    nowPixel = scrollController!.position.pixels.toInt();
     allPixel = 1;
     for (int i = 0; i < listWidth.length; i++) {
       allPixel += listWidth[i].toInt();
@@ -233,7 +320,8 @@ class ViewerNotifier extends ChangeNotifier {
   }
 
   saveIndex() {
-    if (scrollController.hasClients == false) return;
+    if (scrollController == null) return;
+    if (scrollController!.hasClients == false) return;
     if (scrollController == null) return;
     if (book == null) return;
     if (nowIndex == 0 && nowRate < 100) return;
@@ -285,88 +373,102 @@ class ViewerNotifier extends ChangeNotifier {
     c += '  margin: 0;\n';
     c += '}\n';
     c += 'h1, h2, h3 {\n';
-    c += '  font-size: 1.2em;\n';
+    c += '  font-size: 1.0em;\n';
+    c += '  font-weight: bold;\n';
     c += '}\n';
     c += 'h4, h5 {\n';
-    c += '  font-size: 1.1em;\n';
+    c += '  font-size: 1.0em;\n';
+    c += '  font-weight: normal;\n';
     c += '}\n';
     return c;
   }
 
   Widget viewer(Environment env) {
     if (listText.length == 0) return Container();
-    if (_inited == false) return Container();
-
-    return ListView.builder(
-      scrollDirection: env.writing_mode.val == 0 ? Axis.vertical : Axis.horizontal,
-      reverse: env.writing_mode.val == 0 ? false : true,
-      shrinkWrap: true,
-      controller: scrollController,
-      itemCount: listText.length,
-      cacheExtent: 2000,
-      physics: AlwaysScrollableScrollPhysics(),
-      hitTestBehavior: HitTestBehavior.opaque,
-      itemBuilder: (context, int index) {
-        if (listWidth.length <= index) return Container();
-        if (env.writing_mode.val == 0) {
-          return SizedBox(
-            height: listWidth[index],
-            child: inviewer(index, listText[index], env),
-          );
-        } else {
-          return SizedBox(
-            width: listWidth[index],
-            child: inviewer(index, listText[index], env),
-          );
-        }
-      },
-    );
+    //if (_inited == false) return Container();
+    PlatformInAppWebViewController.debugLoggingSettings.enabled = false;
+    try {
+      return ListView.builder(
+        scrollDirection: env.writing_mode.val == 0 ? Axis.vertical : Axis.horizontal,
+        reverse: env.writing_mode.val == 0 ? false : true,
+        shrinkWrap: true,
+        controller: scrollController,
+        itemCount: listText.length,
+        cacheExtent: 2000,
+        physics: AlwaysScrollableScrollPhysics(),
+        hitTestBehavior: HitTestBehavior.opaque,
+        itemBuilder: (context, int index) {
+          if (listWidth.length <= index) return Container();
+          if (env.writing_mode.val == 0) {
+            return SizedBox(
+              height: listWidth[index],
+              child: inviewer(index, listText[index], env),
+            );
+          } else {
+            return SizedBox(
+              width: listWidth[index],
+              child: inviewer(index, listText[index], env),
+            );
+          }
+        },
+      );
+    } catch (_) {
+      return Container();
+    }
   }
 
   Widget inviewer(int index, String text, Environment env) {
     PlatformInAppWebViewController.debugLoggingSettings.enabled = false;
-    return InAppWebView(
-      key: listKey[index],
-      initialData: InAppWebViewInitialData(data: text),
-      initialSettings: initialSettings,
-      onWebViewCreated: (controller) async {
-        listWebViewController[index] = controller;
-      },
-      onLoadStart: (controller, url) async {
-        //await updateStylesheet(index, env);
-      },
-      onLoadStop: (controller, url) async {
-        try {
-          double webWidth = 0;
-          dynamic vw = await controller
-              .evaluateJavascript(source: '''(() => { return document.body.scrollWidth; })()''');
-          if (vw != null && vw != '') {
-            webWidth = double.parse('${vw}');
-          }
-          double webHeight = 0;
-          dynamic vh = await controller
-              .evaluateJavascript(source: '''(() => { return document.body.scrollHeight; })()''');
-          if (vh != null && vh != '') {
-            webHeight = double.parse('${vh}');
-          }
 
-          if (env.writing_mode.val == 0 && webHeight > 100) {
-            if (listWidth[index] != webHeight) {
-              log('onLoadStop height [${index}] ${env.font_size.val}px ${env.line_height.val}% ${listWidth[index].toInt()} -> ${webHeight.toInt()}');
-              listWidth[index] = webHeight + scrollWidth;
-              listState[index] = 1;
+    try {
+      return InAppWebView(
+        key: listKey[index],
+        initialData: InAppWebViewInitialData(data: text),
+        initialSettings: initialSettings,
+        findInteractionController: listFindController[index],
+        onWebViewCreated: (controller) async {
+          listWebViewController[index] = controller;
+        },
+        onLoadStart: (controller, url) async {
+          //await updateStylesheet(index, env);
+        },
+        onLoadStop: (controller, url) async {
+          try {
+            double webWidth = 0;
+            dynamic vw = await controller
+                .evaluateJavascript(source: '''(() => { return document.body.scrollWidth; })()''');
+            if (vw != null && vw != '') {
+              webWidth = double.parse('${vw}');
             }
-          } else if (webWidth > 100) {
-            if (listWidth[index] != webWidth) {
-              log('onLoadStop width [${index}] ${env.font_size.val}px ${env.line_height.val}% ${listWidth[index].toInt()} -> ${webWidth.toInt()}');
-              listWidth[index] = webWidth + scrollWidth;
-              listState[index] = 1;
+            double webHeight = 0;
+            dynamic vh = await controller
+                .evaluateJavascript(source: '''(() => { return document.body.scrollHeight; })()''');
+            if (vh != null && vh != '') {
+              webHeight = double.parse('${vh}');
             }
-          }
-          this.notifyListeners();
-        } catch (_) {}
-      },
-    );
+
+            if (env.writing_mode.val == 0 && webHeight > 100) {
+              webHeight += scrollWidth;
+              if (listWidth[index] != webHeight) {
+                log('onLoadStop height [${index}] ${env.font_size.val}px ${env.line_height.val}% ${listWidth[index].toInt()} -> ${webHeight.toInt()}');
+                listWidth[index] = webHeight;
+              }
+            } else if (webWidth > 100) {
+              webWidth += scrollWidth;
+              if (!Platform.isIOS && webWidth > 10000) webWidth = 10000;
+              if (listWidth[index] != webWidth) {
+                log('onLoadStop width [${index}] ${env.font_size.val}px ${env.line_height.val}% ${listWidth[index].toInt()} -> ${webWidth.toInt()}');
+                listWidth[index] = webWidth;
+              }
+            }
+            listState[index] = 1;
+            this.notifyListeners();
+          } catch (_) {}
+        },
+      );
+    } catch (_) {
+      return Container();
+    }
   }
 
   InAppWebViewSettings initialSettings = InAppWebViewSettings(
@@ -386,16 +488,25 @@ class ViewerNotifier extends ChangeNotifier {
     alwaysBounceVertical: false,
     alwaysBounceHorizontal: false,
     verticalScrollBarEnabled: false,
+    // Scroll
     horizontalScrollBarEnabled: false,
+    // Scroll
     disableVerticalScroll: false,
-    disableHorizontalScroll: true,
+    // Scroll
+    disableHorizontalScroll: false,
+    // Scroll
     useWideViewPort: true,
-    disableContextMenu: true,
+    disableContextMenu: false,
     disableInputAccessoryView: true,
     shouldPrintBackgrounds: true,
     selectionGranularity: SelectionGranularity.DYNAMIC,
     defaultFixedFontSize: 11,
     defaultFontSize: 11,
+    isInspectable: false,
+    // log
+    isFindInteractionEnabled: true,
+    // find
+    isTextInteractionEnabled: true,
   );
 
   String getTitle() {
@@ -408,4 +519,133 @@ class ViewerNotifier extends ChangeNotifier {
     if (book!.indexList.length <= nowIndex) return '';
     return book!.indexList[nowIndex].title;
   }
+
+  String clipText = 'needToInit';
+  bool changeedClipText = false;
+
+  /// Timer
+  void onTimer() async {
+    if (clipText == 'needToInit') {
+      clipText = await getClipText();
+    } else {
+      String text = await getClipText();
+      if (clipText != text) {
+        clipText = text;
+        changeedClipText = true;
+        log('onTimer ${clipText}');
+        this.notifyListeners();
+      }
+    }
+    Future.delayed(const Duration(seconds: 1), () {
+      onTimer();
+    });
+  }
+
+  Future<String> getClipText() async {
+    String s = '';
+    ClipboardData? clip = await Clipboard.getData(Clipboard.kTextPlain);
+    if (clip != null && clip.text != null && clip.text != '') {
+      s = clip.text!;
+      if (s.length > 100) {
+        s = s.substring(0, 100);
+      }
+      if (env1.writing_mode.val == 1) {
+        VerticalRotated.map.forEach((String key, String value) {
+          s = s.replaceAll(value, key);
+        });
+      }
+    }
+    return s;
+  }
+
+  saveClip(String text) async {
+    BookClipData d = BookClipData();
+
+    final file = File('${datadir}/${book!.bookId}/book_clip.json');
+    if (file.existsSync()) {
+      String? txt = await file.readAsString();
+      Map<String, dynamic> j = json.decode(txt);
+
+      d = BookClipData.fromJson(j);
+    }
+    ClipData c = ClipData();
+    c.index = nowIndex;
+    c.rate = nowRate;
+    c.text = text;
+    d.list.add(c);
+    String jsonText = await d.toJsonString();
+    file.writeAsString(jsonText, mode: FileMode.write, flush: true);
+  }
+
+  BookClipData readClip() {
+    BookClipData d = BookClipData();
+    if (datadir == null) return d;
+    final file = File('${datadir}/${book!.bookId}/book_clip.json');
+    if (file.existsSync()) {
+      String? txt = file.readAsStringSync();
+      Map<String, dynamic> j = json.decode(txt);
+      d = BookClipData.fromJson(j);
+    }
+    return d;
+  }
+}
+
+class VerticalRotated {
+  static const map = {
+    //' ': '　',
+    '↑': '→',
+    '↓': '←',
+    '←': '↑',
+    '→': '↓',
+    '。': '︒',
+    '、': '︑',
+    'ー': '丨',
+    '─': '丨',
+    '-': '丨',
+    'ｰ': '丨',
+    '_': '丨 ',
+    '−': '丨',
+    '－': '丨',
+    '—': '丨',
+    '〜': '丨',
+    '～': '丨',
+    '／': '＼',
+    '…': '︙',
+    '‥': '︰',
+    '︙': '…',
+    '：': '︓',
+    ':': '︓',
+    '；': '︔',
+    ';': '︔',
+    '＝': '॥',
+    '=': '॥',
+    '（': '︵',
+    '(': '︵',
+    '）': '︶',
+    ')': '︶',
+    '［': '﹇',
+    "[": '﹇',
+    '］': '﹈',
+    ']': '﹈',
+    '｛': '︷',
+    '{': '︷',
+    '＜': '︿',
+    //'<': '︿',
+    '＞': '﹀',
+    //'>': '﹀',
+    '｝': '︸',
+    '}': '︸',
+    '「': '﹁',
+    '」': '﹂',
+    '『': '﹃',
+    '』': '﹄',
+    '【': '︻',
+    '】': '︼',
+    '〖': '︗',
+    '〗': '︘',
+    '｢': '﹁',
+    '｣': '﹂',
+    ',': '︐',
+    '､': '︑',
+  };
 }

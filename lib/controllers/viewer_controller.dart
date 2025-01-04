@@ -134,6 +134,7 @@ class ViewerNotifier extends ChangeNotifier {
             double calcWidth = lines.toDouble() * (fsize * dh);
             calcWidth += scrollWidth;
             if (!Platform.isIOS && calcWidth > 10000) calcWidth = 10000;
+            if (calcWidth < 800) calcWidth = 800;
             // chars
 
             listWidth.add(calcWidth);
@@ -167,7 +168,7 @@ class ViewerNotifier extends ChangeNotifier {
             if (i > 0) break;
           }
         }
-        //isLoading = true;
+        isLoading = true;
         await Future.delayed(Duration(milliseconds: 1000));
         this.notifyListeners();
         await Future.delayed(Duration(milliseconds: 1000));
@@ -234,7 +235,7 @@ class ViewerNotifier extends ChangeNotifier {
       return;
     }
     if (listWidth.length == 0) return;
-    if (isLoading) return;
+    //if (isLoading) return;
     if (index > listWidth.length - 1) index = listWidth.length - 1;
     isLoading = true;
 
@@ -245,19 +246,19 @@ class ViewerNotifier extends ChangeNotifier {
 
     double dx = 0;
     for (int i = 0; i < index + 1; i++) {
-      if (listState[i] == 0) {
+      if (listState[i] == 2) {
         double sdx = dx;
         curdx = scrollController!.position.pixels;
         maxdx = scrollController!.position.maxScrollExtent;
         if (sdx > maxdx) sdx = maxdx;
         if (sdx > curdx) scrollController!.jumpTo(sdx);
-        await Future.delayed(Duration(milliseconds: 100));
+        await Future.delayed(Duration(milliseconds: 50));
         this.notifyListeners();
         for (int k = 0; k < 10; k++) {
           if (listState[i] == 0) {
-            if (k > 2) scrollController!.jumpTo(sdx += 100);
-            log('jumpTo ${sdx.toInt()} max ${maxdx.toInt()} k ${k}');
-            await Future.delayed(Duration(milliseconds: 100));
+            if (k > 2 && i > 0) scrollController!.jumpTo(sdx += 100);
+            log('jumpTo ${sdx.toInt()}px max ${maxdx.toInt()} k ${k}');
+            await Future.delayed(Duration(milliseconds: 50));
           }
         }
       }
@@ -273,10 +274,35 @@ class ViewerNotifier extends ChangeNotifier {
       log('jumpTo index dx>max ${dx.toInt()} > ${maxdx.toInt()}');
       dx = maxdx;
     }
-    scrollController!.jumpTo(dx);
+    if (dx > curdx) {
+      //scrollController!.jumpTo(dx);
+      for (int i = 0; i < 1000; i++) {
+        if (dx > curdx + 2000) {
+          log('jumpTo curdx +1000 ${curdx.toInt()}');
+          curdx = scrollController!.position.pixels;
+          await scrollController!
+              .animateTo(curdx + 2000, duration: Duration(milliseconds: 100), curve: Curves.linear);
+          continue;
+        }
+      }
+      scrollController!.jumpTo(dx);
+    } else {
+      for (int i = 0; i < 1000; i++) {
+        if (dx < curdx - 2000) {
+          log('jumpTo curdx -1000 ${curdx.toInt()}');
+          curdx = scrollController!.position.pixels;
+          await scrollController!
+              .animateTo(curdx - 2000, duration: Duration(milliseconds: 100), curve: Curves.linear);
+          continue;
+        }
+      }
+      scrollController!.jumpTo(dx);
+    }
+
     await Future.delayed(Duration(milliseconds: 100));
     this.notifyListeners();
     isLoading = false;
+    scrollingListener();
   }
 
   DateTime lastTime = DateTime.now();
@@ -296,8 +322,8 @@ class ViewerNotifier extends ChangeNotifier {
     if (scrollController!.hasClients == false) return;
 
     double px = scrollController!.position.pixels;
-    final past = DateTime.now().add(Duration(seconds: -1));
-    if (lastTime.compareTo(past) > 0 && (lastPixel - px).abs() > 100) {
+    final past = lastTime.add(Duration(seconds: 1));
+    if (DateTime.now().compareTo(past) > 0 && (lastPixel - px).abs() > 100) {
       return;
     }
     lastTime = DateTime.now();
@@ -325,7 +351,8 @@ class ViewerNotifier extends ChangeNotifier {
     if (scrollController == null) return;
     if (book == null) return;
     if (nowIndex == 0 && nowRate < 100) return;
-
+    if (isLoading == true) return;
+    log('saveIndex [${nowIndex}]');
     book!.info.lastIndex = nowIndex;
     book!.info.lastRate = nowRate;
     String jsonText = json.encode(book!.info.toJson());
@@ -375,10 +402,12 @@ class ViewerNotifier extends ChangeNotifier {
     c += 'h1, h2, h3 {\n';
     c += '  font-size: 1.0em;\n';
     c += '  font-weight: bold;\n';
+    c += '  line-height: ${env.line_height.val}%;\n';
     c += '}\n';
     c += 'h4, h5 {\n';
     c += '  font-size: 1.0em;\n';
     c += '  font-weight: normal;\n';
+    c += '  line-height: ${env.line_height.val}%;\n';
     c += '}\n';
     return c;
   }
@@ -487,14 +516,12 @@ class ViewerNotifier extends ChangeNotifier {
     allowsLinkPreview: false,
     alwaysBounceVertical: false,
     alwaysBounceHorizontal: false,
-    verticalScrollBarEnabled: false,
     // Scroll
+    verticalScrollBarEnabled: false,
     horizontalScrollBarEnabled: false,
     // Scroll
     disableVerticalScroll: false,
-    // Scroll
     disableHorizontalScroll: false,
-    // Scroll
     useWideViewPort: true,
     disableContextMenu: false,
     disableInputAccessoryView: true,
@@ -502,10 +529,10 @@ class ViewerNotifier extends ChangeNotifier {
     selectionGranularity: SelectionGranularity.DYNAMIC,
     defaultFixedFontSize: 11,
     defaultFontSize: 11,
-    isInspectable: false,
     // log
-    isFindInteractionEnabled: true,
+    isInspectable: false,
     // find
+    isFindInteractionEnabled: true,
     isTextInteractionEnabled: true,
   );
 

@@ -23,7 +23,7 @@ final viewerProvider = ChangeNotifierProvider((ref) => ViewerNotifier(ref));
 class ViewerNotifier extends ChangeNotifier {
   ViewerNotifier(ref) {
     Future.delayed(const Duration(seconds: 1), () {
-      onTimer();
+      //onTimer();
     });
   }
 
@@ -46,6 +46,7 @@ class ViewerNotifier extends ChangeNotifier {
   List<InAppWebViewController?> listWebViewController = [];
   List<GlobalKey> listKey = [];
   List<FindInteractionController?> listFindController = [];
+  List<ContextMenu?> listContextMenu = [];
 
   String? datadir;
 
@@ -76,6 +77,7 @@ class ViewerNotifier extends ChangeNotifier {
       listKey.clear();
       listState.clear();
       listFindController.clear();
+      listContextMenu.clear();
 
       scrollController = new ScrollController();
       scrollController!.addListener(scrollingListener);
@@ -164,6 +166,38 @@ class ViewerNotifier extends ChangeNotifier {
             } else {
               listFindController.add(null);
             }
+
+            ContextMenu contextMenu = ContextMenu(
+                settings: ContextMenuSettings(hideDefaultSystemContextMenuItems: true),
+                menuItems: [
+                  ContextMenuItem(
+                    androidId: 1,
+                    iosId: "1",
+                    title: "Special",
+                    action: () async {
+                      print("Menu item Special clicked!");
+
+                      //var selectedText = await _webViewController.getSelectedText();
+                      //await _webViewController.clearFocus();
+                      //await _webViewController.evaluateJavascript(source: "window.alert('You have selected: $selectedText')");
+                    },
+                  )
+                ],
+
+                //options: ContextMenuOptions(hideDefaultSystemContextMenuItems: false),
+                onCreateContextMenu: (hitTestResult) async {
+                  print("onCreateContextMenu");
+                  print('hitTestResult.extra ${hitTestResult.extra}');
+                  //print(await _webViewController.getSelectedText());
+                },
+                onHideContextMenu: () {
+                  print("onHideContextMenu");
+                },
+                onContextMenuActionItemClicked: (contextMenuItemClicked) async {
+                  //var id = (Platform.isAndroid) ? contextMenuItemClicked.androidId : contextMenuItemClicked.iosId;
+                  //print("onContextMenuActionItemClicked: " + id.toString() + " " + contextMenuItemClicked.title);
+                });
+            listContextMenu.add(contextMenu);
           } else {
             if (i > 0) break;
           }
@@ -199,10 +233,14 @@ class ViewerNotifier extends ChangeNotifier {
   }
 
   Future find(int index, String text) async {
+    index = nowIndex;
     if (listFindController.length < index) return;
     if (listFindController[index] == null) return;
     if (listState[index] == 0) return;
     await listFindController[index]!.findAll(find: text);
+
+    var selectedText = await listWebViewController[index]!.getSelectedText();
+    log('selectedText ${selectedText}');
   }
 
   Future findNext(int index) async {
@@ -455,6 +493,7 @@ class ViewerNotifier extends ChangeNotifier {
         initialData: InAppWebViewInitialData(data: text),
         initialSettings: initialSettings,
         findInteractionController: listFindController[index],
+        contextMenu: listContextMenu[index],
         onWebViewCreated: (controller) async {
           listWebViewController[index] = controller;
         },
@@ -523,17 +562,20 @@ class ViewerNotifier extends ChangeNotifier {
     disableVerticalScroll: false,
     disableHorizontalScroll: false,
     useWideViewPort: true,
+    // copy translate ...
     disableContextMenu: false,
-    disableInputAccessoryView: true,
+    disableInputAccessoryView: false,
     shouldPrintBackgrounds: true,
-    selectionGranularity: SelectionGranularity.DYNAMIC,
+    selectionGranularity: SelectionGranularity.CHARACTER,
     defaultFixedFontSize: 11,
     defaultFontSize: 11,
     // log
     isInspectable: false,
     // find
-    isFindInteractionEnabled: true,
+    isFindInteractionEnabled: false,
     isTextInteractionEnabled: true,
+    // edit
+    useOnNavigationResponse: true,
   );
 
   String getTitle() {

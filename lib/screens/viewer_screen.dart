@@ -31,6 +31,7 @@ enum BottomBarType {
   settingsBar,
   clipTextBar,
   clipListBar,
+  copyMode,
 }
 
 class ViewerScreen extends BaseScreen {
@@ -64,7 +65,8 @@ class ViewerScreen extends BaseScreen {
   bool isActionBar() {
     return bottomBarType == BottomBarType.bottomBar ||
         bottomBarType == BottomBarType.settingsBar ||
-        bottomBarType == BottomBarType.clipTextBar;
+        bottomBarType == BottomBarType.clipTextBar ||
+        bottomBarType == BottomBarType.copyMode;
   }
 
   @override
@@ -118,6 +120,19 @@ class ViewerScreen extends BaseScreen {
         actions: [
           if (isActionBar())
             IconButton(
+              icon: Icon(Icons.edit),
+              onPressed: () {
+                if (bottomBarType == BottomBarType.copyMode) {
+                  bottomBarType = BottomBarType.none;
+                } else {
+                  bottomBarType = BottomBarType.copyMode;
+                }
+                redraw();
+              },
+            ),
+          if (isActionBar()) SizedBox(width: 10),
+          if (isActionBar())
+            IconButton(
               icon: Icon(Icons.article),
               onPressed: () {
                 bottomBarType = BottomBarType.clipListBar;
@@ -150,40 +165,41 @@ class ViewerScreen extends BaseScreen {
             child: Widget1(),
           ),
           if (ref.watch(viewerProvider).isLoading) loadingWidget(),
-          Container(
-            padding: EdgeInsets.fromLTRB(1, 1, 1, 1),
-            child: RawGestureDetector(
-              behavior: HitTestBehavior.translucent,
-              gestures: {
-                TapGestureRecognizer: GestureRecognizerFactoryWithHandlers<TapGestureRecognizer>(
-                  () => TapGestureRecognizer(),
-                  (TapGestureRecognizer instance) {
-                    instance
-                      ..onTapUp = (TapUpDetails details) {
-                        double dx = details.globalPosition.dx;
-                        if (dx < 120) {
-                          //scrollRight();
-                        } else if (dx > _width - 120) {
-                          //scrollLeft();
-                        } else {
-                          if (bottomBarType != BottomBarType.bottomBar) {
-                            bottomBarType = BottomBarType.bottomBar;
-                            redraw();
+          if (bottomBarType != BottomBarType.copyMode)
+            Container(
+              padding: EdgeInsets.fromLTRB(1, 1, 1, 1),
+              child: RawGestureDetector(
+                behavior: HitTestBehavior.translucent,
+                gestures: {
+                  TapGestureRecognizer: GestureRecognizerFactoryWithHandlers<TapGestureRecognizer>(
+                    () => TapGestureRecognizer(),
+                    (TapGestureRecognizer instance) {
+                      instance
+                        ..onTapUp = (TapUpDetails details) {
+                          double dx = details.globalPosition.dx;
+                          if (dx < 120) {
+                            //scrollRight();
+                          } else if (dx > _width - 120) {
+                            //scrollLeft();
                           } else {
-                            bottomBarType = BottomBarType.none;
-                            redraw();
+                            if (bottomBarType != BottomBarType.bottomBar) {
+                              bottomBarType = BottomBarType.bottomBar;
+                              redraw();
+                            } else {
+                              bottomBarType = BottomBarType.none;
+                              redraw();
+                            }
                           }
                         }
-                      }
-                      ..onTapDown = (TapDownDetails details) {}
-                      ..onTap = () {}
-                      ..onTapCancel = () {};
-                  },
-                ),
-              },
-              child: Container(),
+                        ..onTapDown = (TapDownDetails details) {}
+                        ..onTap = () {}
+                        ..onTapCancel = () {};
+                    },
+                  ),
+                },
+                child: Container(),
+              ),
             ),
-          ),
           tocBar(),
           bottomBar(),
           clipTextBar(),

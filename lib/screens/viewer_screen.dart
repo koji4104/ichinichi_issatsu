@@ -24,16 +24,6 @@ class stateNotifier extends ChangeNotifier {
   List<double> listWidth = [];
 }
 
-enum BottomBarType {
-  none,
-  tocBar,
-  bottomBar,
-  settingsBar,
-  clipTextBar,
-  clipListBar,
-  copyMode,
-}
-
 class ViewerScreen extends BaseScreen {
   ViewerScreen({required BookData this.book}) {}
 
@@ -48,7 +38,6 @@ class ViewerScreen extends BaseScreen {
   bool isTocFlushbar = false;
   bool isTocFlushbarInit = false;
   bool isTopBottomBar = false;
-  BottomBarType bottomBarType = BottomBarType.none;
 
   bool isAppBar = true;
 
@@ -57,16 +46,13 @@ class ViewerScreen extends BaseScreen {
   double _height = 1000.0;
   double _heightPad = Platform.isIOS ? 200.0 : 50;
 
+  bool isActionBar() {
+    return ref.watch(viewerProvider).isActionBar();
+  }
+
   @override
   Future init() async {
     reload();
-  }
-
-  bool isActionBar() {
-    return bottomBarType == BottomBarType.bottomBar ||
-        bottomBarType == BottomBarType.settingsBar ||
-        bottomBarType == BottomBarType.clipTextBar ||
-        bottomBarType == BottomBarType.copyMode;
   }
 
   @override
@@ -90,11 +76,6 @@ class ViewerScreen extends BaseScreen {
     ref.watch(viewerProvider);
     ref.watch(stateProvider);
 
-    if (ref.watch(viewerProvider).changeedClipText) {
-      ref.watch(viewerProvider).changeedClipText = false;
-      bottomBarType = BottomBarType.clipTextBar;
-    }
-
     return Scaffold(
       appBar: AppBar(
         leadingWidth: 120,
@@ -110,7 +91,7 @@ class ViewerScreen extends BaseScreen {
               IconButton(
                 icon: Icon(Icons.list),
                 onPressed: () {
-                  bottomBarType = BottomBarType.tocBar;
+                  ref.watch(viewerProvider).bottomBarType = ViewerBottomBarType.tocBar;
                   redraw();
                 },
               ),
@@ -122,10 +103,10 @@ class ViewerScreen extends BaseScreen {
             IconButton(
               icon: Icon(Icons.edit),
               onPressed: () {
-                if (bottomBarType == BottomBarType.copyMode) {
-                  bottomBarType = BottomBarType.none;
+                if (ref.watch(viewerProvider).bottomBarType == ViewerBottomBarType.clipTextBar) {
+                  ref.watch(viewerProvider).bottomBarType = ViewerBottomBarType.none;
                 } else {
-                  bottomBarType = BottomBarType.copyMode;
+                  ref.watch(viewerProvider).bottomBarType = ViewerBottomBarType.clipTextBar;
                 }
                 redraw();
               },
@@ -135,7 +116,7 @@ class ViewerScreen extends BaseScreen {
             IconButton(
               icon: Icon(Icons.article),
               onPressed: () {
-                bottomBarType = BottomBarType.clipListBar;
+                ref.watch(viewerProvider).bottomBarType = ViewerBottomBarType.clipListBar;
                 redraw();
               },
             ),
@@ -150,7 +131,7 @@ class ViewerScreen extends BaseScreen {
             IconButton(
               icon: Icon(Icons.settings),
               onPressed: () {
-                bottomBarType = BottomBarType.settingsBar;
+                ref.watch(viewerProvider).bottomBarType = ViewerBottomBarType.settingsBar;
                 redraw();
               },
             ),
@@ -165,7 +146,7 @@ class ViewerScreen extends BaseScreen {
             child: Widget1(),
           ),
           if (ref.watch(viewerProvider).isLoading) loadingWidget(),
-          if (bottomBarType != BottomBarType.copyMode)
+          if (ref.watch(viewerProvider).bottomBarType != ViewerBottomBarType.copyMode)
             Container(
               padding: EdgeInsets.fromLTRB(1, 1, 1, 1),
               child: RawGestureDetector(
@@ -182,11 +163,13 @@ class ViewerScreen extends BaseScreen {
                           } else if (dx > _width - 120) {
                             //scrollLeft();
                           } else {
-                            if (bottomBarType != BottomBarType.bottomBar) {
-                              bottomBarType = BottomBarType.bottomBar;
+                            if (ref.watch(viewerProvider).bottomBarType !=
+                                ViewerBottomBarType.bottomBar) {
+                              ref.watch(viewerProvider).bottomBarType =
+                                  ViewerBottomBarType.bottomBar;
                               redraw();
                             } else {
-                              bottomBarType = BottomBarType.none;
+                              ref.watch(viewerProvider).bottomBarType = ViewerBottomBarType.none;
                               redraw();
                             }
                           }
@@ -286,7 +269,7 @@ class ViewerScreen extends BaseScreen {
   Widget bottomBar() {
     double barHeight = 80;
     double ffBottom = -1.0 * barHeight;
-    if (bottomBarType == BottomBarType.bottomBar) {
+    if (ref.watch(viewerProvider).bottomBarType == ViewerBottomBarType.bottomBar) {
       ffBottom = 0;
     }
 
@@ -325,10 +308,11 @@ class ViewerScreen extends BaseScreen {
     );
   }
 
+  /// clipTextBar
   Widget clipTextBar() {
     double barHeight = 200;
     double ffBottom = -1.0 * barHeight;
-    if (bottomBarType == BottomBarType.clipTextBar) {
+    if (ref.watch(viewerProvider).bottomBarType == ViewerBottomBarType.clipTextBar) {
       ffBottom = 0;
     }
 
@@ -345,25 +329,41 @@ class ViewerScreen extends BaseScreen {
   }
 
   Widget clipTextBar1() {
-    String text = ref.watch(viewerProvider).clipText;
     return Container(
       color: myTheme.scaffoldBackgroundColor,
       child: Column(
         children: [
           SizedBox(height: 1, child: Container(color: myTheme.dividerColor)),
           closeButtonRow(),
-          MyTextButton(
-            title: l10n('save'),
-            width: 120,
-            onPressed: () async {
-              saveDialog().then((ret) {
-                if (ret) {
-                  ref.read(viewerProvider).saveClip(text);
-                }
-              });
-            },
-          ),
-          Expanded(child: Text(text, overflow: TextOverflow.clip)),
+          Row(children: [
+            Expanded(child: SizedBox(width: 1)),
+            MyTextButton(
+              title: l10n('cancel'),
+              width: 120,
+              onPressed: () async {
+                ref.watch(viewerProvider).bottomBarType = ViewerBottomBarType.none;
+                ref.watch(viewerProvider).clearFocus();
+                redraw();
+              },
+            ),
+            SizedBox(width: 20),
+            MyTextButton(
+              title: l10n('save'),
+              width: 120,
+              onPressed: () async {
+                String? text = await ref.watch(viewerProvider).getSelectedText();
+                if (text != null && text.length > 2) {
+                  saveDialog().then((ret) {
+                    if (ret) {
+                      ref.read(viewerProvider).saveClip(text);
+                    }
+                  });
+                } else {}
+              },
+            ),
+            Expanded(child: SizedBox(width: 1)),
+          ]),
+          Expanded(child: Text('Save selected text', overflow: TextOverflow.clip)),
         ],
       ),
     );
@@ -374,7 +374,8 @@ class ViewerScreen extends BaseScreen {
       icon: Icon(Icons.close),
       iconSize: 18,
       onPressed: () async {
-        bottomBarType = BottomBarType.none;
+        ref.watch(viewerProvider).bottomBarType = ViewerBottomBarType.none;
+        ref.watch(viewerProvider).clearFocus();
         redraw();
       },
     );
@@ -388,10 +389,11 @@ class ViewerScreen extends BaseScreen {
     ]);
   }
 
+  /// settingsBar
   Widget settingsBar() {
     double barHeight = 280;
     double ffBottom = -1.0 * barHeight;
-    if (bottomBarType == BottomBarType.settingsBar) {
+    if (ref.watch(viewerProvider).bottomBarType == ViewerBottomBarType.settingsBar) {
       ffBottom = 0;
     }
 
@@ -537,7 +539,7 @@ class ViewerScreen extends BaseScreen {
   Widget tocBar() {
     double barHeight = _height / 2;
     double ffBottom = -1.0 * barHeight;
-    if (bottomBarType == BottomBarType.tocBar) {
+    if (ref.watch(viewerProvider).bottomBarType == ViewerBottomBarType.tocBar) {
       ffBottom = 0;
     }
 
@@ -561,7 +563,7 @@ class ViewerScreen extends BaseScreen {
       for (int j = 0; j <= i; j++) {
         sum += book.indexList[j].chars;
       }
-      String txt = '${book.indexList[i].title}  ${sum} chars';
+      String txt = '${book.indexList[i].title}  ${(sum / 450).toInt()} pages';
 
       list.add(
         MyListTile(
@@ -595,7 +597,7 @@ class ViewerScreen extends BaseScreen {
   Widget clipListBar() {
     double barHeight = _height / 2;
     double ffBottom = -1.0 * barHeight;
-    if (bottomBarType == BottomBarType.clipListBar) {
+    if (ref.watch(viewerProvider).bottomBarType == ViewerBottomBarType.clipListBar) {
       ffBottom = 0;
     }
 

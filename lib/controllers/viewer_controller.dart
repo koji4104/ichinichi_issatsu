@@ -18,13 +18,21 @@ import '/models/book_data.dart';
 import '/models/epub_data.dart';
 import '/commons/widgets.dart';
 
+enum ViewerBottomBarType {
+  none,
+  tocBar,
+  bottomBar,
+  settingsBar,
+  clipTextBar,
+  clipListBar,
+  copyMode,
+}
+
 final viewerProvider = ChangeNotifierProvider((ref) => ViewerNotifier(ref));
 
 class ViewerNotifier extends ChangeNotifier {
   ViewerNotifier(ref) {
-    Future.delayed(const Duration(seconds: 1), () {
-      //onTimer();
-    });
+    Future.delayed(const Duration(seconds: 1), () {});
   }
 
   @override
@@ -35,7 +43,14 @@ class ViewerNotifier extends ChangeNotifier {
   ScrollController? scrollController;
   bool isLoading = false;
 
-  //Timer? _timer;
+  ViewerBottomBarType bottomBarType = ViewerBottomBarType.none;
+
+  bool isActionBar() {
+    return bottomBarType == ViewerBottomBarType.bottomBar ||
+        bottomBarType == ViewerBottomBarType.settingsBar ||
+        bottomBarType == ViewerBottomBarType.clipTextBar ||
+        bottomBarType == ViewerBottomBarType.copyMode;
+  }
 
   List<String> listText = [];
   List<double> listWidth = [];
@@ -169,20 +184,7 @@ class ViewerNotifier extends ChangeNotifier {
 
             ContextMenu contextMenu = ContextMenu(
                 settings: ContextMenuSettings(hideDefaultSystemContextMenuItems: true),
-                menuItems: [
-                  ContextMenuItem(
-                    androidId: 1,
-                    iosId: "1",
-                    title: "Special",
-                    action: () async {
-                      print("Menu item Special clicked!");
-
-                      //var selectedText = await _webViewController.getSelectedText();
-                      //await _webViewController.clearFocus();
-                      //await _webViewController.evaluateJavascript(source: "window.alert('You have selected: $selectedText')");
-                    },
-                  )
-                ],
+                menuItems: [],
 
                 //options: ContextMenuOptions(hideDefaultSystemContextMenuItems: false),
                 onCreateContextMenu: (hitTestResult) async {
@@ -259,6 +261,34 @@ class ViewerNotifier extends ChangeNotifier {
     }
   }
 
+  Future<String?> getSelectedText() async {
+    String? text = null;
+    try {
+      if (listWebViewController.length < nowIndex) return null;
+      if (listWebViewController[nowIndex] == null) return null;
+      if (Platform.isIOS || Platform.isAndroid) {
+        text = await listWebViewController[nowIndex]!.getSelectedText();
+        if (text != null) log('getSelectedText() [${nowIndex}] ${text}');
+      }
+    } catch (_) {
+      log('err getSelectedText() [${nowIndex}]');
+    }
+    //listWebViewController[nowIndex]!.clearFocus();
+    return text;
+  }
+
+  Future clearFocus() async {
+    try {
+      if (listWebViewController.length < nowIndex) return null;
+      if (listWebViewController[nowIndex] == null) return null;
+      if (Platform.isIOS || Platform.isAndroid) {
+        listWebViewController[nowIndex]!.clearFocus();
+      }
+    } catch (_) {
+      log('err clearFocus() [${nowIndex}]');
+    }
+  }
+
   Future jumpToIndex(int index, int rate) async {
     if (scrollController == null) return;
     for (int k = 0; k < 5; k++) {
@@ -316,7 +346,7 @@ class ViewerNotifier extends ChangeNotifier {
       //scrollController!.jumpTo(dx);
       for (int i = 0; i < 1000; i++) {
         if (dx > curdx + 2000) {
-          log('jumpTo curdx +1000 ${curdx.toInt()}');
+          log('jumpTo curdx + 2000 ${curdx.toInt()}');
           curdx = scrollController!.position.pixels;
           await scrollController!
               .animateTo(curdx + 2000, duration: Duration(milliseconds: 100), curve: Curves.linear);
@@ -327,7 +357,7 @@ class ViewerNotifier extends ChangeNotifier {
     } else {
       for (int i = 0; i < 1000; i++) {
         if (dx < curdx - 2000) {
-          log('jumpTo curdx -1000 ${curdx.toInt()}');
+          log('jumpTo curdx - 2000 ${curdx.toInt()}');
           curdx = scrollController!.position.pixels;
           await scrollController!
               .animateTo(curdx - 2000, duration: Duration(milliseconds: 100), curve: Curves.linear);
@@ -361,7 +391,7 @@ class ViewerNotifier extends ChangeNotifier {
 
     double px = scrollController!.position.pixels;
     final past = lastTime.add(Duration(seconds: 1));
-    if (DateTime.now().compareTo(past) > 0 && (lastPixel - px).abs() > 100) {
+    if (DateTime.now().compareTo(past) > 0 && (lastPixel - px).abs() < 100) {
       return;
     }
     lastTime = DateTime.now();
@@ -454,6 +484,9 @@ class ViewerNotifier extends ChangeNotifier {
     if (listText.length == 0) return Container();
     //if (_inited == false) return Container();
     PlatformInAppWebViewController.debugLoggingSettings.enabled = false;
+    ScrollPhysics physics = bottomBarType == ViewerBottomBarType.clipTextBar
+        ? NeverScrollableScrollPhysics()
+        : ScrollPhysics();
     try {
       return ListView.builder(
         scrollDirection: env.writing_mode.val == 0 ? Axis.vertical : Axis.horizontal,
@@ -462,7 +495,7 @@ class ViewerNotifier extends ChangeNotifier {
         controller: scrollController,
         itemCount: listText.length,
         cacheExtent: 2000,
-        physics: AlwaysScrollableScrollPhysics(),
+        physics: physics,
         hitTestBehavior: HitTestBehavior.opaque,
         itemBuilder: (context, int index) {
           if (listWidth.length <= index) return Container();
@@ -589,52 +622,12 @@ class ViewerNotifier extends ChangeNotifier {
     return book!.indexList[nowIndex].title;
   }
 
-  String clipText = 'needToInit';
-  bool changeedClipText = false;
-
-  /// Timer
-  void onTimer() async {
-    if (clipText == 'needToInit') {
-      clipText = await getClipText();
-    } else {
-      String text = await getClipText();
-      if (clipText != text) {
-        clipText = text;
-        changeedClipText = true;
-        log('onTimer ${clipText}');
-        this.notifyListeners();
-      }
-    }
-    Future.delayed(const Duration(seconds: 1), () {
-      onTimer();
-    });
-  }
-
-  Future<String> getClipText() async {
-    String s = '';
-    ClipboardData? clip = await Clipboard.getData(Clipboard.kTextPlain);
-    if (clip != null && clip.text != null && clip.text != '') {
-      s = clip.text!;
-      if (s.length > 100) {
-        s = s.substring(0, 100);
-      }
-      if (env1.writing_mode.val == 1) {
-        VerticalRotated.map.forEach((String key, String value) {
-          s = s.replaceAll(value, key);
-        });
-      }
-    }
-    return s;
-  }
-
   saveClip(String text) async {
     BookClipData d = BookClipData();
-
     final file = File('${datadir}/${book!.bookId}/book_clip.json');
     if (file.existsSync()) {
       String? txt = await file.readAsString();
       Map<String, dynamic> j = json.decode(txt);
-
       d = BookClipData.fromJson(j);
     }
     ClipData c = ClipData();

@@ -25,6 +25,7 @@ class SettingsScreen extends BaseScreen {
       body: SingleChildScrollView(
         padding: DEF_MENU_PADDING,
         child: Container(
+          color: myTheme.scaffoldBackgroundColor,
           child: getList(),
         ),
       ),
@@ -34,9 +35,17 @@ class SettingsScreen extends BaseScreen {
   @override
   Widget getList() {
     List<Widget> list = [];
-    for (EnvData d in ref.watch(envProvider).listData()) {
-      list.add(MyValue(data: d));
-    }
+    list.add(MyLabel(l10n('body')));
+    list.add(MySettingsTile(data: env.font_size));
+    list.add(MySettingsTile(data: env.back_color));
+    list.add(MySettingsTile(data: env.writing_mode));
+    list.add(MySettingsTile(data: env.font_family));
+    list.add(MySettingsTile(data: env.line_height));
+    list.add(MyLabel(l10n('appearance')));
+    list.add(MySettingsTile(data: env.dark_mode));
+    list.add(MySettingsTile(data: env.language_code));
+    //list.add(MySettingsTile(data: env.ui_font_size));
+    list.add(MySettingsTile(data: env.ui_text_scale));
     list.add(MyLabel(''));
     list.add(
       MyListTile(
@@ -70,21 +79,7 @@ class SettingsScreen extends BaseScreen {
         },
       ),
     );
+    list.add(MyLabel(''));
     return Column(children: list);
-  }
-
-  Widget MyValue({required EnvData data}) {
-    return MyListTile(
-      title1: Text(l10n(data.name)),
-      title2: Text(l10n(data.key)),
-      onPressed: () async {
-        var result = await NavigatorPush(RadioListScreen(data: data));
-        //NavigatorPush(RadioListScreen(data: data)).then((onValue) {
-        //redraw();
-        //  log('NavigatorPush end ${onValue}');
-        //});
-        //log('NavigatorPush start');
-      },
-    );
   }
 }

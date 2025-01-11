@@ -19,6 +19,7 @@ class BookListNotifier extends ChangeNotifier {
   BookData? selected;
   late String datadir;
   List<BookData> bookList = [];
+  bool isReading = false;
 
   /// read books.json
   Future readBookList() async {
@@ -30,8 +31,9 @@ class BookListNotifier extends ChangeNotifier {
     await Directory('${datadir}').create(recursive: true);
 
     log('readBookList()');
-
+    isReading = true;
     bookList.clear();
+
     List<FileSystemEntity> entities = Directory(datadir).listSync();
     for (var e in entities) {
       if (FileSystemEntity.isDirectorySync(e.path) == true) {
@@ -70,6 +72,44 @@ class BookListNotifier extends ChangeNotifier {
         }
       }
     }
+    await Future.delayed(Duration(milliseconds: 500));
+    isReading = false;
     this.notifyListeners();
+  }
+
+  saveFlag(int index, int flag) async {
+    String dir = datadir + '/${bookList[index].bookId}';
+    if (Directory(dir).existsSync()) {
+      final infoFile = File('${dir}/book_info.json');
+      if (infoFile.existsSync()) {
+        String? txt1 = await infoFile.readAsString();
+        Map<String, dynamic> j = json.decode(txt1);
+        BookInfoData info = BookInfoData.fromJson(j);
+        info.flag = flag;
+
+        String jsonText = json.encode(info.toJson());
+        final file = File('${dir}/book_info.json');
+        file.writeAsString(jsonText, mode: FileMode.write, flush: true);
+        this.notifyListeners();
+      }
+    }
+  }
+
+  saveLastAccess(int index) async {
+    String dir = datadir + '/${bookList[index].bookId}';
+    if (Directory(dir).existsSync()) {
+      final infoFile = File('${dir}/book_info.json');
+      if (infoFile.existsSync()) {
+        String? txt1 = await infoFile.readAsString();
+        Map<String, dynamic> j = json.decode(txt1);
+        BookInfoData info = BookInfoData.fromJson(j);
+        info.lastAccess = DateTime.now();
+
+        String jsonText = json.encode(info.toJson());
+        final file = File('${dir}/book_info.json');
+        file.writeAsString(jsonText, mode: FileMode.write, flush: true);
+        this.notifyListeners();
+      }
+    }
   }
 }

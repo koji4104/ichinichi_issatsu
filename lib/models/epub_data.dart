@@ -21,16 +21,16 @@ class EpubData {
   String? bookAuthor;
 
   List<EpubFileData> fileList = [];
-  List<String> urlList = [];
-  String? contentUrl;
+  List<String> uriList = [];
+  String? downloadUri;
 
   reset() {
     bookId = null;
     bookTitle = null;
     bookAuthor = null;
-    contentUrl = null;
+    downloadUri = null;
     fileList.clear();
-    urlList.clear();
+    uriList.clear();
   }
 
   static const containerFile = """<?xml version="1.0" encoding="UTF-8"?>

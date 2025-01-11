@@ -21,11 +21,11 @@ import '/commons/widgets.dart';
 enum ViewerBottomBarType {
   none,
   tocBar,
-  bottomBar,
+  actionBar,
   settingsBar,
   clipTextBar,
   clipListBar,
-  copyMode,
+  bookmarkBar,
 }
 
 final viewerProvider = ChangeNotifierProvider((ref) => ViewerNotifier(ref));
@@ -46,32 +46,27 @@ class ViewerNotifier extends ChangeNotifier {
   ViewerBottomBarType bottomBarType = ViewerBottomBarType.none;
 
   bool isActionBar() {
-    return bottomBarType == ViewerBottomBarType.bottomBar ||
-        bottomBarType == ViewerBottomBarType.settingsBar ||
-        bottomBarType == ViewerBottomBarType.clipTextBar ||
-        bottomBarType == ViewerBottomBarType.copyMode;
+    return bottomBarType != ViewerBottomBarType.none;
   }
 
   List<String> listText = [];
   List<double> listWidth = [];
   List<int> listState = [];
-  double widthRate = 1.0;
+
+  //double widthRate = 1.0;
 
   List<int> listRead = [];
   List<InAppWebViewController?> listWebViewController = [];
   List<GlobalKey> listKey = [];
-  List<FindInteractionController?> listFindController = [];
   List<ContextMenu?> listContextMenu = [];
 
   String? datadir;
 
   double scrollWidth = DEF_VIEW_SCROLL_WIDTH;
   double width = 1000.0;
-  double _widthPad =
-      Platform.isIOS ? DEF_VIEW_LINE_WIDTH : DEF_VIEW_LINE_WIDTH + DEF_VIEW_SCROLL_WIDTH;
+  double _widthPad = Platform.isIOS ? DEF_VIEW_LINE_WIDTH : DEF_VIEW_LINE_WIDTH + 0;
   double height = 1000.0;
-  double _heightPad =
-      Platform.isIOS ? DEF_VIEW_LINE_HEIGHT : DEF_VIEW_LINE_HEIGHT + DEF_VIEW_SCROLL_WIDTH;
+  double _heightPad = Platform.isIOS ? DEF_VIEW_LINE_HEIGHT : DEF_VIEW_LINE_HEIGHT + 0;
 
   Future load(Environment env, BookData book1, double w, double h) async {
     log('load()');
@@ -91,7 +86,6 @@ class ViewerNotifier extends ChangeNotifier {
       listWebViewController.clear();
       listKey.clear();
       listState.clear();
-      listFindController.clear();
       listContextMenu.clear();
 
       scrollController = new ScrollController();
@@ -159,29 +153,6 @@ class ViewerNotifier extends ChangeNotifier {
             listWebViewController.add(null);
             listKey.add(GlobalKey());
 
-            if (Platform.isIOS || Platform.isAndroid) {
-              FindInteractionController findCtrl = FindInteractionController(
-                onFindResultReceived:
-                    (controller, activeMatchOrdinal, numberOfMatches, isDoneCounting) async {
-                  if (isDoneCounting) {
-                    //setState(() {
-                    String textFound =
-                        numberOfMatches > 0 ? '${activeMatchOrdinal + 1} of $numberOfMatches' : '';
-                    log('textFound = ${textFound}');
-                    //});
-                    if (numberOfMatches == 0) {
-                      //ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                      //  content: Text('No matches found for "${await findInteractionController.getSearchText()}"'),
-                      //));
-                    }
-                  }
-                },
-              );
-              listFindController.add(findCtrl);
-            } else {
-              listFindController.add(null);
-            }
-
             ContextMenu contextMenu = ContextMenu(
                 settings: ContextMenuSettings(hideDefaultSystemContextMenuItems: true),
                 menuItems: [],
@@ -208,7 +179,11 @@ class ViewerNotifier extends ChangeNotifier {
         await Future.delayed(Duration(milliseconds: 1000));
         this.notifyListeners();
         await Future.delayed(Duration(milliseconds: 1000));
-        jumpToIndex(book!.info.lastIndex, book!.info.lastRate);
+        nowIndex = book!.info.nowIndex;
+        nowRatio = book!.info.nowRatio;
+        maxRatio = book!.info.maxRatio;
+        maxRatio = book!.info.maxRatio;
+        jumpToIndex(nowIndex, nowRatio);
       } on Exception catch (e) {
         print('-- PreviewScreen.init ${e.toString()}');
       }
@@ -234,24 +209,6 @@ class ViewerNotifier extends ChangeNotifier {
     scrollController!.animateTo(px, duration: Duration(milliseconds: 600), curve: Curves.linear);
   }
 
-  Future find(int index, String text) async {
-    index = nowIndex;
-    if (listFindController.length < index) return;
-    if (listFindController[index] == null) return;
-    if (listState[index] == 0) return;
-    await listFindController[index]!.findAll(find: text);
-
-    var selectedText = await listWebViewController[index]!.getSelectedText();
-    log('selectedText ${selectedText}');
-  }
-
-  Future findNext(int index) async {
-    if (listFindController.length < index) return;
-    if (listFindController[index] == null) return;
-    if (listState[index] == 0) return;
-    listFindController[index]!.findNext();
-  }
-
   Future next(int index) async {
     if (listWebViewController.length < index) return;
     if (listWebViewController[index] == null) return;
@@ -269,11 +226,12 @@ class ViewerNotifier extends ChangeNotifier {
       if (Platform.isIOS || Platform.isAndroid) {
         text = await listWebViewController[nowIndex]!.getSelectedText();
         if (text != null) log('getSelectedText() [${nowIndex}] ${text}');
+      } else {
+        text = 'あいうえお';
       }
     } catch (_) {
       log('err getSelectedText() [${nowIndex}]');
     }
-    //listWebViewController[nowIndex]!.clearFocus();
     return text;
   }
 
@@ -289,7 +247,17 @@ class ViewerNotifier extends ChangeNotifier {
     }
   }
 
-  Future jumpToIndex(int index, int rate) async {
+  Future moveMaxpage() async {
+    jumpToIndex(maxIndex, maxRatio);
+  }
+
+  Future resetMaxpage() async {
+    maxIndex = nowIndex;
+    maxRatio = nowRatio;
+    saveIndex();
+  }
+
+  Future jumpToIndex(int index, int ratio) async {
     if (scrollController == null) return;
     for (int k = 0; k < 5; k++) {
       if (scrollController!.hasClients == false) {
@@ -299,22 +267,20 @@ class ViewerNotifier extends ChangeNotifier {
       }
     }
     if (scrollController!.hasClients == false) {
-      log('return jumpTo index [${index}] ${(rate / 100).toInt()}%');
+      log('return jumpTo index [${index}] ${(ratio / 100).toInt()}%');
       return;
     }
     if (listWidth.length == 0) return;
-    //if (isLoading) return;
+
     if (index > listWidth.length - 1) index = listWidth.length - 1;
     isLoading = true;
 
     double curdx = scrollController!.position.pixels;
     double maxdx = scrollController!.position.maxScrollExtent;
 
-    isLoading = true;
-
     double dx = 0;
     for (int i = 0; i < index + 1; i++) {
-      if (listState[i] == 2) {
+      if (listState[i] == 5) {
         double sdx = dx;
         curdx = scrollController!.position.pixels;
         maxdx = scrollController!.position.maxScrollExtent;
@@ -325,35 +291,39 @@ class ViewerNotifier extends ChangeNotifier {
         for (int k = 0; k < 10; k++) {
           if (listState[i] == 0) {
             if (k > 2 && i > 0) scrollController!.jumpTo(sdx += 100);
-            log('jumpTo ${sdx.toInt()}px max ${maxdx.toInt()} k ${k}');
+            log('jumpTo [${i}] sdx=${sdx.toInt()} max=${maxdx.toInt()} k=${k}');
             await Future.delayed(Duration(milliseconds: 50));
           }
         }
       }
       if (i < index) dx += listWidth[i];
     }
-    dx += listWidth[index] * rate / 10000;
+    dx += listWidth[index] * ratio / 10000;
 
     curdx = scrollController!.position.pixels;
     maxdx = scrollController!.position.maxScrollExtent;
 
-    log('jumpTo index [${index}] ${(rate / 100).toInt()}% ${dx.toInt()}px ${curdx.toInt()}/${maxdx.toInt()}');
+    log('jumpTo1 [${index}][${(ratio / 100).toInt()}%] dx=${dx.toInt()} cur=${curdx.toInt()} max=${maxdx.toInt()}');
     if (dx > maxdx) {
       log('jumpTo index dx>max ${dx.toInt()} > ${maxdx.toInt()}');
       dx = maxdx;
     }
     if (dx > curdx) {
-      //scrollController!.jumpTo(dx);
       for (int i = 0; i < 1000; i++) {
         if (dx > curdx + 2000) {
-          log('jumpTo curdx + 2000 ${curdx.toInt()}');
           curdx = scrollController!.position.pixels;
+          maxdx = scrollController!.position.maxScrollExtent;
+          log('jumpTo curdx=${curdx.toInt()} maxdx=${maxdx.toInt()} dx=${dx.toInt()}');
           await scrollController!
               .animateTo(curdx + 2000, duration: Duration(milliseconds: 100), curve: Curves.linear);
+          if (i % 10 == 9) await Future.delayed(Duration(milliseconds: 100));
           continue;
         }
       }
-      scrollController!.jumpTo(dx);
+      //scrollController!.jumpTo(dx);
+      log('jumpTo2 [${index}][${(ratio / 100).toInt()}%] dx=${dx.toInt()} cur=${curdx.toInt()} max=${maxdx.toInt()}');
+      await scrollController!
+          .animateTo(dx, duration: Duration(milliseconds: 100), curve: Curves.linear);
     } else {
       for (int i = 0; i < 1000; i++) {
         if (dx < curdx - 2000) {
@@ -366,32 +336,65 @@ class ViewerNotifier extends ChangeNotifier {
       }
       scrollController!.jumpTo(dx);
     }
-
-    await Future.delayed(Duration(milliseconds: 100));
-    this.notifyListeners();
+    log('jumpTo end');
+    await Future.delayed(Duration(milliseconds: 200));
     isLoading = false;
+    this.notifyListeners();
     scrollingListener();
   }
 
   DateTime lastTime = DateTime.now();
   double lastPixel = 0;
   int nowIndex = 0;
-  int nowRate = 0;
+  int nowRatio = 0;
+  int maxIndex = 0;
+  int maxRatio = 0;
   int nowPixel = 0;
   int allPixel = 100;
 
   String getProgress() {
     int per = (nowPixel * 100 / allPixel).toInt();
-    return '${per}%  ${nowPixel}/${allPixel}';
+    return '${per}%';
+  }
+
+  String getNowPage() {
+    if (book == null) return '-1';
+    int chars = 0;
+    for (int i = 0; i < book!.indexList.length; i++) {
+      if (nowIndex < i) {
+        chars += book!.indexList[i].chars;
+      } else if (nowIndex == i) {
+        chars += (book!.indexList[i].chars * nowRatio / 10000).toInt();
+      } else {
+        break;
+      }
+    }
+    return '${(chars / 450).toInt()}';
+  }
+
+  String getMaxPage() {
+    if (book == null) return '-1';
+    int chars = 0;
+    for (int i = 0; i < book!.indexList.length; i++) {
+      if (maxIndex < i) {
+        chars += book!.indexList[i].chars;
+      } else if (maxIndex == i) {
+        chars += (book!.indexList[i].chars * maxRatio / 10000).toInt();
+      } else {
+        break;
+      }
+    }
+    return '${(chars / 450).toInt()}';
   }
 
   void scrollingListener() async {
     if (scrollController == null) return;
     if (scrollController!.hasClients == false) return;
+    if (isLoading == true) return;
 
     double px = scrollController!.position.pixels;
     final past = lastTime.add(Duration(seconds: 1));
-    if (DateTime.now().compareTo(past) > 0 && (lastPixel - px).abs() < 100) {
+    if (DateTime.now().compareTo(past) < 1 || (lastPixel - px).abs() < 200) {
       return;
     }
     lastTime = DateTime.now();
@@ -400,7 +403,7 @@ class ViewerNotifier extends ChangeNotifier {
     for (int i = 0; i < listWidth.length; i++) {
       if (px < listWidth[i]) {
         nowIndex = i;
-        nowRate = (px * 10000.0 / listWidth[i]).toInt();
+        nowRatio = (px * 10000.0 / listWidth[i]).toInt();
         break;
       }
       px -= listWidth[i];
@@ -418,22 +421,20 @@ class ViewerNotifier extends ChangeNotifier {
     if (scrollController!.hasClients == false) return;
     if (scrollController == null) return;
     if (book == null) return;
-    if (nowIndex == 0 && nowRate < 100) return;
     if (isLoading == true) return;
-    log('saveIndex [${nowIndex}]');
-    book!.info.lastIndex = nowIndex;
-    book!.info.lastRate = nowRate;
+    log('saveIndex [${nowIndex}] ${nowRatio}');
+
+    book!.info.nowIndex = nowIndex;
+    book!.info.nowRatio = nowRatio;
+
+    if (book!.info.maxIndex * 10000 + book!.info.maxRatio <= nowIndex * 10000 + nowRatio) {
+      book!.info.maxIndex = nowIndex;
+      book!.info.maxRatio = nowRatio;
+    }
+
     String jsonText = json.encode(book!.info.toJson());
     final file = File('${datadir}/${book!.bookId}/book_info.json');
     file.writeAsString(jsonText, mode: FileMode.write, flush: true);
-  }
-
-  updateStylesheet(int index, Environment env) async {
-    if (!Platform.isIOS && !Platform.isAndroid) return;
-    if (listWebViewController.length <= index) return;
-    if (listWebViewController[index] == null) return;
-    String c = getStyle(env);
-    await listWebViewController[index]!.injectCSSCode(source: c);
   }
 
   String getStyle(Environment env) {
@@ -456,8 +457,8 @@ class ViewerNotifier extends ChangeNotifier {
       c += '}\n';
     }
     c += 'body {\n';
-    c += '  color: ${env.getFrontCssColor()};\n';
-    c += '  background: ${env.getBackCssColor()};\n';
+    c += '  color: ${env.getFrontCss()};\n';
+    c += '  background: ${env.getBackCss()};\n';
     c += '  font-size: ${fontSize}px;\n';
     c += '  font-family: ${fontFamily};\n';
     c += '  ${writing_mode};\n';
@@ -525,7 +526,7 @@ class ViewerNotifier extends ChangeNotifier {
         key: listKey[index],
         initialData: InAppWebViewInitialData(data: text),
         initialSettings: initialSettings,
-        findInteractionController: listFindController[index],
+        findInteractionController: null,
         contextMenu: listContextMenu[index],
         onWebViewCreated: (controller) async {
           listWebViewController[index] = controller;
@@ -622,6 +623,7 @@ class ViewerNotifier extends ChangeNotifier {
     return book!.indexList[nowIndex].title;
   }
 
+  /// Clip
   saveClip(String text) async {
     BookClipData d = BookClipData();
     final file = File('${datadir}/${book!.bookId}/book_clip.json');
@@ -632,9 +634,10 @@ class ViewerNotifier extends ChangeNotifier {
     }
     ClipData c = ClipData();
     c.index = nowIndex;
-    c.rate = nowRate;
+    c.ratio = nowRatio;
     c.text = text;
     d.list.add(c);
+    d.sort();
     String jsonText = await d.toJsonString();
     file.writeAsString(jsonText, mode: FileMode.write, flush: true);
   }
@@ -649,6 +652,23 @@ class ViewerNotifier extends ChangeNotifier {
       d = BookClipData.fromJson(j);
     }
     return d;
+  }
+
+  Future deleteClip({required int index}) async {
+    if (datadir == null) return;
+    try {
+      final file = File('${datadir}/${book!.bookId}/book_clip.json');
+      if (file.existsSync()) {
+        String? txt = file.readAsStringSync();
+        Map<String, dynamic> j = json.decode(txt);
+        BookClipData d = BookClipData.fromJson(j);
+        d.list.removeAt(index);
+        String jsonText = await d.toJsonString();
+        await file.writeAsString(jsonText, mode: FileMode.write, flush: true);
+        this.notifyListeners();
+      }
+    } catch (_) {}
+    return;
   }
 }
 
@@ -673,8 +693,9 @@ class VerticalRotated {
     '～': '丨',
     '／': '＼',
     '…': '︙',
+    '⋯': '︙',
     '‥': '︰',
-    '︙': '…',
+    //'︙': '…',
     '：': '︓',
     ':': '︓',
     '；': '︔',

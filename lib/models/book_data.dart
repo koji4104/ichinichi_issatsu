@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
+import 'package:intl/intl.dart';
 
 class BookData {
   BookData() {}
@@ -8,6 +9,7 @@ class BookData {
   List<IndexData> indexList = [];
   String bookId = '1';
   int charCount = 0;
+  String downloadUri = '';
 
   BookInfoData info = BookInfoData();
 
@@ -15,13 +17,10 @@ class BookData {
         'title': title,
         'author': author,
         'bookId': bookId,
+        'charCount': charCount,
+        'downloadUri': downloadUri,
         'indexList': getIndexListJson(),
       };
-
-  String toJsonString() {
-    String j = json.encode(toJson());
-    return j.replaceAll('}', '}\n');
-  }
 
   List<Map<String, dynamic>> getIndexListJson() {
     List<Map<String, dynamic>> dlist = [];
@@ -32,9 +31,11 @@ class BookData {
   }
 
   BookData.fromJson(Map<String, dynamic> j) {
-    title = j['title'] ?? '';
-    author = j['author'] ?? '';
-    bookId = j['bookId'] ?? '';
+    if (j.containsKey('title')) title = j['title'] ?? '';
+    if (j.containsKey('author')) author = j['author'] ?? '';
+    if (j.containsKey('bookId')) bookId = j['bookId'] ?? '';
+    if (j.containsKey('charCount')) charCount = j['charCount'] ?? '';
+    if (j.containsKey('downloadUri')) downloadUri = j['downloadUri'] ?? '';
 
     if (!Platform.isIOS && !Platform.isMacOS) {
       title = bookId;
@@ -43,9 +44,9 @@ class BookData {
     var list = j['indexList'];
     for (var d in list) {
       IndexData c = IndexData();
-      c.index = d['index'] ?? -1;
-      c.title = d['title'] ?? '';
-      c.chars = d['chars'] ?? 1;
+      if (d.containsKey('index')) c.index = d['index'] ?? -1;
+      if (d.containsKey('title')) c.title = d['title'] ?? '';
+      if (d.containsKey('chars')) c.chars = d['chars'] ?? 1;
       indexList.add(c);
     }
   }
@@ -66,31 +67,52 @@ class IndexData {
 class BookInfoData {
   BookInfoData();
 
-  int lastIndex = 0;
-  int lastRate = 0;
+  int flag = 0;
+  int nowIndex = 0;
+  int nowRatio = 0;
+  int maxIndex = 0;
+  int maxRatio = 0;
   List<int> listMark = [];
-  DateTime lastDate = DateTime(2000, 1, 1);
+  DateTime lastAccess = DateTime(2000, 1, 1);
 
   Map<String, dynamic> toJson() => {
-        'lastIndex': lastIndex,
-        'lastRate': lastRate,
+        'nowIndex': nowIndex,
+        'nowRatio': nowRatio,
+        'maxIndex': maxIndex,
+        'maxRatio': maxRatio,
+        'flag': flag,
+        'lastAccess': DateFormat('yyyy-MM-dd HH:mm:ss').format(lastAccess),
       };
 
   BookInfoData.fromJson(Map<String, dynamic> j) {
-    lastIndex = j['lastIndex'] ?? 0;
-    lastRate = j['lastRate'] ?? 0;
+    if (j.containsKey('nowIndex')) nowIndex = j['nowIndex'] ?? 0;
+    if (j.containsKey('nowRatio')) nowRatio = j['nowRatio'] ?? 0;
+    if (j.containsKey('maxIndex')) maxIndex = j['maxIndex'] ?? 0;
+    if (j.containsKey('maxRatio')) maxRatio = j['maxRatio'] ?? 0;
+    if (j.containsKey('flag')) flag = j['flag'] ?? 0;
+    if (j.containsKey('lastAccess')) {
+      String dt = j['lastAccess'];
+      try {
+        lastAccess = DateTime.parse(dt);
+      } catch (_) {}
+    }
   }
 }
 
 class BookClipData {
   BookClipData();
-
   List<ClipData> list = [];
+
+  sort() {
+    list.sort((a, b) {
+      bool d = (a.index * 1000000) + a.ratio > (b.index * 1000000) + b.ratio;
+      return d ? 1 : -1;
+    });
+  }
 
   String toJsonString() {
     Map<String, dynamic> j = {'list': getClipListJson()};
-    String j1 = json.encode(j);
-    return j1.replaceAll('}', '}\n');
+    return json.encode(j);
   }
 
   List<Map<String, dynamic>> getClipListJson() {
@@ -102,13 +124,15 @@ class BookClipData {
   }
 
   BookClipData.fromJson(dynamic jsonList) {
-    var list1 = jsonList['list'];
-    for (var j in list1) {
-      ClipData c = ClipData();
-      c.index = j['index'] ?? -1;
-      c.rate = j['rate'] ?? '';
-      c.text = j['text'] ?? 1;
-      list.add(c);
+    if (jsonList.containsKey('list')) {
+      var list1 = jsonList['list'];
+      for (Map<String, dynamic> j in list1) {
+        ClipData c = ClipData();
+        if (j.containsKey('index')) c.index = j['index'] ?? -1;
+        if (j.containsKey('ratio')) c.ratio = j['ratio'] ?? '';
+        if (j.containsKey('text')) c.text = j['text'] ?? 1;
+        list.add(c);
+      }
     }
   }
 }
@@ -116,12 +140,12 @@ class BookClipData {
 class ClipData {
   ClipData() {}
   int index = 0;
-  int rate = 0;
+  int ratio = 0;
   String text = '';
 
   Map<String, dynamic> toJson() => {
         'index': index,
-        'rate': rate,
+        'ratio': ratio,
         'text': text,
       };
 }

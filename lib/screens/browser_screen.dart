@@ -40,7 +40,7 @@ class BrowserScreen extends BaseScreen {
         ),
         body: SafeArea(
           child: Stack(children: [
-            selectedUrl == null ? getUrlList() : browser(),
+            selectedUri == null ? getUriList() : browser(),
             downloadBar(),
           ]),
         ),
@@ -54,7 +54,7 @@ class BrowserScreen extends BaseScreen {
 
     return InAppWebView(
       key: webViewKey,
-      initialUrlRequest: URLRequest(url: WebUri(selectedUrl!)),
+      initialUrlRequest: URLRequest(url: WebUri(selectedUri!)),
       onWebViewCreated: (controller) async {
         webViewController = controller;
       },
@@ -74,8 +74,13 @@ class BrowserScreen extends BaseScreen {
     await ref.read(epubProvider).checkHtml(url, body);
   }
 
+  @override
+  Future onPressedCloseButton() async {
+    ref.read(epubProvider).setStatusNone();
+  }
+
   Widget downloadBar() {
-    double barHeight = 200;
+    double barHeight = 240;
     double ffBottom = 0;
     if (ref.watch(epubProvider).status == MyEpubStatus.none) {
       ffBottom = -1.0 * barHeight;
@@ -83,25 +88,12 @@ class BrowserScreen extends BaseScreen {
       ffBottom = 0;
     }
 
-    return AnimatedPositioned(
-      duration: const Duration(milliseconds: 500),
-      curve: Curves.linear,
-      left: 1,
-      top: null,
-      right: 1,
-      bottom: ffBottom,
-      height: barHeight,
-      child: downloadBar1(),
-    );
-  }
-
-  Widget downloadBar1() {
     String label = '';
 
     if (ref.watch(epubProvider).status == MyEpubStatus.downloadable) {
       label = '${ref.watch(epubProvider).epub.bookTitle ?? ref.watch(epubProvider).epub.bookId}';
-      if (ref.watch(epubProvider).epub.urlList.length > 1) {
-        label += ' (${ref.watch(epubProvider).epub.urlList.length})';
+      if (ref.watch(epubProvider).epub.uriList.length > 1) {
+        label += ' (${ref.watch(epubProvider).epub.uriList.length})';
       }
     } else if (ref.watch(epubProvider).status == MyEpubStatus.succeeded) {
       label = 'done';
@@ -110,54 +102,40 @@ class BrowserScreen extends BaseScreen {
     } else if (ref.watch(epubProvider).status == MyEpubStatus.downloading) {
       label = 'downloading';
       int done = ref.watch(epubProvider).downloaded;
-      int all = ref.watch(epubProvider).epub.urlList.length;
+      int all = ref.watch(epubProvider).epub.uriList.length;
       if (done > 0 && all > 1) {
         label += ' ${done}/${all}';
       }
     }
 
-    return Container(
-      color: myTheme.scaffoldBackgroundColor,
+    Widget bar = Container(
+      color: myTheme.cardColor,
       child: Column(
         children: [
+          closeButtonRow(),
+          SizedBox(height: 0),
           Row(children: [
-            IconButton(
-              icon: Icon(Icons.close),
-              iconSize: 20,
-              onPressed: () async {
-                ref.read(epubProvider).setStatusNone();
-              },
-            ),
-            Expanded(flex: 1, child: SizedBox(width: 1)),
-            IconButton(
-              icon: Icon(Icons.close),
-              iconSize: 20,
-              onPressed: () async {
-                ref.read(epubProvider).setStatusNone();
-              },
-            ),
+            SizedBox(width: 20),
+            Expanded(child: MyText(label, noScale: true, center: true)),
+            SizedBox(width: 20),
           ]),
-          //SizedBox(height: 1, child: Container(color: myTheme.dividerColor)),
-          //--------
-          SizedBox(height: 4),
-          Row(children: [
-            Expanded(flex: 1, child: SizedBox(width: 1)),
-            MyText(label),
-            Expanded(flex: 1, child: SizedBox(width: 1)),
-          ]),
-          //--------
-          SizedBox(height: 4),
+          SizedBox(height: 8),
           Row(children: [
             Expanded(flex: 1, child: SizedBox(width: 1)),
             MyTextButton(
-              title: 'Cancel',
+              noScale: true,
+              width: 140,
+              title: l10n('cancel'),
               onPressed: () {
                 ref.read(epubProvider).setStatusNone();
               },
             ),
-            SizedBox(width: 20),
+            SizedBox(width: 16),
             MyTextButton(
-              title: 'Download',
+              noScale: true,
+              commit: true,
+              width: 140,
+              title: l10n('download'),
               onPressed: () {
                 ref.read(epubProvider).download();
               },
@@ -168,27 +146,43 @@ class BrowserScreen extends BaseScreen {
         ],
       ),
     );
+
+    return AnimatedPositioned(
+      duration: const Duration(milliseconds: 500),
+      curve: Curves.linear,
+      left: 1,
+      top: null,
+      right: 1,
+      bottom: ffBottom,
+      height: barHeight,
+      child: bar,
+    );
   }
 
-  String? selectedUrl;
-  List<String> listUrl = [
+  String? selectedUri;
+  List<String> uriList = [
+    'https://www.aozora.gr.jp/access_ranking/2022_xhtml.html',
+    'https://kakuyomu.jp',
+    'https://syosetu.com',
+  ];
+  List<String> titleList = [
     'https://www.aozora.gr.jp/access_ranking/2022_xhtml.html',
     'https://kakuyomu.jp',
     'https://syosetu.com',
   ];
 
-  Widget getUrlList() {
-    if (listUrl.length <= 0) return Container();
+  Widget getUriList() {
+    if (uriList.length <= 0) return Container();
 
     return Container(
       padding: DEF_MENU_PADDING,
       child: ListView.builder(
-        itemCount: listUrl.length,
+        itemCount: uriList.length,
         itemBuilder: (BuildContext context, int index) {
-          return MyBookTile(
-            title1: MyText(listUrl[index]),
+          return MyBookListTile(
+            title: titleList[index],
             onPressed: () {
-              selectedUrl = listUrl[index];
+              selectedUri = uriList[index];
               redraw();
             },
           );

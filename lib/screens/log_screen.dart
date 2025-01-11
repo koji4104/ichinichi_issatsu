@@ -53,16 +53,22 @@ class MyLog {
   }
 
   static write(String level, String event, String msg) async {
-    log('-- ${level} ${msg}');
+    log('${level} ${msg}');
 
     String t = new DateFormat("yyyy-MM-dd HH:mm:ss").format(DateTime.now());
     String l = level;
     String e = event;
     String u = '1';
 
-    final Directory appdir = await getApplicationDocumentsDirectory();
-    await Directory('${appdir.path}/logs').create(recursive: true);
-    final String path = '${appdir.path}/logs/$_fname';
+    //final Directory appdir = await getApplicationDocumentsDirectory();
+
+    String appdir = (await getApplicationDocumentsDirectory()).path;
+    if (!Platform.isIOS && !Platform.isAndroid) {
+      appdir = appdir + '/test';
+    }
+    String logdir = appdir + '/logs';
+    await Directory('${logdir}').create(recursive: true);
+    final String path = '${logdir}/$_fname';
 
     // length byte 200kb
     if (await File(path).exists() && File(path).lengthSync() > 200 * 1024) {
@@ -79,8 +85,14 @@ class MyLog {
     List<MyLogData> list = [];
     try {
       String txt = '';
-      final Directory appdir = await getApplicationDocumentsDirectory();
-      final String path = '${appdir.path}/logs/$_fname';
+      String appdir = (await getApplicationDocumentsDirectory()).path;
+      if (!Platform.isIOS && !Platform.isAndroid) {
+        appdir = appdir + '/test';
+      }
+      String logdir = appdir + '/logs';
+      await Directory('${logdir}').create(recursive: true);
+      final String path = '${logdir}/$_fname';
+
       if (await File(path + '.1').exists()) {
         txt += await File(path + '.1').readAsString();
       }

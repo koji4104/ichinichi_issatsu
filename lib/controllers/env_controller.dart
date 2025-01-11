@@ -16,7 +16,11 @@ class EnvData {
   List<String> keys = [];
   String name = '';
 
-  EnvData({required int this.val, required List<int> this.vals, required List<String> this.keys, required String this.name}) {
+  EnvData(
+      {required int this.val,
+      required List<int> this.vals,
+      required List<String> this.keys,
+      required String this.name}) {
     round(val);
   }
 
@@ -48,15 +52,15 @@ class Environment {
   /// font_size
   EnvData font_size = EnvData(
     val: 16,
-    vals: [10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30, 32],
-    keys: ['10', '12', '14', '16', '18', '20', '22', '24', '26', '28', '30', '32'],
+    vals: [10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30],
+    keys: ['10', '12', '14', '16', '18', '20', '22', '24', '26', '28', '30'],
     name: 'font_size',
   );
 
   EnvData line_height = EnvData(
-    val: 150,
-    vals: [140, 150, 160],
-    keys: ['140', '150', '160'],
+    val: 180,
+    vals: [140, 150, 160, 170, 180, 200],
+    keys: ['140', '150', '160', '170', '180', '200'],
     name: 'line_height',
   );
 
@@ -95,7 +99,7 @@ class Environment {
     name: 'back_color',
   );
 
-  String getFrontCssColor() {
+  String getFrontCss() {
     String col = '#000';
     if (back_color.val == 1) {
       col = '#FFF';
@@ -105,31 +109,43 @@ class Environment {
     return col;
   }
 
-  String getBackCssColor() {
+  String getBackCss() {
     String col = '#FFF';
     if (back_color.val == 1) {
-      col = '#333';
+      col = '#444';
     } else if (back_color.val == 2) {
       col = '#000';
     }
     return col;
   }
 
-  int getBack32Color() {
-    int col = 0xffFFFFFF;
-    if (back_color.val == 1) {
-      col = 0xff333333;
-    } else if (back_color.val == 2) {
-      col = 0xFF000000;
+  Color getFrontColor({int? val}) {
+    if (val == null) val = back_color.val;
+    Color col = Color(0xFF000000);
+    if (val == 1) {
+      col = Color(0xffFFFFFF);
+    } else if (val == 2) {
+      col = Color(0xffFFFFFF);
     }
     return col;
   }
 
-  EnvData ui_font_size = EnvData(
-    val: 16,
-    vals: [14, 16, 18],
-    keys: ['14', '16', '18'],
-    name: 'ui_font_size',
+  Color getBackColor({int? val}) {
+    if (val == null) val = back_color.val;
+    Color col = Color(0xffFFFFFF);
+    if (val == 1) {
+      col = Color(0xff303030);
+    } else if (val == 2) {
+      col = Color(0xFF000000);
+    }
+    return col;
+  }
+
+  EnvData ui_text_scale = EnvData(
+    val: 100,
+    vals: [100, 110, 120, 130, 140, 150],
+    keys: ['100 %', '110 %', '120 %', '130 %', '140 %', '150 %'],
+    name: 'ui_text_scale',
   );
 
   Map<String, dynamic> toJson() => {
@@ -137,10 +153,10 @@ class Environment {
         font_size.name: font_size.val,
         font_family.name: font_family.val,
         line_height.name: line_height.val,
-        ui_font_size.name: ui_font_size.val,
         dark_mode.name: dark_mode.val,
         back_color.name: back_color.val,
         writing_mode.name: writing_mode.val,
+        ui_text_scale.name: ui_text_scale.val,
       };
 
   Environment.fromJson(Map<String, dynamic> j) {
@@ -148,10 +164,10 @@ class Environment {
     fromJsonSub(j, font_size);
     fromJsonSub(j, font_family);
     fromJsonSub(j, line_height);
-    fromJsonSub(j, ui_font_size);
     fromJsonSub(j, dark_mode);
     fromJsonSub(j, back_color);
     fromJsonSub(j, writing_mode);
+    fromJsonSub(j, ui_text_scale);
   }
 
   fromJsonSub(Map<String, dynamic> j, EnvData data) {
@@ -173,10 +189,10 @@ class EnvNotifier extends ChangeNotifier {
     list.add(env.font_size);
     list.add(env.font_family);
     list.add(env.line_height);
-    list.add(env.ui_font_size);
     list.add(env.dark_mode);
     list.add(env.back_color);
     list.add(env.writing_mode);
+    list.add(env.ui_text_scale);
     return list;
   }
 

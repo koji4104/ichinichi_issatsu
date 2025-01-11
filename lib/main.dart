@@ -16,6 +16,7 @@ class MyApp extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     ref.watch(envProvider);
     myTheme = ref.watch(envProvider).env.dark_mode.val == 0 ? myLightTheme : myDarkTheme;
+    myTextScale = (ref.watch(envProvider).env.ui_text_scale.val / 100).toDouble();
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       title: 'onebook',

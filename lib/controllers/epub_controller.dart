@@ -69,17 +69,20 @@ class EpubNotifier extends ChangeNotifier {
     book.title = epub.bookTitle ?? epub.bookId!;
     book.bookId = epub.bookId!;
     book.author = epub.bookAuthor ?? '';
+    book.charCount = 0;
+    book.downloadUri = epub.downloadUri ?? '';
     for (EpubFileData f in epub.fileList) {
       if (f.chapNo >= 0) {
         IndexData ch = IndexData();
         ch.title = f.title ?? '';
         ch.index = f.chapNo;
         ch.chars = f.chars;
+        book.charCount += f.chars;
         book.indexList.add(ch);
       }
     }
 
-    String jsonText = book.toJsonString();
+    String jsonText = json.encode(book.toJson());
     final file = File('${datadir}/${epub.bookId}/book_data.json');
     await file.writeAsString(jsonText, mode: FileMode.write, flush: true);
 
@@ -100,7 +103,7 @@ class EpubNotifier extends ChangeNotifier {
       await checkNarou(url, body);
     }
 
-    if (epub.bookId != null && epub.urlList.isNotEmpty) {
+    if (epub.bookId != null && epub.uriList.isNotEmpty) {
       status = MyEpubStatus.downloadable;
       this.notifyListeners();
     } else if (status != MyEpubStatus.none) {
@@ -110,17 +113,17 @@ class EpubNotifier extends ChangeNotifier {
   }
 
   Future<void> download() async {
-    if (epub.urlList.length == 0 || epub.contentUrl == null) {
+    if (epub.uriList.length == 0 || epub.downloadUri == null) {
       log('urlList.length == 0');
       status = MyEpubStatus.failed;
       this.notifyListeners();
       return;
     }
-    if (epub.contentUrl.toString().contains('www.aozora.gr.jp/cards/')) {
+    if (epub.downloadUri.toString().contains('www.aozora.gr.jp/cards/')) {
       await downloadAozora();
-    } else if (epub.contentUrl.toString().contains('kakuyomu.jp/works/')) {
+    } else if (epub.downloadUri.toString().contains('kakuyomu.jp/works/')) {
       await downloadKakuyomu();
-    } else if (epub.contentUrl.toString().contains('ncode.syosetu.com/')) {
+    } else if (epub.downloadUri.toString().contains('ncode.syosetu.com/')) {
       await downloadNarou();
     } else {
       status = MyEpubStatus.failed;
@@ -158,10 +161,7 @@ class EpubNotifier extends ChangeNotifier {
     return text;
   }
 
-  Map<String, String> headers = {
-    'user-agent':
-        'Mozilla/5.0 (iPhone; CPU iPhone OS 15_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148'
-  };
+  Map<String, String> headers = {'user-agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 15_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148'};
 
   setStatusNone() {
     epub.reset();
@@ -176,7 +176,7 @@ class EpubNotifier extends ChangeNotifier {
   //--------
 
   Future checkAozora(String url, String body) async {
-    epub.contentUrl = url;
+    epub.downloadUri = url;
 
     //https://www.aozora.gr.jp/cards/000148/card773.html
     //https://www.aozora.gr.jp/cards/000148/files/773_14560.html
@@ -189,7 +189,7 @@ class EpubNotifier extends ChangeNotifier {
         String u1 = url.substring(0, url.lastIndexOf('/card'));
         String u2 = href.substring(href.indexOf('/files/'));
         String dl = u1 + u2;
-        epub.urlList.add(dl);
+        epub.uriList.add(dl);
 
         try {
           String fname = dl.substring(dl.lastIndexOf('/files/') + 7);
@@ -201,15 +201,15 @@ class EpubNotifier extends ChangeNotifier {
   }
 
   Future downloadAozora() async {
-    if (epub.urlList.length == 0) return;
+    if (epub.uriList.length == 0) return;
     if (epub.bookId == null) return;
 
     status = MyEpubStatus.downloading;
     this.notifyListeners();
     downloaded = 0;
 
-    String url = epub.urlList[0];
-    http.Response res = await http.get(Uri.parse(url), headers: headers);
+    String uri = epub.uriList[0];
+    http.Response res = await http.get(Uri.parse(uri), headers: headers);
     if (res.statusCode == 200) {
       try {
         String text1 = await CharsetConverter.decode("Shift_JIS", res.bodyBytes);
@@ -346,7 +346,7 @@ class EpubNotifier extends ChangeNotifier {
   //----------
 
   Future<void> checkKakuyomu(String url, String body) async {
-    epub.contentUrl = url;
+    epub.downloadUri = url;
     epub.bookId = url.substring(url.indexOf('works/') + 6);
 
     BeautifulSoup bs = BeautifulSoup(body);
@@ -361,15 +361,13 @@ class EpubNotifier extends ChangeNotifier {
             for (var MapEntry(:key, :value) in map.entries) {
               if (value['__typename'] != null && value['id'] != null) {
                 if (value['__typename'] == 'Episode') {
-                  epub.urlList
-                      .add('https://kakuyomu.jp/works/${epub.bookId}/episodes/${value['id']}');
+                  epub.uriList.add('https://kakuyomu.jp/works/${epub.bookId}/episodes/${value['id']}');
                 } else if (value['__typename'] == 'Work') {
                   if (value['id'] == epub.bookId) {
                     epub.bookTitle = value['title'] ?? epub.bookId;
                     var aut = value['author'];
                     var ref = aut['__ref'] ?? '';
-                    epub.bookAuthor =
-                        ref.toString().substring(ref.toString().indexOf('UserAccount:') + 12);
+                    epub.bookAuthor = ref.toString().substring(ref.toString().indexOf('UserAccount:') + 12);
                   }
                 }
               }
@@ -396,16 +394,16 @@ class EpubNotifier extends ChangeNotifier {
     f0.chars = text0.length;
     epub.fileList.add(f0);
 
-    for (int i = 0; i < epub.urlList.length; i++) {
+    for (int i = 0; i < epub.uriList.length; i++) {
       sleep(Duration(milliseconds: 200));
-      http.Response res1 = await http.get(Uri.parse(epub.urlList[i]), headers: headers);
+      http.Response res1 = await http.get(Uri.parse(epub.uriList[i]), headers: headers);
       if (res1.statusCode == 200) {
         await createKakuyomuText(res1.body, i + 1);
       } else {
         break;
       }
       downloaded = i;
-      if (downloaded % 4 == 1) {
+      if (downloaded % 5 == 0) {
         this.notifyListeners();
       }
     }
@@ -452,7 +450,7 @@ class EpubNotifier extends ChangeNotifier {
   //-------
 
   Future<void> checkNarou(String url, String body) async {
-    epub.contentUrl = url;
+    epub.downloadUri = url;
     epub.bookId = url.substring(url.indexOf('syosetu.com/') + 12);
 
     BeautifulSoup bs = BeautifulSoup(body);
@@ -461,7 +459,7 @@ class EpubNotifier extends ChangeNotifier {
       String? s = e.getAttrValue('href');
       if (s != null) {
         String u = 'https://ncode.syosetu.com' + s;
-        epub.urlList.add(u);
+        epub.uriList.add(u);
       }
     }
   }
@@ -471,18 +469,18 @@ class EpubNotifier extends ChangeNotifier {
     this.notifyListeners();
     downloaded = 0;
 
-    if (epub.urlList.length > 0) {
-      for (int i = 0; i < epub.urlList.length; i++) {
+    if (epub.uriList.length > 0) {
+      for (int i = 0; i < epub.uriList.length; i++) {
         sleep(Duration(milliseconds: 200));
-        http.Response res1 = await http.get(Uri.parse(epub.urlList[i]), headers: headers);
-        log('${res1.statusCode}  ${epub.urlList[i]}');
+        http.Response res1 = await http.get(Uri.parse(epub.uriList[i]), headers: headers);
+        log('${res1.statusCode}  ${epub.uriList[i]}');
         if (res1.statusCode == 200) {
           await createNarouText(res1.body, i + 1);
         } else {
           break;
         }
         downloaded = i;
-        if (downloaded % 4 == 1) {
+        if (downloaded % 5 == 0) {
           this.notifyListeners();
         }
       }
@@ -532,9 +530,8 @@ class EpubNotifier extends ChangeNotifier {
     for (Bs4Element e in els) {
       String? s = e.getAttrValue('href');
       if (s != null) {
-        //String u = 'https://ncode.syosetu.com' + s;
         String u = 'http://ncode.syosetu.com' + s;
-        epub.urlList.add(u);
+        epub.uriList.add(u);
       }
     }
   }

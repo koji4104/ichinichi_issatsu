@@ -53,122 +53,44 @@ class BaseScreen extends ConsumerWidget {
   }
 
   void showSnackBar(String msg) {
-    final snackBar = SnackBar(content: Text(msg));
+    final snackBar = SnackBar(content: MyText(msg));
     ScaffoldMessenger.of(context).showSnackBar(snackBar);
   }
 
-  Future<bool> okDialog() async {
-    bool ret = false;
-    Text msg = Text(l10n(''));
-    double w = Platform.isIOS ? 130 : 70;
-    await showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          shape: RoundedRectangleBorder(borderRadius: DEF_BORDER_RADIUS),
-          titlePadding: EdgeInsets.all(0.0),
-          actionsPadding: EdgeInsets.all(28.0),
-          buttonPadding: EdgeInsets.all(0.0),
-          contentPadding: EdgeInsets.all(0.0),
-          iconPadding: EdgeInsets.all(0.0),
-          backgroundColor: myTheme.cardColor,
-          content: msg,
-          actions: <Widget>[
-            MyTextButton(
-              title: l10n('cancel'),
-              width: w,
-              cancelStyle: true,
-              onPressed: () {
-                Navigator.of(context).pop();
-              },
-            ),
-            SizedBox(width: 20),
-            MyTextButton(
-              title: l10n('OK'),
-              width: w,
-              onPressed: () {
-                ret = true;
-                Navigator.of(context).pop();
-              },
-            ),
-          ],
-        );
-      },
-    );
-    return ret;
-  }
-
-  Future<bool> saveDialog() async {
-    bool ret = false;
-    Text msg = Text(l10n(''));
-    double width = 110;
-    await showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          shape: RoundedRectangleBorder(borderRadius: DEF_BORDER_RADIUS),
-          titlePadding: EdgeInsets.all(0.0),
-          actionsPadding: EdgeInsets.all(18.0),
-          buttonPadding: EdgeInsets.all(0.0),
-          contentPadding: EdgeInsets.all(0.0),
-          iconPadding: EdgeInsets.all(0.0),
-          backgroundColor: myTheme.cardColor,
-          content: msg,
-          actions: <Widget>[
-            MyTextButton(
-              title: l10n('cancel'),
-              width: width,
-              cancelStyle: true,
-              onPressed: () {
-                Navigator.of(context).pop();
-              },
-            ),
-            SizedBox(width: 16),
-            MyTextButton(
-              title: l10n('save'),
-              width: width,
-              onPressed: () {
-                ret = true;
-                Navigator.of(context).pop();
-              },
-            ),
-          ],
-        );
-      },
-    );
-    return ret;
+  Future<bool> okDialog({String? msg}) async {
+    return alertDialog('ok', msg: msg);
   }
 
   Future<bool> deleteDialog() async {
+    return alertDialog('delete');
+  }
+
+  Future<bool> alertDialog(String title, {String? msg}) async {
     bool ret = false;
-    Text msg = Text(l10n(''));
-    double width = 110;
+    Widget? content1 = msg != null ? MyText(l10n(msg)) : null;
     await showDialog(
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
+          actionsAlignment: MainAxisAlignment.center,
           shape: RoundedRectangleBorder(borderRadius: DEF_BORDER_RADIUS),
           titlePadding: EdgeInsets.all(0.0),
-          actionsPadding: EdgeInsets.all(18.0),
+          actionsPadding: EdgeInsets.fromLTRB(8, 16, 8, 16),
           buttonPadding: EdgeInsets.all(0.0),
           contentPadding: EdgeInsets.all(0.0),
           iconPadding: EdgeInsets.all(0.0),
           backgroundColor: myTheme.cardColor,
-          content: msg,
+          content: content1,
           actions: <Widget>[
-            MyTextButton(
-              title: l10n('cancel'),
-              width: width,
-              cancelStyle: true,
+            alertButton(
+              title: 'cancel',
               onPressed: () {
                 Navigator.of(context).pop();
               },
             ),
-            SizedBox(width: 16),
-            MyTextButton(
-              title: l10n('delete'),
-              width: width,
-              deleteStyle: true,
+            SizedBox(width: 10),
+            alertButton(
+              title: title,
               onPressed: () {
                 ret = true;
                 Navigator.of(context).pop();
@@ -179,16 +101,161 @@ class BaseScreen extends ConsumerWidget {
       },
     );
     return ret;
+  }
+
+  Widget alertButton({
+    required String title,
+    required void Function()? onPressed,
+    double? width,
+  }) {
+    Color? fgcol = Color(0xFFFFFFFF);
+    Color? bgcol = Colors.blueAccent;
+    Color? bdcol = null;
+    double scale = myTextScale;
+
+    if (title == 'cancel') {
+      fgcol = myTheme.textTheme.bodyMedium!.color!;
+      bgcol = null;
+      bdcol = myTheme.dividerColor;
+      if (scale > 1.2) scale = 1.2;
+    } else if (title == 'delete') {
+      fgcol = Color(0xFFFFFFFF);
+      bgcol = Colors.redAccent;
+      bdcol = null;
+    }
+
+    return Container(
+      width: width != null ? width : 120,
+      child: TextButton(
+        style: TextButton.styleFrom(
+          //surfaceTintColor: Colors.black,
+          //foregroundColor: fgcol,
+          backgroundColor: bgcol,
+          //shape: RoundedRectangleBorder(borderRadius: DEF_BORDER_RADIUS),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(DEF_RADIUS))),
+          side: bdcol != null ? BorderSide(color: bdcol) : null,
+        ),
+        child: Text(
+          l10n(title),
+          style: TextStyle(color: fgcol),
+          textAlign: TextAlign.center,
+          textScaler: TextScaler.linear(scale),
+        ),
+        onPressed: onPressed,
+      ),
+    );
   }
 
   redraw() {
     if (ref.read(baseProvider) != null) ref.read(baseProvider)!.notifyListeners();
   }
+
+  Widget MySettingsTile({required EnvData data}) {
+    Widget e = Expanded(child: SizedBox(width: 1));
+    Widget child = Row(children: [MyText(l10n(data.name)), e, MyDropdown(data: data)]);
+
+    return Container(
+      decoration: BoxDecoration(
+        color: myTheme.cardColor,
+        border: Border(bottom: BorderSide(color: myTheme.dividerColor, width: 0.5)),
+      ),
+      height: 50,
+      padding: EdgeInsets.fromLTRB(20, 0, 20, 0),
+      child: child,
+    );
+  }
+
+  Widget MyDropdown({required EnvData data}) {
+    List<DropdownMenuItem> list = [];
+    for (int i = 0; i < data.vals.length; i++) {
+      DropdownMenuItem<int> w = DropdownMenuItem<int>(
+        value: data.vals[i],
+        child: MyText(l10n(data.keys[i])),
+      );
+      list.add(w);
+    }
+    return DropdownButton(
+      items: list,
+      value: data.val,
+      onChanged: (value) {
+        if (data.val != value) {
+          ref.read(envProvider).saveVal(data, value).then((ret) {
+            if (ret) onDropdownChanged();
+          });
+        }
+      },
+      dropdownColor: myTheme.secondaryHeaderColor,
+      style: myTheme.textTheme.bodyMedium!,
+    );
+  }
+
+  Widget MyDropdownTest() {
+    List<String> sList = ['AAA', 'BBB'];
+    List<DropdownMenuItem> list = [];
+    for (int i = 0; i < sList.length; i++) {
+      DropdownMenuItem<int> w = DropdownMenuItem<int>(
+        value: i,
+        child: MyText(sList[i]),
+      );
+      list.add(w);
+    }
+    return DropdownButton(
+      items: list,
+      value: 0,
+      onChanged: (value) {},
+      dropdownColor: myTheme.cardColor,
+      style: myTheme.textTheme.bodyMedium!,
+    );
+  }
+
+  onDropdownChanged() {
+    ref.read(envProvider).notifyListeners();
+  }
+
+  TextStyle getTextStyle() {
+    return TextStyle(color: myTheme.textTheme.bodyMedium!.color);
+  }
+
+  @override
+  Future onPressedCloseButton() async {
+    redraw();
+  }
+
+  IconButton closeButton() {
+    return IconButton(
+      icon: Icon(Icons.close),
+      iconSize: 20,
+      constraints: BoxConstraints(minWidth: 0.0, minHeight: 0.0),
+      padding: EdgeInsets.all(2),
+      onPressed: () async {
+        onPressedCloseButton();
+      },
+    );
+  }
+
+  Widget closeButtonRow() {
+    return Container(
+      child: Column(children: [
+        Container(
+          color: myTheme.scaffoldBackgroundColor,
+          height: 6,
+        ),
+        Row(children: [
+          SizedBox(width: 4),
+          closeButton(),
+          Expanded(flex: 1, child: SizedBox(width: 1)),
+          closeButton(),
+          SizedBox(width: 4),
+        ]),
+      ]),
+    );
+  }
 }
 
 /// BaseSettings
-class BaseSettingsScreen extends BaseScreen {
-  BaseSettingsScreen? rightScreen;
+class BaseSettingsScreen1 extends BaseScreen {
+  BaseSettingsScreen1? rightScreen;
 
   @override
   Future init() async {}
@@ -202,99 +269,5 @@ class BaseSettingsScreen extends BaseScreen {
   @override
   Widget getList() {
     return Container();
-  }
-
-  Widget MyValue({required EnvData data}) {
-    return MyListTile(
-      title1: Text(l10n(data.name)),
-      title2: Text(l10n(data.key)),
-      onPressed: () async {
-        //var result = await NavigatorPush(RadioListScreen(data: data));
-        NavigatorPush(RadioListScreen(data: data)).then((onValue) {
-          redraw();
-          log('NavigatorPush end ${onValue}');
-        });
-        log('NavigatorPush start');
-      },
-    );
-  }
-}
-
-/// RadioListScreen
-class RadioListScreen extends BaseSettingsScreen {
-  int selVal = 0;
-  late EnvData data;
-
-  RadioListScreen({required EnvData data}) {
-    this.data = data;
-    selVal = data.val;
-  }
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    super.build(context, ref);
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(l10n(data.name)),
-        leading: Row(
-          children: [
-            SizedBox(width: 8),
-            IconButton(
-              icon: Icon(Icons.arrow_back_ios_new),
-              onPressed: () {
-                Navigator.of(context).pop();
-              },
-            ),
-          ],
-        ),
-      ),
-      body: Container(
-        padding: EdgeInsets.fromLTRB(2, 14, 2, 0),
-        child: SingleChildScrollView(
-          child: getList(),
-        ),
-      ),
-    );
-  }
-
-  @override
-  Widget getList() {
-    List<Widget> list = [];
-    for (int i = 0; i < data.vals.length; i++) {
-      list.add(
-        MyRadioListTile(
-          title: l10n(data.keys[i]),
-          value: data.vals[i],
-          groupValue: selVal,
-          onChanged: () => _onRadioSelected(data.vals[i]),
-        ),
-      );
-    }
-    list.add(MyLabel(l10n(data.name + '_desc')));
-    return Column(children: list);
-  }
-
-  Widget MyRadioListTile({
-    required String title,
-    required int value,
-    required int groupValue,
-    required void Function()? onChanged,
-  }) {
-    return Container(
-      padding: EdgeInsets.fromLTRB(2, 2, 2, 2),
-      child: MyListTile(
-        title1: Text(title),
-        radio: groupValue == value,
-        onPressed: onChanged,
-      ),
-    );
-  }
-
-  void _onRadioSelected(value) async {
-    selVal = value;
-    ref.read(envProvider).saveVal(data, selVal).then((ret) {
-      if (ret) ref.read(envProvider).notifyListeners();
-      //if (ret) redraw();
-    });
   }
 }

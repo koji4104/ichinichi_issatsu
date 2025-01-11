@@ -1,20 +1,22 @@
 import 'package:flutter/material.dart';
 import 'dart:io';
 
+const double DEF_RADIUS = 3;
 BorderRadiusGeometry DEF_BORDER_RADIUS = BorderRadius.circular(3);
+BorderRadiusGeometry DEF_RADIUS_BOTTOMBAR = BorderRadius.circular(6);
 const EdgeInsetsGeometry DEF_MENU_PADDING = EdgeInsets.fromLTRB(8, 16, 8, 0);
 
 const double DEF_APPBAR_HEIGHT = 40.0;
 const double DEF_VIEW_SCROLL_WIDTH = 40.0;
-const double DEF_VIEW_PADDING_W = 30.0;
-const double DEF_VIEW_PADDING_H = 40.0;
+const double DEF_VIEW_PADDING_W = 20.0;
+const double DEF_VIEW_PADDING_H = 50.0;
 const EdgeInsetsGeometry DEF_VIEW_PADDING_TB =
-    EdgeInsets.fromLTRB(DEF_VIEW_PADDING_W, 0, DEF_VIEW_PADDING_W, 0);
+    EdgeInsets.fromLTRB(DEF_VIEW_PADDING_W, 40, DEF_VIEW_PADDING_W, 40);
 const EdgeInsetsGeometry DEF_VIEW_PADDING_RL =
-    EdgeInsets.fromLTRB(0, DEF_VIEW_PADDING_H, 0, DEF_VIEW_PADDING_H);
+    EdgeInsets.fromLTRB(0, DEF_VIEW_PADDING_H + 10, 0, DEF_VIEW_PADDING_H - 10);
 
-const double DEF_VIEW_LINE_WIDTH = DEF_VIEW_PADDING_W + DEF_VIEW_PADDING_W + 4;
-const double DEF_VIEW_LINE_HEIGHT = DEF_VIEW_PADDING_H + DEF_VIEW_PADDING_H + DEF_APPBAR_HEIGHT + 4;
+const double DEF_VIEW_LINE_WIDTH = DEF_VIEW_PADDING_W + DEF_VIEW_PADDING_W + 10;
+const double DEF_VIEW_LINE_HEIGHT = DEF_VIEW_PADDING_H + DEF_VIEW_PADDING_H + 90;
 
 // ON OFF button
 Color btnOn = Colors.white;
@@ -22,9 +24,10 @@ Color btnNg = Colors.grey;
 Color btnNl = Colors.white;
 
 ThemeData myTheme = myLightTheme;
+double myTextScale = 1.0;
 
 Color COL_DARK_TEXT = Color(0xffFFFFFF);
-Color COL_DARK_CARD = Color(0xff333333);
+Color COL_DARK_CARD = Color(0xff303030);
 Color COL_DARK_BACK = Color(0xff000000);
 
 Color COL_LIGHT_TEXT = Color(0xff000000);
@@ -32,6 +35,13 @@ Color COL_LIGHT_CARD = Color(0xffFFFFFF);
 Color COL_LIGHT_BACK = Color(0xffe0e0e0);
 
 Color COL_TEST = Color(0xFF00FFFF);
+
+Color COL_FLAG1 = Color(0xff0000FF);
+Color COL_FLAG2 = Color(0xff00FF00);
+Color COL_FLAG3 = Color(0xffFF0000);
+Color COL_FLAG4 = Color(0xff00FFFF);
+Color COL_FLAG5 = Color(0xffFF00FF);
+Color COL_FLAG6 = Color(0xffFFFF00);
 
 TextStyle TEXTSTYLE_DARK_SMALL =
     ThemeData.dark().textTheme.bodySmall!.copyWith(fontSize: 12.0, color: COL_DARK_TEXT);
@@ -58,7 +68,7 @@ ThemeData myDarkTheme = ThemeData.dark().copyWith(
   scaffoldBackgroundColor: COL_DARK_BACK,
   canvasColor: COL_DARK_CARD,
   cardColor: COL_DARK_CARD,
-  disabledColor: COL_DARK_TEXT,
+  disabledColor: Color(0xFF808080),
   primaryColor: Color(0xFF444444),
   primaryColorDark: Color(0xFF333333),
   dividerColor: Color(0xFF808080),
@@ -73,20 +83,24 @@ ThemeData myDarkTheme = ThemeData.dark().copyWith(
     bodyMedium: TEXTSTYLE_DARK_MEDIUM,
     bodyLarge: TEXTSTYLE_DARK_LARGE,
   ),
+  buttonTheme: ButtonThemeData(
+    buttonColor: Color(0xFF808080),
+  ),
   textButtonTheme: TextButtonThemeData(
     style: TextButton.styleFrom(
+      textStyle: TEXTSTYLE_DARK_MEDIUM,
       foregroundColor: COL_DARK_TEXT,
       backgroundColor: COL_DARK_CARD,
+      padding: EdgeInsets.fromLTRB(8, 0, 8, 0),
       shape: RoundedRectangleBorder(borderRadius: DEF_BORDER_RADIUS),
     ),
   ),
   iconButtonTheme: IconButtonThemeData(
     style: IconButton.styleFrom(
-      iconSize: 28,
       foregroundColor: COL_DARK_TEXT,
-      backgroundColor: Colors.black.withOpacity(0.0),
-      //padding: EdgeInsets.fromLTRB(2, 2, 2, 2),
-      //shape: RoundedRectangleBorder(borderRadius: DEF_BORDER_RADIUS),
+      iconSize: 28,
+      padding: EdgeInsets.all(0),
+      minimumSize: Size(0, 0),
     ),
   ),
   snackBarTheme: SnackBarThemeData(
@@ -107,9 +121,9 @@ ThemeData myLightTheme = ThemeData.light().copyWith(
   scaffoldBackgroundColor: COL_LIGHT_BACK,
   canvasColor: COL_LIGHT_CARD,
   cardColor: COL_LIGHT_CARD,
-  disabledColor: COL_LIGHT_TEXT,
+  disabledColor: Color(0xFF808080),
   primaryColor: Color(0xFFffffff),
-  dividerColor: Color(0xFF808080),
+  dividerColor: Color(0xFFA0A0A0),
   highlightColor: Color(0xFFAADDFF),
   checkboxTheme: CheckboxThemeData(
     fillColor: WidgetStateProperty.all(Color(0xFF333333)),
@@ -121,21 +135,24 @@ ThemeData myLightTheme = ThemeData.light().copyWith(
     bodyMedium: TEXTSTYLE_LIGHT_MEDIUM,
     bodyLarge: TEXTSTYLE_LIGHT_LARGE,
   ),
+  buttonTheme: ButtonThemeData(
+    buttonColor: Color(0xFF808080),
+  ),
   textButtonTheme: TextButtonThemeData(
     style: TextButton.styleFrom(
-      padding: EdgeInsets.fromLTRB(8, 0, 8, 0),
+      textStyle: TEXTSTYLE_LIGHT_MEDIUM,
       foregroundColor: COL_LIGHT_TEXT,
       backgroundColor: COL_LIGHT_CARD,
+      padding: EdgeInsets.fromLTRB(8, 0, 8, 0),
       shape: RoundedRectangleBorder(borderRadius: DEF_BORDER_RADIUS),
     ),
   ),
   iconButtonTheme: IconButtonThemeData(
     style: IconButton.styleFrom(
-      iconSize: 28,
       foregroundColor: COL_LIGHT_TEXT,
-      //backgroundColor: COL_LIGHT_BACK,
-      //padding: EdgeInsets.fromLTRB(8, 8, 8, 8),
-      //shape: RoundedRectangleBorder(borderRadius: DEF_BORDER_RADIUS),
+      iconSize: 28,
+      padding: EdgeInsets.all(0),
+      minimumSize: Size(0, 0),
     ),
   ),
   snackBarTheme: SnackBarThemeData(
@@ -174,14 +191,28 @@ Widget MyLabel(String label, {int? size, Color? color}) {
     alignment: Alignment.centerLeft,
     child: Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-      child: Text(label, style: TextStyle(fontSize: 14, color: Colors.white)),
+      child: Text(
+        label,
+        textScaler: TextScaler.linear(myTextScale),
+      ),
     ),
   );
 }
 
-Widget MyText(String text) {
-  if (text.length > 40) text = text.substring(0, 40) + '...';
-  return Text(text, overflow: TextOverflow.ellipsis);
+Widget MyText(String text, {int? maxLength, bool? noScale, bool? center}) {
+  double scale = myTextScale;
+  if (noScale != null && scale > 1.3) {
+    scale = 1.3;
+  }
+  if (maxLength == null) maxLength = 40;
+  if (text.length > maxLength) text = text.substring(0, maxLength) + '...';
+  return Text(
+    text,
+    overflow: TextOverflow.ellipsis,
+    maxLines: 2,
+    textScaler: TextScaler.linear(scale),
+    textAlign: center != null ? TextAlign.center : null,
+  );
 }
 
 /// Invert colors with frame
@@ -206,6 +237,29 @@ Widget MyIconButton({
   );
 }
 
+Widget MyBackColorButton({
+  required IconData icon,
+  double? iconSize,
+  required Color foregroundColor,
+  required Color backgroundColor,
+  required void Function()? onPressed,
+}) {
+  if (iconSize == null) iconSize = 24;
+  return IconButton(
+    icon: Icon(icon),
+    style: IconButton.styleFrom(
+      iconSize: iconSize,
+      //fixedSize: Size(21, 21),
+      //maximumSize: Size(22, 22),
+      foregroundColor: foregroundColor,
+      backgroundColor: backgroundColor,
+      padding: EdgeInsets.all(0),
+      shape: RoundedRectangleBorder(borderRadius: DEF_BORDER_RADIUS),
+    ),
+    onPressed: onPressed,
+  );
+}
+
 /// MyTextButton
 /// - title
 /// - onPressed
@@ -214,42 +268,44 @@ Widget MyTextButton({
   required String title,
   required void Function()? onPressed,
   double? width,
-  Icon? icon,
-  bool? cancelStyle,
-  bool? deleteStyle,
+  bool? commit,
+  bool? delete,
+  bool? noScale,
 }) {
-  Color fgcol = myTheme.cardColor;
-  Color bgcol = myTheme.textTheme.bodyMedium!.color!;
   double fsize = myTheme.textTheme.bodyMedium!.fontSize!;
-  if (cancelStyle != null && cancelStyle == true) {
+  Color? fgcol = myTheme.textTheme.bodyMedium!.color!;
+  Color? bgcol = null;
+  Color? bdcol = myTheme.dividerColor;
+
+  if (commit != null) {
     fgcol = Color(0xFFFFFFFF);
-    bgcol = Color(0xFF707070);
-  } else if (deleteStyle != null) {
+    bgcol = Colors.blueAccent;
+    bdcol = bgcol;
+  } else if (delete != null) {
     fgcol = Color(0xFFFFFFFF);
     bgcol = Colors.redAccent;
+    bdcol = bgcol;
+  }
+  double scale = myTextScale;
+  if (noScale != null) {
+    if (scale > 1.3) scale = 1.3;
   }
   return Container(
     width: width != null ? width : 300,
     child: TextButton(
       style: TextButton.styleFrom(
+        //surfaceTintColor: Colors.black,
+        //foregroundColor: fgcol,
         backgroundColor: bgcol,
-        shape: RoundedRectangleBorder(borderRadius: DEF_BORDER_RADIUS),
+        //shape: RoundedRectangleBorder(borderRadius: DEF_BORDER_RADIUS),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(DEF_RADIUS))),
+        side: bdcol != null ? BorderSide(color: bdcol) : null,
       ),
-      child: Container(
-        padding: EdgeInsets.symmetric(vertical: 0, horizontal: 0),
-        child: Row(
-          children: [
-            if (icon != null) icon,
-            if (icon != null) SizedBox(width: 4),
-            Expanded(
-              child: Text(
-                title,
-                style: TextStyle(color: fgcol, fontSize: fsize),
-                textAlign: TextAlign.center,
-              ),
-            ),
-          ],
-        ),
+      child: Text(
+        title,
+        style: TextStyle(color: fgcol, fontSize: fsize),
+        textAlign: TextAlign.center,
+        textScaler: TextScaler.linear(scale),
       ),
       onPressed: onPressed,
     ),
@@ -271,7 +327,7 @@ Widget MyListTile(
     bool? textonly}) {
   Widget e = Expanded(child: SizedBox(width: 8));
   if (multiline != null) e = SizedBox(width: 8);
-  Widget w = SizedBox(width: 8);
+  Widget w = SizedBox(width: 10);
   Icon icon = Icon(Icons.arrow_forward_ios, size: 14.0, color: myTheme.textTheme.bodyMedium!.color);
 
   Widget txt;
@@ -297,16 +353,107 @@ Widget MyListTile(
   );
 }
 
-Widget MyBookTile({required Widget title1, Function()? onPressed}) {
+Widget MyTocTile({required Widget title1, required Widget title2, required Function() onPressed}) {
+  Widget e = Expanded(child: SizedBox(width: 1));
+  Widget w = SizedBox(width: 16);
+  Icon icon = Icon(Icons.arrow_forward_ios, size: 14.0, color: myTheme.textTheme.bodyMedium!.color);
+
+  Widget txt = Row(children: [
+    Expanded(child: title1),
+    w,
+    title2,
+    w,
+    icon,
+  ]);
+  return Container(
+    decoration: BoxDecoration(
+      color: myTheme.cardColor,
+      border: Border(bottom: BorderSide(color: myTheme.dividerColor, width: 0.5)),
+    ),
+    padding: EdgeInsets.fromLTRB(16, 2, 4, 2),
+    child: TextButton(child: txt, onPressed: onPressed),
+  );
+}
+
+Widget MyBookListTile({required String title, int? flag, Function()? onPressed}) {
   Widget e = Expanded(child: SizedBox(width: 8));
+  Widget w = SizedBox(width: 8);
   Icon icon = Icon(Icons.arrow_forward_ios, size: 14.0);
 
-  Widget txt = Row(children: [title1, e, icon]);
+  Widget flagIcon = Container(width: 14);
+  if (flag == 1)
+    flagIcon = Icon(Icons.circle, size: 14.0, color: COL_FLAG1);
+  else if (flag == 2)
+    flagIcon = Icon(Icons.circle, size: 14.0, color: COL_FLAG2);
+  else if (flag == 3)
+    flagIcon = Icon(Icons.circle, size: 14.0, color: COL_FLAG3);
+  else if (flag == 4)
+    flagIcon = Icon(Icons.circle, size: 14.0, color: COL_FLAG4);
+  else if (flag == 5)
+    flagIcon = Icon(Icons.circle, size: 14.0, color: COL_FLAG5);
+  else if (flag == 6) flagIcon = Icon(Icons.circle, size: 14.0, color: COL_FLAG6);
+
+  double scale = myTextScale;
+  double height = 60;
+  if (title.length * scale > 40) {
+    scale -= 0.2;
+    height = 100;
+  } else if (title.length * scale > 20) {
+    scale -= 0.1;
+    height = 75;
+  }
+
+  Widget wText = Text(
+    title,
+    overflow: TextOverflow.ellipsis,
+    maxLines: 3,
+    textScaler: TextScaler.linear(scale),
+  );
+
+  Widget child = Row(children: [
+    flagIcon,
+    w,
+    Expanded(child: wText),
+    w,
+    icon,
+  ]);
   return Container(
-    padding: EdgeInsets.symmetric(vertical: 2, horizontal: 2),
+    decoration: BoxDecoration(
+      color: myTheme.cardColor,
+      border: Border(bottom: BorderSide(color: myTheme.dividerColor, width: 0.5)),
+    ),
+    height: height,
     child: TextButton(
-      child: txt,
+      child: child,
       onPressed: onPressed,
     ),
+  );
+}
+
+Widget MyClipListTile({required String text, Function()? onPressed}) {
+  Widget btn = IconButton(
+    icon: Icon(Icons.delete, size: 24, color: myTheme.textTheme.bodyMedium!.color),
+    onPressed: onPressed,
+  );
+
+  Widget wText = Text(
+    text,
+    maxLines: 10,
+    overflow: TextOverflow.clip,
+    textScaler: TextScaler.linear(myTextScale),
+  );
+
+  Widget child = Row(children: [
+    Expanded(child: wText),
+    SizedBox(width: 1),
+    btn,
+  ]);
+  return Container(
+    decoration: BoxDecoration(
+      color: myTheme.cardColor,
+      border: Border(bottom: BorderSide(color: myTheme.dividerColor, width: 0.5)),
+    ),
+    padding: EdgeInsets.fromLTRB(20, 2, 8, 2),
+    child: child,
   );
 }

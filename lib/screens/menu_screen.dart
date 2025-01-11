@@ -48,9 +48,9 @@ class MenuScreen extends BaseScreen {
         currentIndex: index,
         onTap: _onItemTapped,
         items: const <BottomNavigationBarItem>[
-          BottomNavigationBarItem(icon: Icon(Icons.home, size: 32), label: 'Home'),
-          BottomNavigationBarItem(icon: Icon(Icons.text_snippet, size: 32), label: 'Brows'),
-          BottomNavigationBarItem(icon: Icon(Icons.settings, size: 32), label: 'Info'),
+          BottomNavigationBarItem(icon: Icon(Icons.home, size: 28), label: 'Home'),
+          BottomNavigationBarItem(icon: Icon(Icons.text_snippet, size: 28), label: 'Brows'),
+          BottomNavigationBarItem(icon: Icon(Icons.settings, size: 28), label: 'Settings'),
         ],
         type: BottomNavigationBarType.fixed,
       ),

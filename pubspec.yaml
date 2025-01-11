@@ -12,6 +12,7 @@ dependencies:
 
   cupertino_icons: ^1.0.6
   shared_preferences: ^2.2.2
+  flutter_native_splash: ^2.4.4
 
   flutter_inappwebview: ^6.1.5
   webview_flutter: ^4.10.0
@@ -47,6 +48,9 @@ dev_dependencies:
   # package. See that file for information about deactivating specific lint
   # rules and activating additional ones.
   flutter_lints: ^3.0.0
+
+flutter_native_splash:
+  color: "#303030"
 
 flutter:
   uses-material-design: true

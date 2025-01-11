@@ -323,7 +323,6 @@ Widget MyListTile(
     Widget? title2,
     Function()? onPressed,
     bool? multiline,
-    bool? radio,
     bool? textonly}) {
   Widget e = Expanded(child: SizedBox(width: 8));
   if (multiline != null) e = SizedBox(width: 8);
@@ -333,13 +332,6 @@ Widget MyListTile(
   Widget txt;
   if (textonly != null) {
     txt = title1;
-  } else if (radio != null) {
-    //icon = Icon(Icons.circle_outlined, size: 26.0, color: myTheme.textTheme.bodyMedium!.color);
-    icon = Icon(Icons.circle_outlined, size: 26.0);
-    if (radio == true) {
-      icon = Icon(Icons.check_circle, size: 26.0);
-    }
-    txt = Row(children: [title1, e, icon]);
   } else if (title2 != null && onPressed != null) {
     txt = Row(children: [title1, e, title2, w, icon]);
   } else if (onPressed != null) {
@@ -348,7 +340,8 @@ Widget MyListTile(
     txt = Row(children: [e, title1, e]);
   }
   return Container(
-    padding: EdgeInsets.symmetric(vertical: 3, horizontal: 8),
+    height: 50,
+    padding: EdgeInsets.symmetric(vertical: 1, horizontal: 1),
     child: TextButton(child: txt, onPressed: onPressed),
   );
 }

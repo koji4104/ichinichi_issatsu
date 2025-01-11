@@ -8,8 +8,9 @@ class BookData {
   String author = '';
   List<IndexData> indexList = [];
   String bookId = '1';
-  int charCount = 0;
+  int chars = 0;
   String downloadUri = '';
+  DateTime downloadDate = DateTime(2000, 1, 1);
 
   BookInfoData info = BookInfoData();
 
@@ -17,7 +18,7 @@ class BookData {
         'title': title,
         'author': author,
         'bookId': bookId,
-        'charCount': charCount,
+        'chars': chars,
         'downloadUri': downloadUri,
         'indexList': getIndexListJson(),
       };
@@ -34,20 +35,21 @@ class BookData {
     if (j.containsKey('title')) title = j['title'] ?? '';
     if (j.containsKey('author')) author = j['author'] ?? '';
     if (j.containsKey('bookId')) bookId = j['bookId'] ?? '';
-    if (j.containsKey('charCount')) charCount = j['charCount'] ?? '';
+    if (j.containsKey('chars')) chars = j['chars'] ?? '';
     if (j.containsKey('downloadUri')) downloadUri = j['downloadUri'] ?? '';
 
     if (!Platform.isIOS && !Platform.isMacOS) {
       title = bookId;
     }
-
-    var list = j['indexList'];
-    for (var d in list) {
-      IndexData c = IndexData();
-      if (d.containsKey('index')) c.index = d['index'] ?? -1;
-      if (d.containsKey('title')) c.title = d['title'] ?? '';
-      if (d.containsKey('chars')) c.chars = d['chars'] ?? 1;
-      indexList.add(c);
+    if (j.containsKey('indexList')) {
+      var list = j['indexList'];
+      for (var d in list) {
+        IndexData c = IndexData();
+        if (d.containsKey('index')) c.index = d['index'] ?? -1;
+        if (d.containsKey('title')) c.title = d['title'] ?? '';
+        if (d.containsKey('chars')) c.chars = d['chars'] ?? 1;
+        indexList.add(c);
+      }
     }
   }
 }
@@ -73,7 +75,7 @@ class BookInfoData {
   int maxIndex = 0;
   int maxRatio = 0;
   List<int> listMark = [];
-  DateTime lastAccess = DateTime(2000, 1, 1);
+  DateTime accessDate = DateTime(2000, 1, 1);
 
   Map<String, dynamic> toJson() => {
         'nowIndex': nowIndex,
@@ -81,7 +83,7 @@ class BookInfoData {
         'maxIndex': maxIndex,
         'maxRatio': maxRatio,
         'flag': flag,
-        'lastAccess': DateFormat('yyyy-MM-dd HH:mm:ss').format(lastAccess),
+        'accessDate': DateFormat('yyyy-MM-dd HH:mm:ss').format(accessDate),
       };
 
   BookInfoData.fromJson(Map<String, dynamic> j) {
@@ -90,10 +92,10 @@ class BookInfoData {
     if (j.containsKey('maxIndex')) maxIndex = j['maxIndex'] ?? 0;
     if (j.containsKey('maxRatio')) maxRatio = j['maxRatio'] ?? 0;
     if (j.containsKey('flag')) flag = j['flag'] ?? 0;
-    if (j.containsKey('lastAccess')) {
-      String dt = j['lastAccess'];
+    if (j.containsKey('accessDate')) {
+      String dt = j['accessDate'];
       try {
-        lastAccess = DateTime.parse(dt);
+        accessDate = DateTime.parse(dt);
       } catch (_) {}
     }
   }
@@ -101,6 +103,7 @@ class BookInfoData {
 
 class BookClipData {
   BookClipData();
+
   List<ClipData> list = [];
 
   sort() {

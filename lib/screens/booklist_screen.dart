@@ -83,7 +83,7 @@ class BookListScreen extends BaseScreen {
       }
     }
     bookList.sort((a, b) {
-      return a.info.lastAccess.compareTo(b.info.lastAccess) > 0 ? 1 : -1;
+      return a.info.accessDate.compareTo(b.info.accessDate) > 0 ? 1 : -1;
     });
 
     return ListView.builder(

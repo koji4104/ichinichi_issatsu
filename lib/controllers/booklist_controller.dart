@@ -103,7 +103,7 @@ class BookListNotifier extends ChangeNotifier {
         String? txt1 = await infoFile.readAsString();
         Map<String, dynamic> j = json.decode(txt1);
         BookInfoData info = BookInfoData.fromJson(j);
-        info.lastAccess = DateTime.now();
+        info.accessDate = DateTime.now();
 
         String jsonText = json.encode(info.toJson());
         final file = File('${dir}/book_info.json');

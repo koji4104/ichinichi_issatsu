@@ -40,11 +40,10 @@ class SettingsScreen extends BaseScreen {
     list.add(MySettingsTile(data: env.back_color));
     list.add(MySettingsTile(data: env.writing_mode));
     list.add(MySettingsTile(data: env.font_family));
-    list.add(MySettingsTile(data: env.line_height));
+    //list.add(MySettingsTile(data: env.line_height));
     list.add(MyLabel(l10n('appearance')));
     list.add(MySettingsTile(data: env.dark_mode));
     list.add(MySettingsTile(data: env.language_code));
-    //list.add(MySettingsTile(data: env.ui_font_size));
     list.add(MySettingsTile(data: env.ui_text_scale));
     list.add(MyLabel(''));
     list.add(
@@ -71,7 +70,7 @@ class SettingsScreen extends BaseScreen {
                 applicationVersion: info.version,
                 applicationIcon: Container(
                   padding: EdgeInsets.all(8),
-                  child: Image(image: AssetImage('lib/assets/appicon.png'), width: 32, height: 32),
+                  child: Image(image: AssetImage('lib/assets/appicon.png'), width: 64, height: 64),
                 ),
               );
             }),

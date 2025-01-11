@@ -5,6 +5,7 @@ import 'dart:io';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 
@@ -69,15 +70,17 @@ class EpubNotifier extends ChangeNotifier {
     book.title = epub.bookTitle ?? epub.bookId!;
     book.bookId = epub.bookId!;
     book.author = epub.bookAuthor ?? '';
-    book.charCount = 0;
+    book.chars = 0;
     book.downloadUri = epub.downloadUri ?? '';
+    book.downloadDate = DateTime.now();
+
     for (EpubFileData f in epub.fileList) {
       if (f.chapNo >= 0) {
         IndexData ch = IndexData();
         ch.title = f.title ?? '';
         ch.index = f.chapNo;
         ch.chars = f.chars;
-        book.charCount += f.chars;
+        book.chars += f.chars;
         book.indexList.add(ch);
       }
     }
@@ -99,7 +102,7 @@ class EpubNotifier extends ChangeNotifier {
       await checkAozora(url, body);
     } else if (url.toString().contains('kakuyomu.jp/works/')) {
       await checkKakuyomu(url, body);
-    } else if (url.toString().contains('ncode.syosetu.com/')) {
+    } else if (url.toString().contains('ncode.syosetu.com/n')) {
       await checkNarou(url, body);
     }
 
@@ -123,7 +126,7 @@ class EpubNotifier extends ChangeNotifier {
       await downloadAozora();
     } else if (epub.downloadUri.toString().contains('kakuyomu.jp/works/')) {
       await downloadKakuyomu();
-    } else if (epub.downloadUri.toString().contains('ncode.syosetu.com/')) {
+    } else if (epub.downloadUri.toString().contains('.syosetu.com/n')) {
       await downloadNarou();
     } else {
       status = MyEpubStatus.failed;
@@ -161,7 +164,10 @@ class EpubNotifier extends ChangeNotifier {
     return text;
   }
 
-  Map<String, String> headers = {'user-agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 15_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148'};
+  Map<String, String> headers = {
+    'user-agent':
+        'Mozilla/5.0 (iPhone; CPU iPhone OS 15_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148'
+  };
 
   setStatusNone() {
     epub.reset();
@@ -197,6 +203,12 @@ class EpubNotifier extends ChangeNotifier {
         } catch (_) {}
         break;
       }
+    }
+
+    // こころ (夏目 漱石)
+    Bs4Element? elTitle = bs.find('meta', attrs: {'property': 'og:title'});
+    if (elTitle != null) {
+      epub.bookTitle = elTitle['content'] ?? epub.bookId;
     }
   }
 
@@ -236,6 +248,7 @@ class EpubNotifier extends ChangeNotifier {
     BeautifulSoup bs = BeautifulSoup(body);
     String bookId = epub.bookId!;
     epub.bookTitle = bookId;
+
     Bs4Element? elTitle = bs.find('meta', attrs: {'name': 'DC.Title'});
     if (elTitle != null) {
       epub.bookTitle = elTitle['content'] ?? bookId;
@@ -361,13 +374,15 @@ class EpubNotifier extends ChangeNotifier {
             for (var MapEntry(:key, :value) in map.entries) {
               if (value['__typename'] != null && value['id'] != null) {
                 if (value['__typename'] == 'Episode') {
-                  epub.uriList.add('https://kakuyomu.jp/works/${epub.bookId}/episodes/${value['id']}');
+                  epub.uriList
+                      .add('https://kakuyomu.jp/works/${epub.bookId}/episodes/${value['id']}');
                 } else if (value['__typename'] == 'Work') {
                   if (value['id'] == epub.bookId) {
                     epub.bookTitle = value['title'] ?? epub.bookId;
                     var aut = value['author'];
                     var ref = aut['__ref'] ?? '';
-                    epub.bookAuthor = ref.toString().substring(ref.toString().indexOf('UserAccount:') + 12);
+                    epub.bookAuthor =
+                        ref.toString().substring(ref.toString().indexOf('UserAccount:') + 12);
                   }
                 }
               }
@@ -452,8 +467,19 @@ class EpubNotifier extends ChangeNotifier {
   Future<void> checkNarou(String url, String body) async {
     epub.downloadUri = url;
     epub.bookId = url.substring(url.indexOf('syosetu.com/') + 12);
-
+    epub.bookId = epub.bookId!.replaceAll('/', '');
     BeautifulSoup bs = BeautifulSoup(body);
+
+    Bs4Element? elTitle = bs.find('meta', attrs: {'property': 'og:title'});
+    if (elTitle != null) {
+      epub.bookTitle = elTitle['content'] ?? epub.bookId;
+    }
+
+    Bs4Element? elAuthor = bs.find('meta', attrs: {'property': 'twitter:creator'});
+    if (elAuthor != null) {
+      epub.bookAuthor = elAuthor['content'] ?? '';
+    }
+
     List<Bs4Element> els = bs.findAll('a', class_: 'p-eplist__subtitle');
     for (Bs4Element e in els) {
       String? s = e.getAttrValue('href');

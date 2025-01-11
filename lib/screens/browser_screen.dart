@@ -80,7 +80,7 @@ class BrowserScreen extends BaseScreen {
   }
 
   Widget downloadBar() {
-    double barHeight = 240;
+    double barHeight = 220;
     double ffBottom = 0;
     if (ref.watch(epubProvider).status == MyEpubStatus.none) {
       ffBottom = -1.0 * barHeight;
@@ -163,12 +163,14 @@ class BrowserScreen extends BaseScreen {
   List<String> uriList = [
     'https://www.aozora.gr.jp/access_ranking/2022_xhtml.html',
     'https://kakuyomu.jp',
-    'https://syosetu.com',
+    'https://yomou.syosetu.com',
+    'https://noc.syosetu.com/top/top/',
   ];
   List<String> titleList = [
     'https://www.aozora.gr.jp/access_ranking/2022_xhtml.html',
     'https://kakuyomu.jp',
-    'https://syosetu.com',
+    'https://yomou.syosetu.com',
+    'https://noc.syosetu.com/top/top/',
   ];
 
   Widget getUriList() {

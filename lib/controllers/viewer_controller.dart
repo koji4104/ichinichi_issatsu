@@ -53,8 +53,6 @@ class ViewerNotifier extends ChangeNotifier {
   List<double> listWidth = [];
   List<int> listState = [];
 
-  //double widthRate = 1.0;
-
   List<int> listRead = [];
   List<InAppWebViewController?> listWebViewController = [];
   List<GlobalKey> listKey = [];
@@ -209,15 +207,6 @@ class ViewerNotifier extends ChangeNotifier {
     scrollController!.animateTo(px, duration: Duration(milliseconds: 600), curve: Curves.linear);
   }
 
-  Future next(int index) async {
-    if (listWebViewController.length < index) return;
-    if (listWebViewController[index] == null) return;
-    if (Platform.isIOS || Platform.isAndroid) {
-      String? st = await listWebViewController[index]!.getSelectedText();
-      if (st != null) log('next ${st}');
-    }
-  }
-
   Future<String?> getSelectedText() async {
     String? text = null;
     try {
@@ -245,16 +234,6 @@ class ViewerNotifier extends ChangeNotifier {
     } catch (_) {
       log('err clearFocus() [${nowIndex}]');
     }
-  }
-
-  Future moveMaxpage() async {
-    jumpToIndex(maxIndex, maxRatio);
-  }
-
-  Future resetMaxpage() async {
-    maxIndex = nowIndex;
-    maxRatio = nowRatio;
-    saveIndex();
   }
 
   Future jumpToIndex(int index, int ratio) async {
@@ -357,13 +336,24 @@ class ViewerNotifier extends ChangeNotifier {
     return '${per}%';
   }
 
+  Future moveMaxpage() async {
+    jumpToIndex(maxIndex, maxRatio);
+  }
+
+  Future resetMaxpage() async {
+    maxIndex = nowIndex;
+    maxRatio = nowRatio;
+    saveIndex();
+    notifyListeners();
+  }
+
   String getNowPage() {
     if (book == null) return '-1';
     int chars = 0;
     for (int i = 0; i < book!.indexList.length; i++) {
-      if (nowIndex < i) {
+      if (i < nowIndex) {
         chars += book!.indexList[i].chars;
-      } else if (nowIndex == i) {
+      } else if (i == nowIndex) {
         chars += (book!.indexList[i].chars * nowRatio / 10000).toInt();
       } else {
         break;
@@ -376,9 +366,9 @@ class ViewerNotifier extends ChangeNotifier {
     if (book == null) return '-1';
     int chars = 0;
     for (int i = 0; i < book!.indexList.length; i++) {
-      if (maxIndex < i) {
+      if (i < maxIndex) {
         chars += book!.indexList[i].chars;
-      } else if (maxIndex == i) {
+      } else if (i == maxIndex) {
         chars += (book!.indexList[i].chars * maxRatio / 10000).toInt();
       } else {
         break;
@@ -413,6 +403,12 @@ class ViewerNotifier extends ChangeNotifier {
     for (int i = 0; i < listWidth.length; i++) {
       allPixel += listWidth[i].toInt();
     }
+
+    if (maxIndex * 10000 + maxRatio <= nowIndex * 10000 + nowRatio) {
+      maxIndex = nowIndex;
+      maxRatio = nowRatio;
+    }
+
     saveIndex();
   }
 
@@ -426,11 +422,9 @@ class ViewerNotifier extends ChangeNotifier {
 
     book!.info.nowIndex = nowIndex;
     book!.info.nowRatio = nowRatio;
-
-    if (book!.info.maxIndex * 10000 + book!.info.maxRatio <= nowIndex * 10000 + nowRatio) {
-      book!.info.maxIndex = nowIndex;
-      book!.info.maxRatio = nowRatio;
-    }
+    book!.info.maxIndex = maxIndex;
+    book!.info.maxRatio = maxRatio;
+    book!.info.accessDate = DateTime.now();
 
     String jsonText = json.encode(book!.info.toJson());
     final file = File('${datadir}/${book!.bookId}/book_info.json');

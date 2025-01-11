@@ -25,7 +25,7 @@ class stateNotifier extends ChangeNotifier {
   List<double> listWidth = [];
 }
 
-class ViewerScreen extends BaseScreen {
+class ViewerScreen extends BaseScreen with WidgetsBindingObserver {
   ViewerScreen({required BookData this.book}) {}
 
   BookData book;
@@ -52,6 +52,29 @@ class ViewerScreen extends BaseScreen {
   @override
   Future init() async {
     reload();
+    if (Platform.isAndroid || Platform.isIOS) {
+      WidgetsBinding.instance.addObserver(this);
+    }
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (Platform.isAndroid || Platform.isIOS) {
+      if (state == AppLifecycleState.inactive) {
+        log('inactive'); // no
+      } else if (state == AppLifecycleState.paused) {
+        log('paused');
+      } else if (state == AppLifecycleState.resumed) {
+        log('resumed');
+      } else if (state == AppLifecycleState.detached) {
+        log('detached');
+      }
+    }
   }
 
   @override
@@ -317,7 +340,7 @@ class ViewerScreen extends BaseScreen {
       ffBottom = 0;
     }
 
-    double pad = 90;
+    double pad = (_width - 290) / 2;
     String nowPage = ref.watch(viewerProvider).getNowPage();
     String maxPage = ref.watch(viewerProvider).getMaxPage();
     Widget wNow = Row(children: [

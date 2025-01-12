@@ -8,6 +8,8 @@ import 'package:path/path.dart';
 import 'dart:convert';
 
 import '/models/book_data.dart';
+import '/models/log_data.dart';
+import '/controllers/log_controller.dart';
 
 final booklistProvider = ChangeNotifierProvider((ref) => BookListNotifier(ref));
 
@@ -20,6 +22,9 @@ class BookListNotifier extends ChangeNotifier {
   late String datadir;
   List<BookData> bookList = [];
   bool isReading = false;
+
+  BooklogController booklogController = BooklogController();
+  List<BooklogData> booklogList = [];
 
   /// read books.json
   Future readBookList() async {
@@ -112,4 +117,6 @@ class BookListNotifier extends ChangeNotifier {
       }
     }
   }
+
+  Future readBooklog() async {}
 }

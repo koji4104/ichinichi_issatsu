@@ -20,7 +20,6 @@ import '/screens/settings_screen.dart';
 
 /// BookScreen
 class BookListScreen extends BaseScreen {
-  //List<BookData> bookList = [];
   bool isCheckBox = true;
   String datadir = '';
 

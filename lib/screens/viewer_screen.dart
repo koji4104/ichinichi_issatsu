@@ -67,10 +67,10 @@ class ViewerScreen extends BaseScreen with WidgetsBindingObserver {
     if (Platform.isAndroid || Platform.isIOS) {
       if (state == AppLifecycleState.inactive) {
         log('inactive'); // no
-      } else if (state == AppLifecycleState.paused) {
-        log('paused');
       } else if (state == AppLifecycleState.resumed) {
         log('resumed');
+      } else if (state == AppLifecycleState.paused) {
+        log('paused');
       } else if (state == AppLifecycleState.detached) {
         log('detached');
       }

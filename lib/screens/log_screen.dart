@@ -60,8 +60,6 @@ class MyLog {
     String e = event;
     String u = '1';
 
-    //final Directory appdir = await getApplicationDocumentsDirectory();
-
     String appdir = (await getApplicationDocumentsDirectory()).path;
     if (!Platform.isIOS && !Platform.isAndroid) {
       appdir = appdir + '/test';
@@ -160,7 +158,8 @@ class LogScreen extends ConsumerWidget {
         spans.add(TextSpan(text: stime, style: tsTime));
         if (d.level.toLowerCase().contains('err'))
           spans.add(TextSpan(text: ' error', style: tsErr));
-        else if (d.level.toLowerCase().contains('warn')) spans.add(TextSpan(text: ' warn', style: tsWarn));
+        else if (d.level.toLowerCase().contains('warn'))
+          spans.add(TextSpan(text: ' warn', style: tsWarn));
         if (d.level.toLowerCase().contains('debug'))
           spans.add(TextSpan(text: ' ' + d.msg + '\n', style: tsDebug));
         else

@@ -43,6 +43,9 @@ class EpubNotifier extends ChangeNotifier {
   MyEpubStatus status = MyEpubStatus.none;
   int downloaded = 0;
 
+  InAppWebViewController? webViewController;
+  String? webBody;
+
   Future writeBook() async {
     if (epub.bookId == null) return;
     if (epub.fileList.length == 0) return;
@@ -104,6 +107,8 @@ class EpubNotifier extends ChangeNotifier {
       await checkKakuyomu(url, body);
     } else if (url.toString().contains('ncode.syosetu.com/n')) {
       await checkNarou(url, body);
+    } else if (url.toString().contains('novel18.syosetu.com/n')) {
+      await checkNarou(url, body);
     }
 
     if (epub.bookId != null && epub.uriList.isNotEmpty) {
@@ -126,8 +131,10 @@ class EpubNotifier extends ChangeNotifier {
       await downloadAozora();
     } else if (epub.downloadUri.toString().contains('kakuyomu.jp/works/')) {
       await downloadKakuyomu();
-    } else if (epub.downloadUri.toString().contains('.syosetu.com/n')) {
+    } else if (epub.downloadUri.toString().contains('ncode.syosetu.com/n')) {
       await downloadNarou();
+    } else if (epub.downloadUri.toString().contains('novel18.syosetu.com/n')) {
+      await downloadNarou1();
     } else {
       status = MyEpubStatus.failed;
       this.notifyListeners();
@@ -516,6 +523,53 @@ class EpubNotifier extends ChangeNotifier {
     this.notifyListeners();
   }
 
+  Future<void> downloadNarou1() async {
+    if (webViewController == null) {
+      status = MyEpubStatus.failed;
+      return;
+    }
+
+    status = MyEpubStatus.downloading;
+    this.notifyListeners();
+    downloaded = 0;
+
+    if (epub.uriList.length > 0) {
+      for (int i = 0; i < epub.uriList.length; i++) {
+        sleep(Duration(milliseconds: 200));
+
+        await webViewController!.loadUrl(
+          urlRequest: URLRequest(
+            url: WebUri(epub.uriList[i]),
+          ),
+        );
+
+        for (int wait = 0; wait < 10; wait++) {
+          sleep(Duration(milliseconds: 500));
+          bool isLoading = await webViewController!.isLoading();
+          log('isLoading ${isLoading}');
+          if (isLoading == false) break;
+        }
+
+        String? body = await webViewController!.getHtml();
+        //String? body = webBody;
+        if (body != null) {
+          await createNarouText1(body, i + 1);
+        } else {
+          break;
+        }
+
+        downloaded = i;
+        if (downloaded % 5 == 0) {
+          this.notifyListeners();
+        }
+        if (i >= 20) break;
+      }
+    }
+    writeBook();
+    status = MyEpubStatus.succeeded;
+    this.notifyListeners();
+  }
+
   Future createNarouText(String body, int chap) async {
     EpubFileData f = new EpubFileData();
     f.chapNo = chap;
@@ -525,6 +579,40 @@ class EpubNotifier extends ChangeNotifier {
 
     //<div class="js-novel-text p-novel__text">
     Bs4Element? ec = bs.find('div', class_: 'js-novel-text p-novel__text');
+    if (ec != null) {
+      String text = ec.innerHtml;
+      text = text.replaceAll('<br>', '<br />');
+      text = text.replaceAll('&nbsp;', '');
+      String title = '<h3>${f.title}</h3>\n';
+
+      // delete <p>
+      text = deleteTag(text, '<p ');
+      text = text.replaceAll('</p>', '<br />');
+
+      f.text = title + text;
+      f.chars = text.length;
+      f.fileName = 'text/ch${f.chapNo000}.txt';
+      epub.fileList.add(f);
+    }
+
+    return f;
+  }
+
+  Future createNarouText1(String body, int chap) async {
+    EpubFileData f = new EpubFileData();
+    f.chapNo = chap;
+    BeautifulSoup bs = BeautifulSoup(body);
+
+    Bs4Element? elTitle1 = bs.find('h1', class_: 'p-novel__title p-novel__title--rensai');
+    if (elTitle1 != null) f.title = elTitle1.innerHtml;
+
+    if (f.title == null) {
+      Bs4Element? elTitle2 = bs.find('meta', attrs: {'property': 'og:title'});
+      if (elTitle2 != null) f.title = elTitle2['content'] ?? '';
+    }
+
+    //<div class="p-novel__body">
+    Bs4Element? ec = bs.find('div', class_: 'p-novel__body');
     if (ec != null) {
       String text = ec.innerHtml;
       text = text.replaceAll('<br>', '<br />');

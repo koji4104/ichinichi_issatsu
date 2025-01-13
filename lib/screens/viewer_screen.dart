@@ -480,7 +480,7 @@ class ViewerScreen extends BaseScreen with WidgetsBindingObserver {
 
   /// settingsBar
   Widget settingsBar() {
-    double barHeight = 360;
+    double barHeight = 350;
     double ffBottom = -1.0 * barHeight;
     if (ref.watch(viewerProvider).bottomBarType == ViewerBottomBarType.settingsBar) {
       ffBottom = 0;
@@ -492,7 +492,7 @@ class ViewerScreen extends BaseScreen with WidgetsBindingObserver {
     list.add(MySettingsTile(data: env.back_color));
     list.add(MySettingsTile(data: env.writing_mode));
     list.add(MySettingsTile(data: env.font_family));
-    list.add(MySettingsTile(data: env.line_height));
+    //list.add(MySettingsTile(data: env.line_height));
     Widget bar = Container(
       color: myTheme.cardColor,
       child: Column(children: list),

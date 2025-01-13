@@ -68,9 +68,16 @@ class BrowserScreen extends BaseScreen {
   }
 
   checkHtml({String? url}) async {
+    if (ref.watch(epubProvider).status == MyEpubStatus.downloading) {
+      String? body = await webViewController!.getHtml();
+      ref.watch(epubProvider).webBody = body;
+      return;
+    }
     if (url == null) return;
     String? body = await webViewController!.getHtml();
     if (body == null) return;
+
+    ref.watch(epubProvider).webViewController = webViewController;
     await ref.read(epubProvider).checkHtml(url, body);
   }
 

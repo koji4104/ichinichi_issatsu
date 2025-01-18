@@ -73,11 +73,6 @@ class BookListNotifier extends ChangeNotifier {
           } catch (_) {
             continue;
           }
-        } else {
-          //BookData book = BookData();
-          //book.bookId = e.path.replaceAll('${datadir}/', '');
-          //book.title = book.bookId;
-          //bookList.add(book);
         }
       }
     }

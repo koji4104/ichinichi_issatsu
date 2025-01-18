@@ -663,21 +663,7 @@ class ViewerScreen extends BaseScreen with WidgetsBindingObserver {
         ],
       ),
     );
-    /*
-    Widget bar = Container(
-      color: myTheme.cardColor,
-      child: Column(
-        children: [
-          closeButtonRow(),
-          Expanded(
-            child: SingleChildScrollView(
-              child: Column(children: list),
-            ),
-          ),
-        ],
-      ),
-    );
-*/
+
     return AnimatedPositioned(
       duration: const Duration(milliseconds: 400),
       curve: Curves.linear,

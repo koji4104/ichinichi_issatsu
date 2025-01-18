@@ -323,7 +323,7 @@ class BookListScreen extends BaseScreen {
     );
 
     Widget wAuthor = Text(
-      data.author,
+      '${data.author} ${(data.chars / CHARS_PAGE).toInt()}',
       overflow: TextOverflow.ellipsis,
       maxLines: 1,
       textScaler: TextScaler.linear(myTextScale - 0.2),
@@ -344,6 +344,12 @@ class BookListScreen extends BaseScreen {
       textScaler: TextScaler.linear(myTextScale - 0.2),
     );
 
+    Widget wAuthorRow = Row(children: [
+      wAuthor,
+      w,
+      wChars,
+    ]);
+
     Widget child = Row(children: [
       Column(children: [e, flagIcon, e]),
       w,
@@ -354,7 +360,7 @@ class BookListScreen extends BaseScreen {
         ),
       ),
       w,
-      Column(children: [e, wProg, w, wChars, e]),
+      Column(children: [e, wProg, e]),
       w,
       icon,
     ]);

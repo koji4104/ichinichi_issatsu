@@ -319,52 +319,6 @@ class ReadlogScreen extends BaseScreen {
     );
   }
 
-/*
-  Widget getList1() {
-    List<Widget> list = [];
-    List<BookData> bookList1 = ref.watch(booklistProvider).bookList;
-
-    for (int i = 0; i < readLog.list.length; i++) {
-      String title = readLog.list[i].bookId;
-
-      for (BookData d in bookList1) {
-        if (d.bookId == readLog.list[i].bookId) {
-          title = d.title;
-          break;
-        }
-      }
-      list.add(
-        MyReadlogListTile(
-          data: readLog.list[i],
-          title: title,
-          onPressed: () async {
-            deleteDialog().then((ret) async {
-              if (ret) {
-                await readLog.delete(i);
-                redraw();
-              }
-            });
-          },
-        ),
-      );
-    }
-    if (list.length == 0) return Container();
-
-    return Container(
-      width: MediaQuery.of(context).size.width - 20,
-      height: MediaQuery.of(context).size.height - 120,
-      decoration: BoxDecoration(
-        color: myTheme.scaffoldBackgroundColor,
-        borderRadius: BorderRadius.circular(3),
-      ),
-      child: SingleChildScrollView(
-        scrollDirection: Axis.vertical,
-        padding: EdgeInsets.fromLTRB(0, 0, 0, 0),
-        child: Column(children: list),
-      ),
-    );
-  }
-*/
   Widget MyReadlogListTile({
     required ReadlogData data,
     required String title,

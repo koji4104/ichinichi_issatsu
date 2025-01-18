@@ -163,20 +163,14 @@ class ViewerNotifier extends ChangeNotifier {
             ContextMenu contextMenu = ContextMenu(
                 settings: ContextMenuSettings(hideDefaultSystemContextMenuItems: true),
                 menuItems: [],
-
-                //options: ContextMenuOptions(hideDefaultSystemContextMenuItems: false),
                 onCreateContextMenu: (hitTestResult) async {
                   print("onCreateContextMenu");
                   print('hitTestResult.extra ${hitTestResult.extra}');
-                  //print(await _webViewController.getSelectedText());
                 },
                 onHideContextMenu: () {
                   print("onHideContextMenu");
                 },
-                onContextMenuActionItemClicked: (contextMenuItemClicked) async {
-                  //var id = (Platform.isAndroid) ? contextMenuItemClicked.androidId : contextMenuItemClicked.iosId;
-                  //print("onContextMenuActionItemClicked: " + id.toString() + " " + contextMenuItemClicked.title);
-                });
+                onContextMenuActionItemClicked: (contextMenuItemClicked) async {});
             listContextMenu.add(contextMenu);
           } else {
             if (i >= 1) break;

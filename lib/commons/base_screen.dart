@@ -78,10 +78,10 @@ class BaseScreen extends ConsumerWidget {
         return AlertDialog(
           actionsAlignment: MainAxisAlignment.center,
           shape: RoundedRectangleBorder(borderRadius: DEF_BORDER_RADIUS),
-          titlePadding: EdgeInsets.all(24.0),
+          titlePadding: EdgeInsets.all(0.0),
+          contentPadding: EdgeInsets.fromLTRB(8, 8, 8, 0),
           actionsPadding: EdgeInsets.fromLTRB(8, 16, 8, 16),
           buttonPadding: EdgeInsets.all(0.0),
-          contentPadding: EdgeInsets.all(0.0),
           iconPadding: EdgeInsets.all(0.0),
           backgroundColor: myTheme.cardColor,
           content: wMsg,

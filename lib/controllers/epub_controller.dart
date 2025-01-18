@@ -411,10 +411,10 @@ class EpubNotifier extends ChangeNotifier {
               if (value['__typename'] != null && value['id'] != null) {
                 if (value['__typename'] == 'Episode') {
                   epub.uriList
-                      .add('https://kakuyomu.jp/works/${epub.bookId}/episodes/${value['id']}');
+                      .add('https://kakuyomu.jp/works/${epub.siteId}/episodes/${value['id']}');
                 } else if (value['__typename'] == 'Work') {
-                  if (value['id'] == epub.bookId) {
-                    epub.bookTitle = value['title'] ?? epub.bookId;
+                  if (value['id'] == epub.siteId) {
+                    epub.bookTitle = value['title'];
                     var aut = value['author'];
                     var ref = aut['__ref'] ?? '';
                     userId = ref.toString().substring(ref.toString().indexOf('UserAccount:') + 12);
@@ -429,6 +429,11 @@ class EpubNotifier extends ChangeNotifier {
           }
         }
       }
+    }
+
+    if (epub.bookTitle == null) {
+      Bs4Element? el = bs.find('meta', attrs: {'property': 'og:title'});
+      if (el != null) epub.bookTitle = el['content'];
     }
   }
 
@@ -460,6 +465,7 @@ class EpubNotifier extends ChangeNotifier {
       if (downloaded % 5 == 0) {
         this.notifyListeners();
       }
+      if (i >= 10) break;
     }
 
     if (epub.fileList.length >= 2) {
@@ -519,7 +525,8 @@ class EpubNotifier extends ChangeNotifier {
       epub.bookTitle = elTitle['content'] ?? epub.bookId;
     }
 
-    Bs4Element? elAuthor = bs.find('meta', attrs: {'property': 'twitter:creator'});
+    // <meta name="twitter:creator" content="黒昆布">
+    Bs4Element? elAuthor = bs.find('meta', attrs: {'name': 'twitter:creator'});
     if (elAuthor != null) {
       epub.bookAuthor = elAuthor['content'] ?? '';
     }
@@ -553,6 +560,7 @@ class EpubNotifier extends ChangeNotifier {
         if (downloaded % 5 == 0) {
           this.notifyListeners();
         }
+        if (i >= 10) break;
       }
     }
     writeBook();

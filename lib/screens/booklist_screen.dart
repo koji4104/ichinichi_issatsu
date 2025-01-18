@@ -93,10 +93,6 @@ class BookListScreen extends BaseScreen {
     return ListView.builder(
       itemCount: bookList.length,
       itemBuilder: (BuildContext context, int index) {
-        int mchars = bookList[index].prop.maxChars;
-        if (mchars < 1) mchars = 1000;
-        int prog = (bookList[index].prop.nowChars * 100 / mchars).toInt();
-
         bool isAddDownload = false;
         String type = bookList[index].bookId.substring(0, 1);
         if (type == 'K' || type == 'N') isAddDownload = true;
@@ -151,7 +147,7 @@ class BookListScreen extends BaseScreen {
                     }
                   });
                 },
-                backgroundColor: Colors.grey,
+                backgroundColor: Colors.blueAccent,
                 icon: Icons.download,
                 label: null,
                 spacing: 0,
@@ -230,10 +226,10 @@ class BookListScreen extends BaseScreen {
         return AlertDialog(
           actionsAlignment: MainAxisAlignment.center,
           shape: RoundedRectangleBorder(borderRadius: DEF_BORDER_RADIUS),
-          titlePadding: EdgeInsets.all(0.0),
+          titlePadding: EdgeInsets.fromLTRB(16, 16, 16, 0),
+          contentPadding: EdgeInsets.all(0.0),
           actionsPadding: EdgeInsets.fromLTRB(8, 16, 8, 16),
           buttonPadding: EdgeInsets.all(0.0),
-          contentPadding: EdgeInsets.all(0.0),
           iconPadding: EdgeInsets.all(0.0),
           backgroundColor: myTheme.cardColor,
           title: Text(l10n('flag_changes'), style: myTheme.textTheme.bodyMedium!),

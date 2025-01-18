@@ -47,7 +47,7 @@ class EpubNotifier extends ChangeNotifier {
   String? webBody;
 
   Future writeBook() async {
-    if (epub.bookId == null) return;
+    if (epub.siteId == null) return;
     if (epub.fileList.length == 0) return;
 
     epub.addTitle();
@@ -60,9 +60,10 @@ class EpubNotifier extends ChangeNotifier {
     if (!Platform.isIOS && !Platform.isAndroid) {
       appdir += '/test';
     }
-    String datadir = appdir + '/data';
+    String datadir = appdir + '/book';
     await Directory('${datadir}/${epub.bookId}').create(recursive: true);
     await Directory('${datadir}/${epub.bookId}/text').create(recursive: true);
+    await Directory('${datadir}/${epub.bookId}/data').create(recursive: true);
     for (EpubFileData f in epub.fileList) {
       List<int> content = convert.utf8.encode(f.text!);
       final file = File('${datadir}/${epub.bookId}/${f.fileName}');
@@ -72,30 +73,36 @@ class EpubNotifier extends ChangeNotifier {
     BookData book = BookData();
     book.title = epub.bookTitle ?? epub.bookId!;
     book.bookId = epub.bookId!;
+    book.siteId = epub.siteId!;
     book.author = epub.bookAuthor ?? '';
     book.chars = 0;
-    book.downloadUri = epub.downloadUri ?? '';
-    book.downloadDate = DateTime.now();
+    book.dluri = epub.downloadUri ?? '';
+    book.ctime = DateTime.now();
 
+    IndexData index = IndexData();
     for (EpubFileData f in epub.fileList) {
       if (f.chapNo >= 0) {
-        IndexData ch = IndexData();
+        IndexInfo ch = IndexInfo();
         ch.title = f.title ?? '';
         ch.index = f.chapNo;
         ch.chars = f.chars;
         book.chars += f.chars;
-        book.indexList.add(ch);
+        index.list.add(ch);
       }
     }
 
     String jsonText = json.encode(book.toJson());
-    final file = File('${datadir}/${epub.bookId}/book_data.json');
-    await file.writeAsString(jsonText, mode: FileMode.write, flush: true);
+    final boolFile = File('${datadir}/${epub.bookId}/data/book.json');
+    await boolFile.writeAsString(jsonText, mode: FileMode.write, flush: true);
 
-    BookInfoData bi = BookInfoData();
-    var val = json.encode(bi.toJson());
-    final fileInfo = File('${datadir}/${epub.bookId}/book_info.json');
-    await fileInfo.writeAsString(val, mode: FileMode.write, flush: true);
+    String j = json.encode(index.toJson());
+    final indexFile = File('${datadir}/${epub.bookId}/data/index.json');
+    await indexFile.writeAsString(j, mode: FileMode.write, flush: true);
+
+    PropData prop = PropData();
+    var val = json.encode(prop.toJson());
+    final propFile = File('${datadir}/${epub.bookId}/data/prop.json');
+    await propFile.writeAsString(val, mode: FileMode.write, flush: true);
   }
 
   Future checkHtml(String url, String body) async {
@@ -206,7 +213,8 @@ class EpubNotifier extends ChangeNotifier {
 
         try {
           String fname = dl.substring(dl.lastIndexOf('/files/') + 7);
-          epub.bookId = fname.substring(0, fname.indexOf('_'));
+          epub.siteId = fname.substring(0, fname.indexOf('_'));
+          epub.bookId = 'A' + epub.siteId!;
         } catch (_) {}
         break;
       }
@@ -237,15 +245,11 @@ class EpubNotifier extends ChangeNotifier {
         if (epub.fileList.length >= 2) {
           writeBook();
           status = MyEpubStatus.succeeded;
-        } else {
-          status = MyEpubStatus.failed;
         }
-      } catch (_) {
-        status = MyEpubStatus.failed;
-      }
-    } else {
-      status = MyEpubStatus.failed;
+      } catch (_) {}
     }
+
+    if (status != MyEpubStatus.succeeded) status = MyEpubStatus.failed;
     this.notifyListeners();
   }
 
@@ -253,17 +257,39 @@ class EpubNotifier extends ChangeNotifier {
     if (epub.bookId == null) return;
 
     BeautifulSoup bs = BeautifulSoup(body);
-    String bookId = epub.bookId!;
-    epub.bookTitle = bookId;
 
-    Bs4Element? elTitle = bs.find('meta', attrs: {'name': 'DC.Title'});
-    if (elTitle != null) {
-      epub.bookTitle = elTitle['content'] ?? bookId;
+    String? oldTitle = epub.bookTitle;
+    epub.bookTitle = null;
+    if (epub.bookTitle == null) {
+      Bs4Element? el = bs.find('meta', attrs: {'name': 'DC.Title'});
+      if (el != null) {
+        epub.bookTitle = el['content'];
+      }
+    }
+    if (epub.bookTitle == null) {
+      Bs4Element? el = bs.find('h1', class_: 'title');
+      if (el != null) {
+        epub.bookTitle = el.innerHtml;
+      }
+    }
+    if (epub.bookTitle == null && oldTitle != null) {
+      epub.bookTitle = oldTitle!;
+    }
+    if (epub.bookTitle == null) {
+      epub.bookTitle = epub.bookId!;
     }
 
-    Bs4Element? elAuthor = bs.find('meta', attrs: {'name': 'DC.Creator'});
-    if (elAuthor != null) {
-      epub.bookAuthor = elAuthor['content'] ?? '';
+    if (epub.bookAuthor == null) {
+      Bs4Element? el = bs.find('meta', attrs: {'name': 'DC.Creator'});
+      if (el != null) {
+        epub.bookAuthor = el['content'] ?? '';
+      }
+    }
+    if (epub.bookAuthor == null) {
+      Bs4Element? el = bs.find('h2', class_: 'author');
+      if (el != null) {
+        epub.bookAuthor = el.innerHtml;
+      }
     }
 
     Bs4Element? el = bs.find('div', class_: 'main_text');
@@ -367,7 +393,10 @@ class EpubNotifier extends ChangeNotifier {
 
   Future<void> checkKakuyomu(String url, String body) async {
     epub.downloadUri = url;
-    epub.bookId = url.substring(url.indexOf('works/') + 6);
+    //epub.bookId = 'K' + url.substring(url.indexOf('works/') + 6);
+    epub.siteId = url.substring(url.indexOf('works/') + 6);
+    epub.bookId = 'K' + epub.siteId!;
+    String userId = '';
 
     BeautifulSoup bs = BeautifulSoup(body);
     List<Bs4Element> els = bs.findAll('script', id: '__NEXT_DATA__');
@@ -388,8 +417,11 @@ class EpubNotifier extends ChangeNotifier {
                     epub.bookTitle = value['title'] ?? epub.bookId;
                     var aut = value['author'];
                     var ref = aut['__ref'] ?? '';
-                    epub.bookAuthor =
-                        ref.toString().substring(ref.toString().indexOf('UserAccount:') + 12);
+                    userId = ref.toString().substring(ref.toString().indexOf('UserAccount:') + 12);
+                  }
+                } else if (value['__typename'] == 'UserAccount') {
+                  if (value['id'] == userId) {
+                    epub.bookAuthor = value['activityName'];
                   }
                 }
               }
@@ -402,8 +434,8 @@ class EpubNotifier extends ChangeNotifier {
 
   Future<void> downloadKakuyomu() async {
     status = MyEpubStatus.downloading;
-    this.notifyListeners();
     downloaded = 0;
+    this.notifyListeners();
 
     String text0 = '';
     text0 += '<h2>' + (epub.bookTitle ?? epub.bookId!) + '</h2>\n';
@@ -447,6 +479,11 @@ class EpubNotifier extends ChangeNotifier {
     Bs4Element? et = bs.find('p', class_: 'widget-episodeTitle');
     if (et != null) f.title = et.innerHtml;
 
+    if (epub.bookAuthor == null) {
+      Bs4Element? eAuthor = bs.find('p', id: 'contentMain-header-author');
+      if (eAuthor != null) epub.bookAuthor = eAuthor.innerHtml;
+    }
+
     Bs4Element? ec = bs.find('div', class_: 'widget-episodeBody js-episode-body');
     if (ec != null) {
       String text = ec.innerHtml;
@@ -473,8 +510,8 @@ class EpubNotifier extends ChangeNotifier {
 
   Future<void> checkNarou(String url, String body) async {
     epub.downloadUri = url;
-    epub.bookId = url.substring(url.indexOf('syosetu.com/') + 12);
-    epub.bookId = epub.bookId!.replaceAll('/', '');
+    epub.siteId = url.substring(url.indexOf('syosetu.com/') + 12);
+    epub.bookId = 'N' + epub.siteId!;
     BeautifulSoup bs = BeautifulSoup(body);
 
     Bs4Element? elTitle = bs.find('meta', attrs: {'property': 'og:title'});

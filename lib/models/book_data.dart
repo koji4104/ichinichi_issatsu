@@ -2,59 +2,62 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:intl/intl.dart';
 
-class BookData {
-  BookData() {}
+class CacheData {
+  String bookId = '1';
   String title = '';
   String author = '';
-  List<IndexData> indexList = [];
-  String bookId = '1';
-  int chars = 0;
-  String downloadUri = '';
-  DateTime downloadDate = DateTime(2000, 1, 1);
+}
 
-  BookInfoData info = BookInfoData();
+class BookData {
+  BookData() {}
+  String bookId = '1';
+  String title = '';
+  String author = '';
+  int chars = 0;
+  String siteId = '';
+
+  //List<IndexData> indexList = [];
+
+  String dluri = '';
+  DateTime ctime = DateTime(2000, 1, 1);
+
+  IndexData index = IndexData();
+  PropData prop = PropData();
 
   Map<String, dynamic> toJson() => {
+        'bookId': bookId,
         'title': title,
         'author': author,
-        'bookId': bookId,
         'chars': chars,
-        'downloadUri': downloadUri,
-        'indexList': getIndexListJson(),
+        'siteId': siteId,
+        'dluri': dluri,
+        'ctime': DateFormat('yyyy-MM-dd HH:mm:ss').format(ctime),
       };
-
-  List<Map<String, dynamic>> getIndexListJson() {
-    List<Map<String, dynamic>> dlist = [];
-    for (IndexData d in indexList) {
-      dlist.add(d.toJson());
-    }
-    return dlist;
-  }
 
   BookData.fromJson(Map<String, dynamic> j) {
     if (j.containsKey('title')) title = j['title'] ?? '';
     if (j.containsKey('author')) author = j['author'] ?? '';
     if (j.containsKey('bookId')) bookId = j['bookId'] ?? '';
     if (j.containsKey('chars')) chars = j['chars'] ?? '';
-    if (j.containsKey('downloadUri')) downloadUri = j['downloadUri'] ?? '';
+    if (j.containsKey('siteId')) siteId = j['siteId'] ?? '';
+    if (j.containsKey('dluri')) dluri = j['dluri'] ?? '';
 
     if (!Platform.isIOS && !Platform.isMacOS) {
       title = bookId;
     }
-    if (j.containsKey('indexList')) {
-      var list = j['indexList'];
-      for (var d in list) {
-        IndexData c = IndexData();
-        if (d.containsKey('index')) c.index = d['index'] ?? -1;
-        if (d.containsKey('title')) c.title = d['title'] ?? '';
-        if (d.containsKey('chars')) c.chars = d['chars'] ?? 1;
-        indexList.add(c);
-      }
+
+    if (j.containsKey('ctime')) {
+      String date = j['ctime'];
+      try {
+        ctime = DateTime.parse(date);
+      } catch (_) {}
     }
   }
 }
 
-class IndexData {
+class IndexInfo {
+  IndexInfo() {}
+
   int index = 0;
   String title = '';
   int chars = 0;
@@ -64,84 +67,41 @@ class IndexData {
         'title': title,
         'chars': chars,
       };
-}
 
-class BookInfoData {
-  BookInfoData();
-
-  int flag = 0;
-  int nowIndex = 0;
-  int nowRatio = 0;
-  int maxIndex = 0;
-  int maxRatio = 0;
-  List<int> listMark = [];
-  DateTime accessDate = DateTime(2000, 1, 1);
-
-  Map<String, dynamic> toJson() => {
-        'nowIndex': nowIndex,
-        'nowRatio': nowRatio,
-        'maxIndex': maxIndex,
-        'maxRatio': maxRatio,
-        'flag': flag,
-        'accessDate': DateFormat('yyyy-MM-dd HH:mm:ss').format(accessDate),
-      };
-
-  BookInfoData.fromJson(Map<String, dynamic> j) {
-    if (j.containsKey('nowIndex')) nowIndex = j['nowIndex'] ?? 0;
-    if (j.containsKey('nowRatio')) nowRatio = j['nowRatio'] ?? 0;
-    if (j.containsKey('maxIndex')) maxIndex = j['maxIndex'] ?? 0;
-    if (j.containsKey('maxRatio')) maxRatio = j['maxRatio'] ?? 0;
-    if (j.containsKey('flag')) flag = j['flag'] ?? 0;
-    if (j.containsKey('accessDate')) {
-      String dt = j['accessDate'];
-      try {
-        accessDate = DateTime.parse(dt);
-      } catch (_) {}
-    }
+  IndexInfo.fromJson(Map<String, dynamic> j) {
+    if (j.containsKey('index')) index = j['index'] ?? 0;
+    if (j.containsKey('title')) title = j['title'] ?? '';
+    if (j.containsKey('chars')) chars = j['chars'] ?? 0;
   }
 }
 
-class BookClipData {
-  BookClipData();
+class IndexData {
+  IndexData() {}
 
-  List<ClipData> list = [];
+  List<IndexInfo> list = [];
 
-  sort() {
-    list.sort((a, b) {
-      bool d = (a.index * 1000000) + a.ratio > (b.index * 1000000) + b.ratio;
-      return d ? 1 : -1;
-    });
-  }
-
-  String toJsonString() {
-    Map<String, dynamic> j = {'list': getClipListJson()};
-    return json.encode(j);
-  }
-
-  List<Map<String, dynamic>> getClipListJson() {
-    List<Map<String, dynamic>> dlist = [];
-    for (ClipData d in list) {
-      dlist.add(d.toJson());
+  Map<String, dynamic> toJson() {
+    List<Map<String, dynamic>> jsonlist = [];
+    for (IndexInfo d in list) {
+      jsonlist.add(d.toJson());
     }
-    return dlist;
+    return {'list': jsonlist};
   }
 
-  BookClipData.fromJson(dynamic jsonList) {
+  IndexData.fromJson(dynamic jsonList) {
     if (jsonList.containsKey('list')) {
       var list1 = jsonList['list'];
       for (Map<String, dynamic> j in list1) {
-        ClipData c = ClipData();
-        if (j.containsKey('index')) c.index = j['index'] ?? -1;
-        if (j.containsKey('ratio')) c.ratio = j['ratio'] ?? '';
-        if (j.containsKey('text')) c.text = j['text'] ?? 1;
-        list.add(c);
+        IndexInfo l = IndexInfo.fromJson(j);
+        list.add(l);
       }
     }
   }
 }
 
-class ClipData {
-  ClipData() {}
+class ClipInfo {
+  ClipInfo() {}
+
   int index = 0;
   int ratio = 0;
   String text = '';
@@ -151,10 +111,126 @@ class ClipData {
         'ratio': ratio,
         'text': text,
       };
+
+  ClipInfo.fromJson(Map<String, dynamic> j) {
+    if (j.containsKey('index')) index = j['index'] ?? 0;
+    if (j.containsKey('ratio')) ratio = j['ratio'] ?? 0;
+    if (j.containsKey('text')) text = j['text'] ?? '';
+  }
+}
+
+class ClipData {
+  ClipData();
+
+  List<ClipInfo> list = [];
+
+  sort() {
+    list.sort((a, b) {
+      bool d = (a.index * 1000000) + a.ratio > (b.index * 1000000) + b.ratio;
+      return d ? 1 : -1;
+    });
+  }
+
+  Map<String, dynamic> toJson() {
+    List<Map<String, dynamic>> dlist = [];
+    for (ClipInfo d in list) {
+      dlist.add(d.toJson());
+    }
+    return {'list': dlist};
+  }
+
+  ClipData.fromJson(dynamic jsonList) {
+    if (jsonList.containsKey('list')) {
+      var list1 = jsonList['list'];
+      for (Map<String, dynamic> j in list1) {
+        ClipInfo c = ClipInfo.fromJson(j);
+        list.add(c);
+      }
+    }
+  }
+}
+
+class PropData {
+  PropData();
+
+  int flag = 0;
+  int nowIndex = 0;
+  int nowRatio = 0;
+  int nowChars = 1;
+  int maxIndex = 0;
+  int maxRatio = 0;
+  int maxChars = 1;
+  DateTime atime = DateTime.now();
+
+  Map<String, dynamic> toJson() => {
+        'nowIndex': nowIndex,
+        'nowRatio': nowRatio,
+        'nowChars': nowChars,
+        'maxIndex': maxIndex,
+        'maxRatio': maxRatio,
+        'maxChars': maxChars,
+        'flag': flag,
+        'atime': DateFormat('yyyy-MM-dd HH:mm:ss').format(atime),
+      };
+
+  PropData.fromJson(Map<String, dynamic> j) {
+    if (j.containsKey('nowIndex')) nowIndex = j['nowIndex'] ?? 0;
+    if (j.containsKey('nowRatio')) nowRatio = j['nowRatio'] ?? 0;
+    if (j.containsKey('nowChars')) nowChars = j['nowChars'] ?? 0;
+    if (j.containsKey('maxIndex')) maxIndex = j['maxIndex'] ?? 0;
+    if (j.containsKey('maxRatio')) maxRatio = j['maxRatio'] ?? 0;
+    if (j.containsKey('maxChars')) maxChars = j['maxChars'] ?? 0;
+    if (j.containsKey('flag')) flag = j['flag'] ?? 0;
+    if (j.containsKey('atime')) {
+      String date = j['atime'];
+      try {
+        atime = DateTime.parse(date);
+      } catch (_) {}
+    }
+  }
 }
 
 class SettingsData {
   int appId = 0;
   List<int> listMark = [];
   DateTime lastDate = DateTime(2000, 1, 1);
+}
+
+class FavoriteInfo {
+  FavoriteInfo() {}
+  String uri = '';
+  String title = '';
+
+  Map<String, dynamic> toJson() => {
+        'uri': uri,
+        'title': title,
+      };
+
+  FavoriteInfo.fromJson(Map<String, dynamic> j) {
+    if (j.containsKey('uri')) uri = j['uri'] ?? '';
+    if (j.containsKey('title')) title = j['title'] ?? '';
+  }
+}
+
+class FavoriteData {
+  FavoriteData() {}
+  List<FavoriteInfo> list = [];
+
+  Map<String, dynamic> toJson() {
+    List<Map<String, dynamic>> dlist = [];
+    for (FavoriteInfo d in list) {
+      dlist.add(d.toJson());
+    }
+    return {'list': dlist};
+  }
+
+  FavoriteData.fromJson(dynamic jsonList) {
+    if (jsonList.containsKey('list')) {
+      var list1 = jsonList['list'];
+      for (Map<String, dynamic> j in list1) {
+        FavoriteInfo c = FavoriteInfo.fromJson(j);
+        list.add(c);
+      }
+    }
+  }
 }

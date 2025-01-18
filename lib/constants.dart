@@ -11,3 +11,6 @@ const DEF_ROW_HEIGHT_PLAYLOG = 32.0;
 
 /// Radius
 const DEFAULT_RADIUS = 6.0;
+
+///
+const CHARS_PAGE = 450;

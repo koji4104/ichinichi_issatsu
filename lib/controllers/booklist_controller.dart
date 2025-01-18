@@ -21,10 +21,8 @@ class BookListNotifier extends ChangeNotifier {
   BookData? selected;
   late String datadir;
   List<BookData> bookList = [];
+  List<PropData> propList = [];
   bool isReading = false;
-
-  BooklogController booklogController = BooklogController();
-  List<BooklogData> booklogList = [];
 
   /// read books.json
   Future readBookList() async {
@@ -32,7 +30,7 @@ class BookListNotifier extends ChangeNotifier {
     if (!Platform.isIOS && !Platform.isAndroid) {
       appdir = appdir + '/test';
     }
-    datadir = appdir + '/data';
+    datadir = appdir + '/book';
     await Directory('${datadir}').create(recursive: true);
 
     log('readBookList()');
@@ -44,24 +42,30 @@ class BookListNotifier extends ChangeNotifier {
       if (FileSystemEntity.isDirectorySync(e.path) == true) {
         log('readBookList ${e.path}');
         String bookId = basename(e.path);
-        if (File('${e.path}/book_data.json').existsSync()) {
+        if (File('${e.path}/data/book.json').existsSync()) {
           try {
-            String? txt = await File('${e.path}/book_data.json').readAsString();
+            String? txt = await File('${e.path}/data/book.json').readAsString();
             Map<String, dynamic> j = json.decode(txt);
             BookData book = BookData();
             book = BookData.fromJson(j);
 
-            if (book.bookId != bookId) {
-              book.bookId = bookId;
-            }
+            try {
+              final indexFile = File('${e.path}/data/index.json');
+              if (indexFile.existsSync()) {
+                String? txt1 = await indexFile.readAsString();
+                Map<String, dynamic> j = json.decode(txt1);
+                IndexData bi = IndexData.fromJson(j);
+                book.index = bi;
+              }
+            } catch (_) {}
 
             try {
-              final infoFile = File('${e.path}/book_info.json');
-              if (infoFile.existsSync()) {
-                String? txt1 = await infoFile.readAsString();
+              final propFile = File('${e.path}/data/prop.json');
+              if (propFile.existsSync()) {
+                String? txt1 = await propFile.readAsString();
                 Map<String, dynamic> j = json.decode(txt1);
-                BookInfoData bi = BookInfoData.fromJson(j);
-                book.info = bi;
+                PropData bi = PropData.fromJson(j);
+                book.prop = bi;
               }
             } catch (_) {}
 
@@ -82,36 +86,36 @@ class BookListNotifier extends ChangeNotifier {
     this.notifyListeners();
   }
 
-  saveFlag(int index, int flag) async {
+  Future saveFlag(int index, int flag) async {
     String dir = datadir + '/${bookList[index].bookId}';
     if (Directory(dir).existsSync()) {
-      final infoFile = File('${dir}/book_info.json');
+      final infoFile = File('${dir}/data/prop.json');
       if (infoFile.existsSync()) {
         String? txt1 = await infoFile.readAsString();
         Map<String, dynamic> j = json.decode(txt1);
-        BookInfoData info = BookInfoData.fromJson(j);
-        info.flag = flag;
+        PropData prop = PropData.fromJson(j);
+        prop.flag = flag;
 
-        String jsonText = json.encode(info.toJson());
-        final file = File('${dir}/book_info.json');
+        String jsonText = json.encode(prop.toJson());
+        final file = File('${dir}/data/prop.json');
         file.writeAsString(jsonText, mode: FileMode.write, flush: true);
         this.notifyListeners();
       }
     }
   }
 
-  saveLastAccess(int index) async {
+  Future saveLastAccess(int index) async {
     String dir = datadir + '/${bookList[index].bookId}';
     if (Directory(dir).existsSync()) {
       final infoFile = File('${dir}/book_info.json');
       if (infoFile.existsSync()) {
         String? txt1 = await infoFile.readAsString();
         Map<String, dynamic> j = json.decode(txt1);
-        BookInfoData info = BookInfoData.fromJson(j);
-        info.accessDate = DateTime.now();
+        PropData prop = PropData.fromJson(j);
+        prop.atime = DateTime.now();
 
-        String jsonText = json.encode(info.toJson());
-        final file = File('${dir}/book_info.json');
+        String jsonText = json.encode(prop.toJson());
+        final file = File('${dir}/data/prop.json');
         file.writeAsString(jsonText, mode: FileMode.write, flush: true);
         this.notifyListeners();
       }

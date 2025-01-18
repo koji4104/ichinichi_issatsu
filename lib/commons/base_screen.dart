@@ -67,20 +67,24 @@ class BaseScreen extends ConsumerWidget {
 
   Future<bool> alertDialog(String title, {String? msg}) async {
     bool ret = false;
-    Widget? content1 = msg != null ? MyText(l10n(msg)) : null;
+    Widget? wMsg = null;
+    if (msg != null) {
+      wMsg = MyText(l10n(msg), maxLength: 80, maxLines: 5);
+    }
+
     await showDialog(
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
           actionsAlignment: MainAxisAlignment.center,
           shape: RoundedRectangleBorder(borderRadius: DEF_BORDER_RADIUS),
-          titlePadding: EdgeInsets.all(0.0),
+          titlePadding: EdgeInsets.all(24.0),
           actionsPadding: EdgeInsets.fromLTRB(8, 16, 8, 16),
           buttonPadding: EdgeInsets.all(0.0),
           contentPadding: EdgeInsets.all(0.0),
           iconPadding: EdgeInsets.all(0.0),
           backgroundColor: myTheme.cardColor,
-          content: content1,
+          content: wMsg,
           actions: <Widget>[
             alertButton(
               title: 'cancel',
@@ -158,9 +162,12 @@ class BaseScreen extends ConsumerWidget {
     return Container(
       decoration: BoxDecoration(
         color: myTheme.cardColor,
-        border: Border(bottom: BorderSide(color: myTheme.dividerColor, width: 0.5)),
+        border: Border(
+          top: BorderSide(color: myTheme.dividerColor, width: 0.3),
+          bottom: BorderSide(color: myTheme.dividerColor, width: 0.3),
+        ),
       ),
-      height: 50,
+      height: 30 + (16 * myTextScale),
       padding: EdgeInsets.fromLTRB(20, 0, 20, 0),
       child: child,
     );
@@ -239,14 +246,14 @@ class BaseScreen extends ConsumerWidget {
       child: Column(children: [
         Container(
           color: myTheme.scaffoldBackgroundColor,
-          height: 6,
+          height: 4,
         ),
         Row(children: [
-          SizedBox(width: 4),
+          SizedBox(width: 2),
           closeButton(),
           Expanded(flex: 1, child: SizedBox(width: 1)),
           closeButton(),
-          SizedBox(width: 4),
+          SizedBox(width: 2),
         ]),
       ]),
     );

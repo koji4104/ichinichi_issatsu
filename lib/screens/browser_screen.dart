@@ -3,7 +3,10 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
+import 'package:path_provider/path_provider.dart';
+import 'dart:convert';
 
+import '/models/book_data.dart';
 import '/commons/base_screen.dart';
 import '/commons/widgets.dart';
 import '/controllers/epub_controller.dart';
@@ -18,7 +21,22 @@ class BrowserScreen extends BaseScreen {
   InAppWebViewController? webViewController;
 
   @override
-  Future init() async {}
+  Future init() async {
+    readUri();
+  }
+
+  Future readUri() async {
+    uriList.clear();
+    titleList.clear();
+    uriList.addAll(initUriList);
+    titleList.addAll(initTitleList);
+    FavoriteData f = await readFavorite();
+    for (FavoriteInfo info in f.list) {
+      uriList.add(info.uri);
+      titleList.add(info.uri);
+    }
+    redraw();
+  }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -37,6 +55,15 @@ class BrowserScreen extends BaseScreen {
       child: Scaffold(
         appBar: AppBar(
           title: Text('Brows'),
+          actions: [
+            MyIconButton(
+              icon: Icons.star,
+              onPressed: () {
+                saveUri();
+              },
+            ),
+            SizedBox(width: 10)
+          ],
         ),
         body: SafeArea(
           child: Stack(children: [
@@ -157,9 +184,9 @@ class BrowserScreen extends BaseScreen {
     return AnimatedPositioned(
       duration: const Duration(milliseconds: 500),
       curve: Curves.linear,
-      left: 1,
+      left: 0,
       top: null,
-      right: 1,
+      right: 0,
       bottom: ffBottom,
       height: barHeight,
       child: bar,
@@ -167,13 +194,17 @@ class BrowserScreen extends BaseScreen {
   }
 
   String? selectedUri;
-  List<String> uriList = [
+
+  List<String> uriList = [];
+  List<String> titleList = [];
+
+  List<String> initUriList = [
     'https://www.aozora.gr.jp/access_ranking/2022_xhtml.html',
     'https://kakuyomu.jp',
     'https://yomou.syosetu.com',
     'https://noc.syosetu.com/top/top/',
   ];
-  List<String> titleList = [
+  List<String> initTitleList = [
     'https://www.aozora.gr.jp/access_ranking/2022_xhtml.html',
     'https://kakuyomu.jp',
     'https://yomou.syosetu.com',
@@ -188,7 +219,7 @@ class BrowserScreen extends BaseScreen {
       child: ListView.builder(
         itemCount: uriList.length,
         itemBuilder: (BuildContext context, int index) {
-          return MyBookListTile(
+          return MyUriListTile(
             title: titleList[index],
             onPressed: () {
               selectedUri = uriList[index];
@@ -198,5 +229,99 @@ class BrowserScreen extends BaseScreen {
         },
       ),
     );
+  }
+
+  Widget MyUriListTile({
+    required String title,
+    Function()? onPressed,
+  }) {
+    Widget e = Expanded(child: SizedBox(width: 8));
+    Widget w = SizedBox(width: 6);
+    Icon icon = Icon(Icons.arrow_forward_ios, size: 14.0);
+
+    double scale = myTextScale;
+
+    Widget wText = Text(
+      title,
+      overflow: TextOverflow.ellipsis,
+      maxLines: 3,
+      textScaler: TextScaler.linear(scale),
+    );
+
+    double height = 44 + (14 * myTextScale);
+    Widget child = Row(children: [
+      Expanded(child: wText),
+      w,
+      icon,
+    ]);
+    return Container(
+      height: height,
+      decoration: BoxDecoration(
+        color: myTheme.cardColor,
+        border: Border(
+          top: BorderSide(color: myTheme.dividerColor, width: 0.3),
+          bottom: BorderSide(color: myTheme.dividerColor, width: 0.3),
+        ),
+      ),
+      child: TextButton(
+        child: child,
+        onPressed: onPressed,
+      ),
+    );
+  }
+
+  //'https://www.aozora.gr.jp/access_ranking/2022_xhtml.html',
+  //'https://kakuyomu.jp',
+  //'https://yomou.syosetu.com',
+  //'https://noc.syosetu.com/top/top/',
+  saveUri() async {
+    if (webViewController != null) {
+      WebUri? wUri = await webViewController!.getUrl();
+      if (wUri != null) {
+        String path = wUri.path;
+        if (path.contains('aozora.gr.jp') ||
+            path.contains('kakuyomu.jp') ||
+            path.contains('syosetu.com')) {
+          String appdir = (await getApplicationDocumentsDirectory()).path;
+          if (!Platform.isIOS && !Platform.isAndroid) {
+            appdir = appdir + '/test';
+          }
+          String datadir = appdir + '/data';
+          if (datadir == null) return;
+          final file = File('${datadir}/favorite.json');
+
+          FavoriteData d = FavoriteData();
+          if (file.existsSync()) {
+            String? txt = file.readAsStringSync();
+            Map<String, dynamic> j = json.decode(txt);
+            d = FavoriteData.fromJson(j);
+          }
+          FavoriteInfo info = FavoriteInfo();
+          info.uri = path;
+          d.list.add(info);
+          String jsonText = json.encode(d.toJson());
+          file.writeAsString(jsonText, mode: FileMode.write, flush: true);
+          redraw();
+        }
+      }
+    }
+  }
+
+  Future<FavoriteData> readFavorite() async {
+    FavoriteData d = FavoriteData();
+
+    String appdir = (await getApplicationDocumentsDirectory()).path;
+    if (!Platform.isIOS && !Platform.isAndroid) {
+      appdir = appdir + '/test';
+    }
+    String datadir = appdir + '/data';
+    if (datadir == null) return d;
+    final file = File('${datadir}/favorite.json');
+    if (file.existsSync()) {
+      String? txt = file.readAsStringSync();
+      Map<String, dynamic> j = json.decode(txt);
+      d = FavoriteData.fromJson(j);
+    }
+    return d;
   }
 }

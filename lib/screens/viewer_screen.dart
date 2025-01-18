@@ -2,6 +2,7 @@ import 'dart:developer';
 import 'dart:io';
 import 'dart:convert';
 
+import 'package:flutter_slidable/flutter_slidable.dart';
 import 'package:another_flushbar/flushbar.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
@@ -51,10 +52,11 @@ class ViewerScreen extends BaseScreen with WidgetsBindingObserver {
 
   @override
   Future init() async {
-    reload();
     if (Platform.isAndroid || Platform.isIOS) {
       WidgetsBinding.instance.addObserver(this);
     }
+    await reload();
+    ref.watch(viewerProvider).startReadlog();
   }
 
   @override
@@ -69,10 +71,13 @@ class ViewerScreen extends BaseScreen with WidgetsBindingObserver {
         log('inactive'); // no
       } else if (state == AppLifecycleState.resumed) {
         log('resumed');
+        ref.watch(viewerProvider).startReadlog();
       } else if (state == AppLifecycleState.paused) {
         log('paused');
+        ref.watch(viewerProvider).endReadlog();
       } else if (state == AppLifecycleState.detached) {
         log('detached');
+        ref.watch(viewerProvider).endReadlog();
       }
     }
   }
@@ -98,61 +103,69 @@ class ViewerScreen extends BaseScreen with WidgetsBindingObserver {
     ref.watch(viewerProvider);
     ref.watch(stateProvider);
 
-    return Scaffold(
-      backgroundColor: env.getBackColor(),
-      body: SafeArea(
-        child: Stack(children: [
-          Container(
-            padding: env.writing_mode.val == 0 ? DEF_VIEW_PADDING_TB : DEF_VIEW_PADDING_RL,
-            color: env.getBackColor(),
-            child: Widget1(),
-          ),
-          if (ref.watch(viewerProvider).isLoading) loadingWidget(),
-          if (ref.watch(viewerProvider).bottomBarType != ViewerBottomBarType.clipTextBar)
+    return PopScope(
+      canPop: true,
+      onPopInvokedWithResult: (didPop, result) async {
+        log('pop');
+        ref.watch(viewerProvider).endReadlog();
+      },
+      child: Scaffold(
+        backgroundColor: env.getBackColor(),
+        body: SafeArea(
+          child: Stack(children: [
             Container(
-              padding: EdgeInsets.fromLTRB(1, 1, 1, 1),
-              child: RawGestureDetector(
-                behavior: HitTestBehavior.translucent,
-                gestures: {
-                  TapGestureRecognizer: GestureRecognizerFactoryWithHandlers<TapGestureRecognizer>(
-                    () => TapGestureRecognizer(),
-                    (TapGestureRecognizer instance) {
-                      instance
-                        ..onTapUp = (TapUpDetails details) {
-                          double dx = details.globalPosition.dx;
-                          if (dx < 120) {
-                            //scrollRight();
-                          } else if (dx > _width - 120) {
-                            //scrollLeft();
-                          } else {
-                            if (ref.watch(viewerProvider).bottomBarType !=
-                                ViewerBottomBarType.actionBar) {
-                              ref.watch(viewerProvider).bottomBarType =
-                                  ViewerBottomBarType.actionBar;
-                              redraw();
+              padding: env.writing_mode.val == 0 ? DEF_VIEW_PADDING_TB : DEF_VIEW_PADDING_RL,
+              color: env.getBackColor(),
+              child: Widget1(),
+            ),
+            if (ref.watch(viewerProvider).isLoading) loadingWidget(),
+            if (ref.watch(viewerProvider).bottomBarType != ViewerBottomBarType.clipTextBar)
+              Container(
+                padding: EdgeInsets.fromLTRB(1, 1, 1, 1),
+                child: RawGestureDetector(
+                  behavior: HitTestBehavior.translucent,
+                  gestures: {
+                    TapGestureRecognizer:
+                        GestureRecognizerFactoryWithHandlers<TapGestureRecognizer>(
+                      () => TapGestureRecognizer(),
+                      (TapGestureRecognizer instance) {
+                        instance
+                          ..onTapUp = (TapUpDetails details) {
+                            double dx = details.globalPosition.dx;
+                            if (dx < 120) {
+                              //scrollRight();
+                            } else if (dx > _width - 120) {
+                              //scrollLeft();
                             } else {
-                              ref.watch(viewerProvider).bottomBarType = ViewerBottomBarType.none;
-                              redraw();
+                              if (ref.watch(viewerProvider).bottomBarType !=
+                                  ViewerBottomBarType.actionBar) {
+                                ref.watch(viewerProvider).bottomBarType =
+                                    ViewerBottomBarType.actionBar;
+                                redraw();
+                              } else {
+                                ref.watch(viewerProvider).bottomBarType = ViewerBottomBarType.none;
+                                redraw();
+                              }
                             }
                           }
-                        }
-                        ..onTapDown = (TapDownDetails details) {}
-                        ..onTap = () {}
-                        ..onTapCancel = () {};
-                    },
-                  ),
-                },
-                child: Container(),
+                          ..onTapDown = (TapDownDetails details) {}
+                          ..onTap = () {}
+                          ..onTapCancel = () {};
+                      },
+                    ),
+                  },
+                  child: Container(),
+                ),
               ),
-            ),
-          topBar(),
-          bottomBar(),
-          bookmarkBar(),
-          tocBar(),
-          clipTextBar(),
-          settingsBar(),
-          clipListBar(),
-        ]),
+            topBar(),
+            bottomBar(),
+            bookmarkBar(),
+            tocBar(),
+            clipTextBar(),
+            settingsBar(),
+            clipListBar(),
+          ]),
+        ),
       ),
     );
   }
@@ -164,7 +177,7 @@ class ViewerScreen extends BaseScreen with WidgetsBindingObserver {
 
   Widget loadingWidget() {
     return Stack(children: [
-      Container(color: myTheme.scaffoldBackgroundColor),
+      Container(color: env.getBackColor()),
       Positioned(
         top: _height / 5,
         left: 0,
@@ -172,6 +185,7 @@ class ViewerScreen extends BaseScreen with WidgetsBindingObserver {
         child: Icon(
           Icons.refresh,
           size: 48,
+          color: env.getFrontColor(),
         ),
       ),
     ]);
@@ -194,14 +208,18 @@ class ViewerScreen extends BaseScreen with WidgetsBindingObserver {
     return Row(children: [
       SizedBox(width: 4),
       IconButton(
-        iconSize: 20,
-        icon: Icon(Icons.arrow_back_ios_new),
-        onPressed: () => Navigator.of(context).pop(),
-      ),
+          iconSize: 22,
+          icon: Icon(Icons.arrow_back_ios_new),
+          color: env.getFrontColor(),
+          onPressed: () {
+            ref.watch(viewerProvider).endReadlog();
+            Navigator.of(context).pop();
+          }),
       if (isActionBar()) SizedBox(width: pad),
       if (isActionBar())
         IconButton(
           icon: Icon(Icons.list),
+          color: env.getFrontColor(),
           onPressed: () {
             ref.watch(viewerProvider).bottomBarType = ViewerBottomBarType.tocBar;
             redraw();
@@ -211,6 +229,7 @@ class ViewerScreen extends BaseScreen with WidgetsBindingObserver {
       if (isActionBar())
         IconButton(
           icon: Icon(Icons.bookmark),
+          color: env.getFrontColor(),
           onPressed: () {
             if (ref.watch(viewerProvider).bottomBarType == ViewerBottomBarType.bookmarkBar) {
               ref.watch(viewerProvider).bottomBarType = ViewerBottomBarType.none;
@@ -224,6 +243,7 @@ class ViewerScreen extends BaseScreen with WidgetsBindingObserver {
       if (isActionBar())
         IconButton(
           icon: Icon(Icons.edit),
+          color: env.getFrontColor(),
           onPressed: () {
             if (ref.watch(viewerProvider).bottomBarType == ViewerBottomBarType.clipTextBar) {
               ref.watch(viewerProvider).bottomBarType = ViewerBottomBarType.none;
@@ -237,6 +257,7 @@ class ViewerScreen extends BaseScreen with WidgetsBindingObserver {
       if (isActionBar())
         IconButton(
           icon: Icon(Icons.article),
+          color: env.getFrontColor(),
           onPressed: () {
             ref.watch(viewerProvider).bottomBarType = ViewerBottomBarType.clipListBar;
             redraw();
@@ -246,6 +267,7 @@ class ViewerScreen extends BaseScreen with WidgetsBindingObserver {
       if (isActionBar())
         IconButton(
           icon: Icon(Icons.settings),
+          color: env.getFrontColor(),
           onPressed: () {
             ref.watch(viewerProvider).bottomBarType = ViewerBottomBarType.settingsBar;
             redraw();
@@ -268,10 +290,11 @@ class ViewerScreen extends BaseScreen with WidgetsBindingObserver {
       maxLines: 1,
       textAlign: TextAlign.center,
       textScaler: TextScaler.linear(0.9),
+      style: TextStyle(color: env.getFrontColor()),
     );
 
     Widget topBar1 = Container(
-      color: myTheme.scaffoldBackgroundColor,
+      color: env.getBackColor(),
       child: Column(
         children: [
           Expanded(child: SizedBox(height: 1)),
@@ -281,7 +304,8 @@ class ViewerScreen extends BaseScreen with WidgetsBindingObserver {
             Expanded(child: wText),
             SizedBox(width: 4),
           ]),
-          SizedBox(height: 8),
+          SizedBox(height: 6),
+          SizedBox(height: 1, child: Container(color: isActionBar() ? myTheme.dividerColor : null)),
         ],
       ),
     );
@@ -308,13 +332,14 @@ class ViewerScreen extends BaseScreen with WidgetsBindingObserver {
       overflow: TextOverflow.ellipsis,
       maxLines: 1,
       textScaler: TextScaler.linear(0.9),
+      style: TextStyle(color: env.getFrontColor()),
     );
 
     Widget bar = Container(
-      color: myTheme.scaffoldBackgroundColor,
+      color: env.getBackColor(),
       child: Column(
         children: [
-          SizedBox(height: 8),
+          SizedBox(height: 6),
           wText,
           Expanded(child: SizedBox(height: 1)),
         ],
@@ -379,7 +404,7 @@ class ViewerScreen extends BaseScreen with WidgetsBindingObserver {
               });
             },
           ),
-          SizedBox(height: 8),
+          SizedBox(height: 6),
           MyTextButton(
               //noScale: true,
               title: l10n('reset_maxpage'),
@@ -431,7 +456,7 @@ class ViewerScreen extends BaseScreen with WidgetsBindingObserver {
               width: 140,
               onPressed: () async {
                 ref.watch(viewerProvider).bottomBarType = ViewerBottomBarType.none;
-                ref.watch(viewerProvider).clearFocus();
+                await ref.watch(viewerProvider).clearFocus();
                 redraw();
               },
             ),
@@ -443,7 +468,7 @@ class ViewerScreen extends BaseScreen with WidgetsBindingObserver {
               onPressed: () async {
                 String? text = await ref.watch(viewerProvider).getSelectedText();
                 if (text != null && text.length > 2) {
-                  alertDialog('save').then((ret) {
+                  alertDialog('save', msg: text).then((ret) {
                     if (ret) {
                       ref.read(viewerProvider).saveClip(text);
                     }
@@ -480,7 +505,7 @@ class ViewerScreen extends BaseScreen with WidgetsBindingObserver {
 
   /// settingsBar
   Widget settingsBar() {
-    double barHeight = 350;
+    double barHeight = 340;
     double ffBottom = -1.0 * barHeight;
     if (ref.watch(viewerProvider).bottomBarType == ViewerBottomBarType.settingsBar) {
       ffBottom = 0;
@@ -493,6 +518,7 @@ class ViewerScreen extends BaseScreen with WidgetsBindingObserver {
     list.add(MySettingsTile(data: env.writing_mode));
     list.add(MySettingsTile(data: env.font_family));
     //list.add(MySettingsTile(data: env.line_height));
+
     Widget bar = Container(
       color: myTheme.cardColor,
       child: Column(children: list),
@@ -523,12 +549,12 @@ class ViewerScreen extends BaseScreen with WidgetsBindingObserver {
     }
     List<Widget> list = [];
 
-    for (int i = 0; i < book.indexList.length; i++) {
+    for (int i = 0; i < book.index.list.length; i++) {
       int sum = 0;
       for (int j = 0; j <= i; j++) {
-        sum += book.indexList[j].chars;
+        sum += book.index.list[j].chars;
       }
-      String txt = '${book.indexList[i].title}';
+      String txt = '${book.index.list[i].title}';
       String pages = '${(sum / 450).toInt()}';
 
       list.add(
@@ -575,7 +601,7 @@ class ViewerScreen extends BaseScreen with WidgetsBindingObserver {
       ffBottom = 0;
     }
 
-    BookClipData d = ref.watch(viewerProvider).readClip();
+    ClipData d = ref.watch(viewerProvider).readClip();
 
     List<Widget> list = [];
     for (int i = 0; i < d.list.length; i++) {
@@ -600,6 +626,50 @@ class ViewerScreen extends BaseScreen with WidgetsBindingObserver {
         children: [
           closeButtonRow(),
           Expanded(
+            child: ListView.builder(
+              itemCount: list.length,
+              itemBuilder: (BuildContext context, int index) {
+                return Slidable(
+                  dragStartBehavior: DragStartBehavior.start,
+                  key: UniqueKey(),
+                  child: list[index],
+                  endActionPane: ActionPane(
+                    extentRatio: 0.25,
+                    motion: const StretchMotion(),
+                    children: [
+                      SlidableAction(
+                        onPressed: (_) {
+                          deleteDialog().then((ret) {
+                            if (ret) {
+                              log('delette');
+                              ref.watch(viewerProvider).deleteClip(index: index).then((ret) {
+                                redraw();
+                              });
+                            }
+                          });
+                        },
+                        backgroundColor: Colors.redAccent,
+                        icon: Icons.delete,
+                        label: null,
+                        spacing: 0,
+                        padding: EdgeInsets.fromLTRB(0, 0, 0, 0),
+                      ),
+                    ],
+                  ),
+                );
+              },
+            ),
+          )
+        ],
+      ),
+    );
+    /*
+    Widget bar = Container(
+      color: myTheme.cardColor,
+      child: Column(
+        children: [
+          closeButtonRow(),
+          Expanded(
             child: SingleChildScrollView(
               child: Column(children: list),
             ),
@@ -607,7 +677,7 @@ class ViewerScreen extends BaseScreen with WidgetsBindingObserver {
         ],
       ),
     );
-
+*/
     return AnimatedPositioned(
       duration: const Duration(milliseconds: 400),
       curve: Curves.linear,

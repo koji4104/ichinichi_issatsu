@@ -7,6 +7,7 @@ import 'log_screen.dart';
 import '/commons/base_screen.dart';
 import '/commons/widgets.dart';
 import '/controllers/env_controller.dart';
+import '/controllers/log_controller.dart';
 
 /// Settings
 class SettingsScreen extends BaseScreen {
@@ -35,17 +36,35 @@ class SettingsScreen extends BaseScreen {
   @override
   Widget getList() {
     List<Widget> list = [];
-    list.add(MyLabel(l10n('body')));
     list.add(MySettingsTile(data: env.font_size));
     list.add(MySettingsTile(data: env.back_color));
     list.add(MySettingsTile(data: env.writing_mode));
     list.add(MySettingsTile(data: env.font_family));
-    //list.add(MySettingsTile(data: env.line_height));
-    list.add(MyLabel(l10n('appearance')));
+
+    list.add(SizedBox(height: 20));
     list.add(MySettingsTile(data: env.dark_mode));
     list.add(MySettingsTile(data: env.language_code));
     list.add(MySettingsTile(data: env.ui_text_scale));
-    list.add(MyLabel(''));
+
+    String sph = l10n('per_hour');
+    String spage = l10n('page');
+    int speed = readLog.per_hour;
+
+    list.add(SizedBox(height: 20));
+    list.add(
+      MyListTile(
+        title1: MyText('${sph} ${speed} ${spage}'),
+        onPressed: () {
+          Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (context) => ReadlogScreen(),
+            ),
+          );
+        },
+      ),
+    );
+
+    list.add(SizedBox(height: 20));
     list.add(
       MyListTile(
         title1: MyText('Logs'),

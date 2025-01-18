@@ -19,6 +19,7 @@ class EpubData {
   String? bookId;
   String? bookTitle;
   String? bookAuthor;
+  String? siteId;
 
   List<EpubFileData> fileList = [];
   List<String> uriList = [];
@@ -28,6 +29,7 @@ class EpubData {
     bookId = null;
     bookTitle = null;
     bookAuthor = null;
+    siteId = null;
     downloadUri = null;
     fileList.clear();
     uriList.clear();
@@ -96,7 +98,8 @@ p {
     // <item id="ch001_xhtml" href="text/ch001.xhtml" media-type="application/xhtml+xml" />
     for (EpubFileData f in fileList) {
       if (f.fileName!.contains('text/ch')) {
-        text += '<item id="ch${f.chapNo000}_xhtml" href="${f.fileName}" media-type="application/xhtml+xml" />\n';
+        text +=
+            '<item id="ch${f.chapNo000}_xhtml" href="${f.fileName}" media-type="application/xhtml+xml" />\n';
       }
     }
     text += opf2;
@@ -245,8 +248,10 @@ p {
 
   Archive _createArchive() {
     var arch = Archive();
-    arch.addFile(ArchiveFile.noCompress('mimetype', 20, convert.utf8.encode('application/epub+zip')));
-    arch.addFile(ArchiveFile('META-INF/container.xml', containerFile.length, convert.utf8.encode(containerFile)));
+    arch.addFile(
+        ArchiveFile.noCompress('mimetype', 20, convert.utf8.encode('application/epub+zip')));
+    arch.addFile(ArchiveFile(
+        'META-INF/container.xml', containerFile.length, convert.utf8.encode(containerFile)));
     for (EpubFileData f in fileList) {
       List<int> content = convert.utf8.encode(f.text!);
       arch.addFile(ArchiveFile('EPUB/${f.fileName}', content.length, content));

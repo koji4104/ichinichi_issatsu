@@ -16,11 +16,7 @@ class EnvData {
   List<String> keys = [];
   String name = '';
 
-  EnvData(
-      {required int this.val,
-      required List<int> this.vals,
-      required List<String> this.keys,
-      required String this.name}) {
+  EnvData({required int this.val, required List<int> this.vals, required List<String> this.keys, required String this.name}) {
     round(val);
   }
 
@@ -209,7 +205,7 @@ class EnvNotifier extends ChangeNotifier {
       if (!Platform.isIOS && !Platform.isAndroid) {
         appdir = appdir + '/test';
       }
-      String settingsdir = appdir + '/settings';
+      String settingsdir = appdir + '/data';
       await Directory('${settingsdir}').create(recursive: true);
       if (File('${settingsdir}/settings.json').existsSync()) {
         String? txt = await File('${settingsdir}/settings.json').readAsString();
@@ -236,7 +232,7 @@ class EnvNotifier extends ChangeNotifier {
     if (!Platform.isIOS && !Platform.isAndroid) {
       appdir = appdir + '/test';
     }
-    String settingsdir = appdir + '/settings';
+    String settingsdir = appdir + '/data';
     await Directory('${settingsdir}').create(recursive: true);
     File file = File('${settingsdir}/settings.json');
     await file.writeAsString(val, mode: FileMode.write, flush: true);
@@ -250,7 +246,7 @@ class EnvNotifier extends ChangeNotifier {
     if (!Platform.isIOS && !Platform.isAndroid) {
       appdir = appdir + '/test';
     }
-    String settingsdir = appdir + '/settings';
+    String settingsdir = appdir + '/data';
 
     await Directory('${settingsdir}').create(recursive: true);
     File file = File('${settingsdir}/settings.json');

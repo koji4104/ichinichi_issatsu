@@ -32,9 +32,6 @@ class MenuScreen extends BaseScreen {
     int index = ref.watch(menuProvider).selectedIndex;
 
     return Scaffold(
-      //appBar: AppBar(
-      //  title: MyText('Test'),
-      //),
       body: SafeArea(
         child: Stack(
           children: [
@@ -45,12 +42,15 @@ class MenuScreen extends BaseScreen {
         ),
       ),
       bottomNavigationBar: BottomNavigationBar(
+        backgroundColor: myTheme.scaffoldBackgroundColor,
+        selectedItemColor: myTheme.textTheme.bodyMedium!.color,
+        unselectedItemColor: myTheme.disabledColor,
         currentIndex: index,
         onTap: _onItemTapped,
         items: const <BottomNavigationBarItem>[
           BottomNavigationBarItem(icon: Icon(Icons.home, size: 28), label: 'Home'),
           BottomNavigationBarItem(icon: Icon(Icons.text_snippet, size: 28), label: 'Brows'),
-          BottomNavigationBarItem(icon: Icon(Icons.settings, size: 28), label: 'Settings'),
+          BottomNavigationBarItem(icon: Icon(Icons.settings, size: 28), label: 'Option'),
         ],
         type: BottomNavigationBarType.fixed,
       ),

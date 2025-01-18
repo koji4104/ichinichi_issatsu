@@ -17,6 +17,7 @@ import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 import '/models/book_data.dart';
 import '/models/epub_data.dart';
 import '/commons/widgets.dart';
+import '/controllers/log_controller.dart';
 
 enum ViewerBottomBarType {
   none,
@@ -40,6 +41,9 @@ class ViewerNotifier extends ChangeNotifier {
 
   Environment env1 = Environment();
   BookData? book;
+
+  //PropData? prop;
+
   ScrollController? scrollController;
   bool isLoading = false;
 
@@ -78,6 +82,10 @@ class ViewerNotifier extends ChangeNotifier {
 
     width = w;
     height = h;
+
+    isLoading = true;
+    this.notifyListeners();
+
     try {
       listText.clear();
       listWidth.clear();
@@ -94,9 +102,9 @@ class ViewerNotifier extends ChangeNotifier {
         if (!Platform.isIOS && !Platform.isAndroid) {
           appdir = appdir + '/test';
         }
-        datadir = appdir + '/data';
+        datadir = appdir + '/book';
 
-        for (int i = 0; i < 1000; i++) {
+        for (int i = 0; i < 10000; i++) {
           String path1 = '${datadir}/${book!.bookId}/text/ch${(i).toString().padLeft(3, '0')}.txt';
           if (File(path1).existsSync()) {
             String text = await File(path1).readAsStringSync();
@@ -118,6 +126,7 @@ class ViewerNotifier extends ChangeNotifier {
             double w = (env.writing_mode.val == 0) ? (width - _widthPad) : (height - _heightPad);
             int chars = (w / fsize).toInt();
             body = body.replaceAll('\n', '');
+            body = body.replaceAll('<h3>', '');
             body = body.replaceAll('</h3>', '<br /><br />');
 
             // delete ruby
@@ -170,17 +179,19 @@ class ViewerNotifier extends ChangeNotifier {
                 });
             listContextMenu.add(contextMenu);
           } else {
-            if (i > 0) break;
+            if (i >= 1) break;
           }
         }
         isLoading = true;
-        await Future.delayed(Duration(milliseconds: 1000));
+        await Future.delayed(Duration(milliseconds: 500));
         this.notifyListeners();
-        await Future.delayed(Duration(milliseconds: 1000));
-        nowIndex = book!.info.nowIndex;
-        nowRatio = book!.info.nowRatio;
-        maxRatio = book!.info.maxRatio;
-        maxRatio = book!.info.maxRatio;
+        //await Future.delayed(Duration(milliseconds: 1000));
+        nowIndex = book!.prop.nowIndex;
+        nowRatio = book!.prop.nowRatio;
+        maxRatio = book!.prop.maxRatio;
+        maxRatio = book!.prop.maxRatio;
+        nowChars = getNowChars();
+        startReadlog();
         jumpToIndex(nowIndex, nowRatio);
       } on Exception catch (e) {
         print('-- PreviewScreen.init ${e.toString()}');
@@ -213,8 +224,15 @@ class ViewerNotifier extends ChangeNotifier {
       if (listWebViewController.length < nowIndex) return null;
       if (listWebViewController[nowIndex] == null) return null;
       if (Platform.isIOS || Platform.isAndroid) {
-        text = await listWebViewController[nowIndex]!.getSelectedText();
-        if (text != null) log('getSelectedText() [${nowIndex}] ${text}');
+        int i = nowIndex;
+        text = await getSelectedText1(i);
+        if (text == null) {
+          text = await getSelectedText1(i - 1);
+        }
+        if (text == null) {
+          text = await getSelectedText1(i + 1);
+        }
+        log('getSelectedText() [${i}] text=${text}');
       } else {
         text = 'あいうえお';
       }
@@ -224,12 +242,29 @@ class ViewerNotifier extends ChangeNotifier {
     return text;
   }
 
+  Future<String?> getSelectedText1(int i) async {
+    if (i <= 0) return null;
+    if (i >= listWebViewController.length) return null;
+    if (listWebViewController[i] == null) return null;
+    try {
+      String? text = await listWebViewController[i]!.getSelectedText();
+      if (text != null && text == "") text = null;
+      return text;
+    } catch (_) {
+      log('error getSelectedText() [${i}]');
+    }
+    return null;
+  }
+
   Future clearFocus() async {
     try {
       if (listWebViewController.length < nowIndex) return null;
       if (listWebViewController[nowIndex] == null) return null;
       if (Platform.isIOS || Platform.isAndroid) {
-        listWebViewController[nowIndex]!.clearFocus();
+        int i = nowIndex;
+        await listWebViewController[i]!.clearFocus();
+        if (i - 1 >= 0) await listWebViewController[i - 1]!.clearFocus();
+        if (i + 1 < listWebViewController.length) await listWebViewController[i + 1]!.clearFocus();
       }
     } catch (_) {
       log('err clearFocus() [${nowIndex}]');
@@ -330,10 +365,14 @@ class ViewerNotifier extends ChangeNotifier {
   int maxRatio = 0;
   int nowPixel = 0;
   int allPixel = 100;
+  int nowChars = 0;
 
   String getProgress() {
-    int per = (nowPixel * 100 / allPixel).toInt();
-    return '${per}%';
+    if (book == null) return '';
+    int c = book!.chars;
+    if (c < 1) c = 1;
+    int per = (nowChars * 100 / c).toInt();
+    return '${per} %';
   }
 
   Future moveMaxpage() async {
@@ -347,14 +386,37 @@ class ViewerNotifier extends ChangeNotifier {
     notifyListeners();
   }
 
+  Future startReadlog() async {
+    readLog.init(nowChars);
+  }
+
+  Future endReadlog() async {
+    readLog.save(nowChars, book!.bookId);
+  }
+
+  int getNowChars() {
+    if (book == null) return -1;
+    int chars = 0;
+    for (int i = 0; i < book!.index.list.length; i++) {
+      if (i < nowIndex) {
+        chars += book!.index.list[i].chars;
+      } else if (i == nowIndex) {
+        chars += (book!.index.list[i].chars * nowRatio / 10000).toInt();
+      } else {
+        break;
+      }
+    }
+    return chars;
+  }
+
   String getNowPage() {
     if (book == null) return '-1';
     int chars = 0;
-    for (int i = 0; i < book!.indexList.length; i++) {
+    for (int i = 0; i < book!.index.list.length; i++) {
       if (i < nowIndex) {
-        chars += book!.indexList[i].chars;
+        chars += book!.index.list[i].chars;
       } else if (i == nowIndex) {
-        chars += (book!.indexList[i].chars * nowRatio / 10000).toInt();
+        chars += (book!.index.list[i].chars * nowRatio / 10000).toInt();
       } else {
         break;
       }
@@ -365,11 +427,11 @@ class ViewerNotifier extends ChangeNotifier {
   String getMaxPage() {
     if (book == null) return '-1';
     int chars = 0;
-    for (int i = 0; i < book!.indexList.length; i++) {
+    for (int i = 0; i < book!.index.list.length; i++) {
       if (i < maxIndex) {
-        chars += book!.indexList[i].chars;
+        chars += book!.index.list[i].chars;
       } else if (i == maxIndex) {
-        chars += (book!.indexList[i].chars * maxRatio / 10000).toInt();
+        chars += (book!.index.list[i].chars * maxRatio / 10000).toInt();
       } else {
         break;
       }
@@ -387,6 +449,9 @@ class ViewerNotifier extends ChangeNotifier {
     if (DateTime.now().compareTo(past) < 1 || (lastPixel - px).abs() < 200) {
       return;
     }
+
+    if (isActionBar()) bottomBarType = ViewerBottomBarType.none;
+
     lastTime = DateTime.now();
     lastPixel = px;
 
@@ -398,6 +463,7 @@ class ViewerNotifier extends ChangeNotifier {
       }
       px -= listWidth[i];
     }
+    nowChars = getNowChars();
     nowPixel = scrollController!.position.pixels.toInt();
     allPixel = 1;
     for (int i = 0; i < listWidth.length; i++) {
@@ -420,14 +486,18 @@ class ViewerNotifier extends ChangeNotifier {
     if (isLoading == true) return;
     log('saveIndex [${nowIndex}] ${nowRatio}');
 
-    book!.info.nowIndex = nowIndex;
-    book!.info.nowRatio = nowRatio;
-    book!.info.maxIndex = maxIndex;
-    book!.info.maxRatio = maxRatio;
-    book!.info.accessDate = DateTime.now();
+    book!.prop.nowIndex = nowIndex;
+    book!.prop.nowRatio = nowRatio;
+    book!.prop.nowChars = nowChars;
 
-    String jsonText = json.encode(book!.info.toJson());
-    final file = File('${datadir}/${book!.bookId}/book_info.json');
+    book!.prop.maxIndex = maxIndex;
+    book!.prop.maxRatio = maxRatio;
+    book!.prop.maxChars = book!.chars;
+
+    book!.prop.atime = DateTime.now();
+
+    String jsonText = json.encode(book!.prop.toJson());
+    final file = File('${datadir}/${book!.bookId}/data/prop.json');
     file.writeAsString(jsonText, mode: FileMode.write, flush: true);
   }
 
@@ -611,39 +681,35 @@ class ViewerNotifier extends ChangeNotifier {
     return book!.title;
   }
 
-  String getSubTitle() {
-    if (book == null) return '';
-    if (book!.indexList.length <= nowIndex) return '';
-    return book!.indexList[nowIndex].title;
-  }
-
   /// Clip
-  saveClip(String text) async {
-    BookClipData d = BookClipData();
-    final file = File('${datadir}/${book!.bookId}/book_clip.json');
+  Future saveClip(String text) async {
+    ClipData d = ClipData();
+    final file = File('${datadir}/${book!.bookId}/data/clip.json');
     if (file.existsSync()) {
       String? txt = await file.readAsString();
       Map<String, dynamic> j = json.decode(txt);
-      d = BookClipData.fromJson(j);
+      d = ClipData.fromJson(j);
     }
-    ClipData c = ClipData();
+
+    ClipInfo c = ClipInfo();
     c.index = nowIndex;
     c.ratio = nowRatio;
     c.text = text;
+
     d.list.add(c);
     d.sort();
-    String jsonText = await d.toJsonString();
+    String jsonText = json.encode(d.toJson());
     file.writeAsString(jsonText, mode: FileMode.write, flush: true);
   }
 
-  BookClipData readClip() {
-    BookClipData d = BookClipData();
+  ClipData readClip() {
+    ClipData d = ClipData();
     if (datadir == null) return d;
-    final file = File('${datadir}/${book!.bookId}/book_clip.json');
+    final file = File('${datadir}/${book!.bookId}/data/clip.json');
     if (file.existsSync()) {
       String? txt = file.readAsStringSync();
       Map<String, dynamic> j = json.decode(txt);
-      d = BookClipData.fromJson(j);
+      d = ClipData.fromJson(j);
     }
     return d;
   }
@@ -651,13 +717,13 @@ class ViewerNotifier extends ChangeNotifier {
   Future deleteClip({required int index}) async {
     if (datadir == null) return;
     try {
-      final file = File('${datadir}/${book!.bookId}/book_clip.json');
+      final file = File('${datadir}/${book!.bookId}/data/clip.json');
       if (file.existsSync()) {
         String? txt = file.readAsStringSync();
         Map<String, dynamic> j = json.decode(txt);
-        BookClipData d = BookClipData.fromJson(j);
+        ClipData d = ClipData.fromJson(j);
         d.list.removeAt(index);
-        String jsonText = await d.toJsonString();
+        String jsonText = json.encode(d.toJson());
         await file.writeAsString(jsonText, mode: FileMode.write, flush: true);
         this.notifyListeners();
       }

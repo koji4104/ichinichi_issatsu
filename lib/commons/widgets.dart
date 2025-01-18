@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'dart:io';
 
+import 'package:ichinichi_issatsu/constants.dart';
+
 const double DEF_RADIUS = 3;
 BorderRadiusGeometry DEF_BORDER_RADIUS = BorderRadius.circular(3);
 BorderRadiusGeometry DEF_RADIUS_BOTTOMBAR = BorderRadius.circular(6);
@@ -32,7 +34,7 @@ Color COL_DARK_BACK = Color(0xff000000);
 
 Color COL_LIGHT_TEXT = Color(0xff000000);
 Color COL_LIGHT_CARD = Color(0xffFFFFFF);
-Color COL_LIGHT_BACK = Color(0xffe0e0e0);
+Color COL_LIGHT_BACK = Color(0xFFf8f8ff);
 
 Color COL_TEST = Color(0xFF00FFFF);
 
@@ -42,6 +44,16 @@ Color COL_FLAG3 = Color(0xffFF0000);
 Color COL_FLAG4 = Color(0xff00FFFF);
 Color COL_FLAG5 = Color(0xffFF00FF);
 Color COL_FLAG6 = Color(0xffFFFF00);
+
+List<Color?> COL_FLAG_LIST = [
+  null,
+  COL_FLAG1,
+  COL_FLAG2,
+  COL_FLAG3,
+  COL_FLAG4,
+  COL_FLAG5,
+  COL_FLAG6
+];
 
 TextStyle TEXTSTYLE_DARK_SMALL =
     ThemeData.dark().textTheme.bodySmall!.copyWith(fontSize: 12.0, color: COL_DARK_TEXT);
@@ -68,7 +80,7 @@ ThemeData myDarkTheme = ThemeData.dark().copyWith(
   scaffoldBackgroundColor: COL_DARK_BACK,
   canvasColor: COL_DARK_CARD,
   cardColor: COL_DARK_CARD,
-  disabledColor: Color(0xFF808080),
+  disabledColor: Color(0xFF909090),
   primaryColor: Color(0xFF444444),
   primaryColorDark: Color(0xFF333333),
   dividerColor: Color(0xFF808080),
@@ -199,17 +211,21 @@ Widget MyLabel(String label, {int? size, Color? color}) {
   );
 }
 
-Widget MyText(String text, {int? maxLength, bool? noScale, bool? center}) {
+Widget MyText(String text, {int? maxLength, int? maxLines, bool? noScale, bool? center}) {
   double scale = myTextScale;
   if (noScale != null && scale > 1.3) {
     scale = 1.3;
   }
   if (maxLength == null) maxLength = 40;
-  if (text.length > maxLength) text = text.substring(0, maxLength) + '...';
+  if (maxLines == null) maxLines = 2;
+  if (text.length > maxLength) {
+    text = text.substring(0, maxLength) + '...';
+    scale -= 0.2;
+  }
   return Text(
     text,
     overflow: TextOverflow.ellipsis,
-    maxLines: 2,
+    maxLines: maxLines,
     textScaler: TextScaler.linear(scale),
     textAlign: center != null ? TextAlign.center : null,
   );
@@ -365,61 +381,6 @@ Widget MyTocTile({required Widget title1, required Widget title2, required Funct
     ),
     padding: EdgeInsets.fromLTRB(16, 2, 4, 2),
     child: TextButton(child: txt, onPressed: onPressed),
-  );
-}
-
-Widget MyBookListTile({required String title, int? flag, Function()? onPressed}) {
-  Widget e = Expanded(child: SizedBox(width: 8));
-  Widget w = SizedBox(width: 8);
-  Icon icon = Icon(Icons.arrow_forward_ios, size: 14.0);
-
-  Widget flagIcon = Container(width: 14);
-  if (flag == 1)
-    flagIcon = Icon(Icons.circle, size: 14.0, color: COL_FLAG1);
-  else if (flag == 2)
-    flagIcon = Icon(Icons.circle, size: 14.0, color: COL_FLAG2);
-  else if (flag == 3)
-    flagIcon = Icon(Icons.circle, size: 14.0, color: COL_FLAG3);
-  else if (flag == 4)
-    flagIcon = Icon(Icons.circle, size: 14.0, color: COL_FLAG4);
-  else if (flag == 5)
-    flagIcon = Icon(Icons.circle, size: 14.0, color: COL_FLAG5);
-  else if (flag == 6) flagIcon = Icon(Icons.circle, size: 14.0, color: COL_FLAG6);
-
-  double scale = myTextScale;
-  double height = 60;
-  if (title.length * scale > 40) {
-    scale -= 0.2;
-    height = 100;
-  } else if (title.length * scale > 20) {
-    scale -= 0.1;
-    height = 75;
-  }
-
-  Widget wText = Text(
-    title,
-    overflow: TextOverflow.ellipsis,
-    maxLines: 3,
-    textScaler: TextScaler.linear(scale),
-  );
-
-  Widget child = Row(children: [
-    flagIcon,
-    w,
-    Expanded(child: wText),
-    w,
-    icon,
-  ]);
-  return Container(
-    decoration: BoxDecoration(
-      color: myTheme.cardColor,
-      border: Border(bottom: BorderSide(color: myTheme.dividerColor, width: 0.5)),
-    ),
-    height: height,
-    child: TextButton(
-      child: child,
-      onPressed: onPressed,
-    ),
   );
 }
 

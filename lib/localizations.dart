@@ -24,8 +24,6 @@ class Localized {
   static Map<String, Map<String, String>> _localizedValues = {
     'en': {
       'app_name': 'One book',
-      'body': 'Body',
-      'appearance': 'Appearance',
       'language_code': 'Language',
       'settings_title': 'Settings',
       'font_size': 'Font size',
@@ -52,12 +50,12 @@ class Localized {
       'maxpage': 'Max page',
       'flag_changes': 'Flag changes',
       'ok': 'OK',
-      'download': 'Download'
+      'download': 'Download',
+      'per_hour': 'Per hour',
+      'page': 'pages',
     },
     'ja': {
       'app_name': '一日一冊',
-      'body': '本文',
-      'appearance': 'アプリ',
       'language_code': '言語',
       'settings_title': '設定',
       'font_size': '文字サイズ',
@@ -84,7 +82,9 @@ class Localized {
       'maxpage': '最後のページ',
       'flag_changes': 'フラグの変更',
       'ok': 'OK',
-      'download': 'ダウンロード'
+      'download': 'ダウンロード',
+      'per_hour': '時速',
+      'page': 'ページ',
     },
   };
 

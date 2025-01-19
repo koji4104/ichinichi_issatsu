@@ -156,7 +156,7 @@ class PropData {
   int flag = 0;
   int nowIndex = 0;
   int nowRatio = 0;
-  int nowChars = 1;
+  int nowChars = 0;
   int maxIndex = 0;
   int maxRatio = 0;
   int maxChars = 1;

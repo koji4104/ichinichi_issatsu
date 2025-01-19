@@ -8,6 +8,7 @@ import 'package:flutter_slidable/flutter_slidable.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart';
+import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 
 import '/commons/base_screen.dart';
 import '/commons/widgets.dart';
@@ -25,6 +26,9 @@ class BookListScreen extends BaseScreen {
   String datadir = '';
   double _width = 400.0;
   double _height = 800.0;
+
+  GlobalKey webViewKey1 = GlobalKey();
+  InAppWebViewController? webViewController1;
 
   @override
   Future init() async {
@@ -284,10 +288,10 @@ class BookListScreen extends BaseScreen {
     Widget w = SizedBox(width: 6);
     Icon icon = Icon(Icons.arrow_forward_ios, size: 14.0);
 
-    int maxChars = data.prop.maxChars;
-    if (maxChars < 1) maxChars = 1000;
-    int prog = (data.prop.nowChars * 100 / maxChars).toInt();
-
+    int prog = 0;
+    if (data.prop.nowChars > 0 && data.prop.maxChars > 100) {
+      prog = (data.prop.nowChars * 100 / data.prop.maxChars).toInt();
+    }
     Widget flagIcon = Container(width: 14);
     if (1 <= data.prop.flag && data.prop.flag <= 6) {
       flagIcon = Icon(Icons.circle, size: 14.0, color: COL_FLAG_LIST[data.prop.flag]);

@@ -42,9 +42,12 @@ class EpubNotifier extends ChangeNotifier {
   EpubData epub = new EpubData();
   MyEpubStatus status = MyEpubStatus.none;
   int downloaded = 0;
+  bool isBrowserDownloading = false;
 
   InAppWebViewController? webViewController;
+  InAppWebViewController? webViewController1;
   String? webBody;
+  DownloadController downloadController = DownloadController();
 
   Future writeBook() async {
     if (epub.siteId == null) return;
@@ -107,6 +110,7 @@ class EpubNotifier extends ChangeNotifier {
 
   Future checkHtml(String url, String body) async {
     epub.reset();
+    isBrowserDownloading = false;
 
     if (url.toString().contains('www.aozora.gr.jp/cards/')) {
       await checkAozora(url, body);
@@ -141,7 +145,7 @@ class EpubNotifier extends ChangeNotifier {
     } else if (epub.downloadUri.toString().contains('ncode.syosetu.com/n')) {
       await downloadNarou();
     } else if (epub.downloadUri.toString().contains('novel18.syosetu.com/n')) {
-      await downloadNarou1();
+      await downloadNarou18();
     } else {
       status = MyEpubStatus.failed;
       this.notifyListeners();
@@ -568,7 +572,7 @@ class EpubNotifier extends ChangeNotifier {
     this.notifyListeners();
   }
 
-  Future<void> downloadNarou1() async {
+  Future<void> downloadNarou18() async {
     if (webViewController == null) {
       status = MyEpubStatus.failed;
       return;
@@ -577,28 +581,34 @@ class EpubNotifier extends ChangeNotifier {
     status = MyEpubStatus.downloading;
     this.notifyListeners();
     downloaded = 0;
+    isBrowserDownloading = true;
 
     if (epub.uriList.length > 0) {
       for (int i = 0; i < epub.uriList.length; i++) {
-        sleep(Duration(milliseconds: 200));
+        await Future.delayed(Duration(milliseconds: 100));
 
-        await webViewController!.loadUrl(
+        /*
+        this.webBody = null;
+        await webViewController1!.loadUrl(
           urlRequest: URLRequest(
             url: WebUri(epub.uriList[i]),
           ),
         );
 
-        for (int wait = 0; wait < 10; wait++) {
-          sleep(Duration(milliseconds: 500));
-          bool isLoading = await webViewController!.isLoading();
-          log('isLoading ${isLoading}');
-          if (isLoading == false) break;
+        for (int wait = 0; wait < 50; wait++) {
+          await Future.delayed(Duration(milliseconds: 100));
+          if (this.webBody != null) {
+            log('download finish wait=${wait}');
+            break;
+          }
         }
 
-        String? body = await webViewController!.getHtml();
-        //String? body = webBody;
+        //String? body = await webViewController!.getHtml();
+        String? body = webBody;
+        */
+        String? body = await downloadController.download18(epub.uriList[i]);
         if (body != null) {
-          await createNarouText1(body, i + 1);
+          await createNarouText(body, i + 1);
         } else {
           break;
         }
@@ -607,11 +617,12 @@ class EpubNotifier extends ChangeNotifier {
         if (downloaded % 5 == 0) {
           this.notifyListeners();
         }
-        if (i >= 20) break;
+        if (i >= 10) break;
       }
     }
     writeBook();
     status = MyEpubStatus.succeeded;
+    isBrowserDownloading = false;
     this.notifyListeners();
   }
 
@@ -619,8 +630,19 @@ class EpubNotifier extends ChangeNotifier {
     EpubFileData f = new EpubFileData();
     f.chapNo = chap;
     BeautifulSoup bs = BeautifulSoup(body);
-    Bs4Element? et = bs.find('div', class_: 'p-novel__subtitle-episode');
-    if (et != null) f.title = et.innerHtml;
+
+    if (f.title == null) {
+      Bs4Element? el = bs.find('div', class_: 'p-novel__subtitle-episode');
+      if (el != null) f.title = el.innerHtml;
+    }
+    if (f.title == null) {
+      Bs4Element? el = bs.find('h1', class_: 'p-novel__title p-novel__title--rensai');
+      if (el != null) f.title = el.innerHtml;
+    }
+    if (f.title == null) {
+      Bs4Element? el = bs.find('meta', attrs: {'property': 'og:title'});
+      if (el != null) f.title = el['content'];
+    }
 
     //<div class="js-novel-text p-novel__text">
     Bs4Element? ec = bs.find('div', class_: 'js-novel-text p-novel__text');
@@ -643,7 +665,7 @@ class EpubNotifier extends ChangeNotifier {
     return f;
   }
 
-  Future createNarouText1(String body, int chap) async {
+  Future createNarouText___(String body, int chap) async {
     EpubFileData f = new EpubFileData();
     f.chapNo = chap;
     BeautifulSoup bs = BeautifulSoup(body);
@@ -693,5 +715,61 @@ class EpubNotifier extends ChangeNotifier {
         epub.uriList.add(u);
       }
     }
+  }
+}
+
+class DownloadController {
+  DownloadController() {}
+
+  InAppWebViewController? webViewController18;
+  String? webBody;
+
+  Future<String?> download(String uri) async {
+    Map<String, String> headers = {
+      'user-agent':
+          'Mozilla/5.0 (iPhone; CPU iPhone OS 15_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148'
+    };
+    String? body = null;
+    http.Response res = await http.get(Uri.parse(uri), headers: headers);
+    if (res.statusCode == 200) {
+      body = res.body;
+    }
+    return body;
+  }
+
+  Future<String?> download18(String uri) async {
+    if (webViewController18 == null) return null;
+
+    webBody = null;
+    await webViewController18!.loadUrl(
+      urlRequest: URLRequest(
+        url: WebUri(uri),
+      ),
+    );
+
+    for (int wait = 0; wait < 100; wait++) {
+      await Future.delayed(Duration(milliseconds: 100));
+      if (this.webBody != null) {
+        log('download finish wait=${wait}');
+        break;
+      }
+    }
+    return webBody;
+  }
+
+  Widget browser18() {
+    PlatformInAppWebViewController.debugLoggingSettings.enabled = false;
+    return InAppWebView(
+      key: GlobalKey(),
+      onWebViewCreated: (controller) async {
+        webViewController18 = controller;
+      },
+      onLoadStart: (controller, url) {},
+      onLoadStop: (controller, url) async {
+        if (url != null) {
+          webBody = await webViewController18!.getHtml();
+        }
+      },
+    );
   }
 }

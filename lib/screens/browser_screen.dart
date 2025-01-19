@@ -10,6 +10,7 @@ import '/models/book_data.dart';
 import '/commons/base_screen.dart';
 import '/commons/widgets.dart';
 import '/controllers/epub_controller.dart';
+import '/controllers/browser_controller.dart';
 import '/screens/booklist_screen.dart';
 
 final browserScreenProvider = ChangeNotifierProvider((ref) => ChangeNotifier());
@@ -20,8 +21,12 @@ class BrowserScreen extends BaseScreen {
   GlobalKey webViewKey = GlobalKey();
   InAppWebViewController? webViewController;
 
+  //GlobalKey webViewKey1 = GlobalKey();
+  //InAppWebViewController? webViewController1;
+
   @override
   Future init() async {
+    log('BrowserScreen() init()');
     readUri();
   }
 
@@ -38,36 +43,63 @@ class BrowserScreen extends BaseScreen {
     redraw();
   }
 
+  bool isActionButton() {
+    if (webViewController == null) return false;
+    if (selectedUri == null) return false;
+    return true;
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     super.build(context, ref);
     ref.watch(browserScreenProvider);
+    ref.watch(browserProvider);
     ref.watch(epubProvider);
 
     return PopScope(
       canPop: false,
       onPopInvokedWithResult: (didPop, result) async {
-        if (await webViewController!.canGoBack()) {
-          await webViewController!.goBack();
-          log('goBack');
+        if (webViewController != null) {
+          if (await webViewController!.canGoBack()) {
+            await webViewController!.goBack();
+            log('goBack');
+          }
         }
       },
       child: Scaffold(
         appBar: AppBar(
           title: Text('Brows'),
+          //leadingWidth: 150,
+          leading: (isActionButton() == false)
+              ? null
+              : IconButton(
+                  iconSize: 22,
+                  icon: Icon(Icons.arrow_back_ios_new),
+                  onPressed: () async {
+                    if (webViewController != null) {
+                      if (await webViewController!.canGoBack()) {
+                        await webViewController!.goBack();
+                        log('goBack');
+                      }
+                    }
+                  },
+                ),
           actions: [
-            MyIconButton(
-              icon: Icons.star,
-              onPressed: () {
-                saveUri();
-              },
-            ),
+            if (isActionButton())
+              IconButton(
+                icon: Icon(Icons.star_border),
+                onPressed: () {
+                  saveUri();
+                },
+              ),
             SizedBox(width: 10)
           ],
         ),
         body: SafeArea(
           child: Stack(children: [
-            selectedUri == null ? getUriList() : browser(),
+            //browser1(),
+            ref.watch(epubProvider).downloadController.browser18(),
+            widget1(),
             downloadBar(),
           ]),
         ),
@@ -75,10 +107,15 @@ class BrowserScreen extends BaseScreen {
     );
   }
 
+  Widget widget1() {
+    if (selectedUri != null) {
+      return browser();
+    }
+    return getUriList();
+  }
+
   Widget browser() {
     PlatformInAppWebViewController.debugLoggingSettings.enabled = false;
-    //log('${selectedUrl}');
-
     return InAppWebView(
       key: webViewKey,
       initialUrlRequest: URLRequest(url: WebUri(selectedUri!)),
@@ -88,18 +125,41 @@ class BrowserScreen extends BaseScreen {
       onLoadStart: (controller, url) {},
       onLoadStop: (controller, url) async {
         if (url != null) {
+          if (ref.watch(epubProvider).isBrowserDownloading) {
+            String? body = await webViewController!.getHtml();
+            ref.watch(epubProvider).webBody = body;
+            return;
+          }
           checkHtml(url: url.rawValue);
+          redraw();
         }
       },
     );
   }
 
+/*
+  Widget browser1() {
+    PlatformInAppWebViewController.debugLoggingSettings.enabled = false;
+    return InAppWebView(
+      key: webViewKey1,
+      onWebViewCreated: (controller) async {
+        webViewController1 = controller;
+        ref.watch(epubProvider).webViewController1 = webViewController1;
+      },
+      onLoadStart: (controller, url) {},
+      onLoadStop: (controller, url) async {
+        if (url != null) {
+          if (ref.watch(epubProvider).isBrowserDownloading) {
+            String? body = await webViewController1!.getHtml();
+            ref.watch(epubProvider).webBody = body;
+            return;
+          }
+        }
+      },
+    );
+  }
+*/
   checkHtml({String? url}) async {
-    if (ref.watch(epubProvider).status == MyEpubStatus.downloading) {
-      String? body = await webViewController!.getHtml();
-      ref.watch(epubProvider).webBody = body;
-      return;
-    }
     if (url == null) return;
     String? body = await webViewController!.getHtml();
     if (body == null) return;

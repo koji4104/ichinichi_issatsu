@@ -48,6 +48,7 @@ class BookListNotifier extends ChangeNotifier {
             Map<String, dynamic> j = json.decode(txt);
             BookData book = BookData();
             book = BookData.fromJson(j);
+            log('${book.title}');
 
             try {
               final indexFile = File('${e.path}/data/index.json');
@@ -117,5 +118,7 @@ class BookListNotifier extends ChangeNotifier {
     }
   }
 
-  Future readBooklog() async {}
+  Future AddDownload(int index) async {
+    bookList[index].dluri;
+  }
 }

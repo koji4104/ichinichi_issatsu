@@ -97,6 +97,14 @@ class IndexData {
       }
     }
   }
+
+  int getMaxIndex() {
+    int maxIndex = 0;
+    for (IndexInfo i in list) {
+      if (maxIndex < i.index) maxIndex = i.index;
+    }
+    return maxIndex;
+  }
 }
 
 class ClipInfo {
@@ -196,39 +204,40 @@ class SettingsData {
   DateTime lastDate = DateTime(2000, 1, 1);
 }
 
-class FavoriteInfo {
-  FavoriteInfo() {}
+class FavoInfo {
+  FavoInfo() {}
   String uri = '';
   String title = '';
+  int type = 0;
 
   Map<String, dynamic> toJson() => {
         'uri': uri,
         'title': title,
       };
 
-  FavoriteInfo.fromJson(Map<String, dynamic> j) {
+  FavoInfo.fromJson(Map<String, dynamic> j) {
     if (j.containsKey('uri')) uri = j['uri'] ?? '';
     if (j.containsKey('title')) title = j['title'] ?? '';
   }
 }
 
-class FavoriteData {
-  FavoriteData() {}
-  List<FavoriteInfo> list = [];
+class FavoData {
+  FavoData() {}
+  List<FavoInfo> list = [];
 
   Map<String, dynamic> toJson() {
     List<Map<String, dynamic>> dlist = [];
-    for (FavoriteInfo d in list) {
+    for (FavoInfo d in list) {
       dlist.add(d.toJson());
     }
     return {'list': dlist};
   }
 
-  FavoriteData.fromJson(dynamic jsonList) {
+  FavoData.fromJson(dynamic jsonList) {
     if (jsonList.containsKey('list')) {
       var list1 = jsonList['list'];
       for (Map<String, dynamic> j in list1) {
-        FavoriteInfo c = FavoriteInfo.fromJson(j);
+        FavoInfo c = FavoInfo.fromJson(j);
         list.add(c);
       }
     }

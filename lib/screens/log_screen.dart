@@ -221,7 +221,7 @@ class ReadlogScreen extends BaseScreen {
           ),
           SizedBox(width: 10),
           IconButton(
-            iconSize: 24,
+            iconSize: 28,
             icon: Icon(Icons.refresh),
             onPressed: () async {
               await readLog.read();
@@ -340,7 +340,7 @@ class ReadlogScreen extends BaseScreen {
       textAlign: TextAlign.left,
     );
     Widget wMin = Text(
-      '${(data.sec / 60).toInt()}',
+      '${(data.sec / 60).toInt().toString().padLeft(4, ' ')}',
       textScaler: TextScaler.linear(myTextScale),
       textAlign: TextAlign.right,
     );
@@ -351,7 +351,7 @@ class ReadlogScreen extends BaseScreen {
       //style: TextStyle(color: myTheme.disabledColor),
     );
     Widget wPage = Text(
-      '${(data.chars / CHARS_PAGE).toInt()}',
+      '${(data.chars / CHARS_PAGE).toInt().toString().padLeft(4, ' ')}',
       textScaler: TextScaler.linear(myTextScale),
       textAlign: TextAlign.right,
     );
@@ -362,7 +362,7 @@ class ReadlogScreen extends BaseScreen {
       //style: TextStyle(color: myTheme.disabledColor),
     );
     Widget wSpeed = Text(
-      '${per_hour}',
+      '${per_hour.toString().padLeft(4, ' ')}',
       textScaler: TextScaler.linear(myTextScale),
       textAlign: TextAlign.right,
     );

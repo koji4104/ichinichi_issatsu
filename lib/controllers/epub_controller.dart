@@ -5,6 +5,7 @@ import 'dart:io';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:ichinichi_issatsu/commons/widgets.dart';
 import 'package:intl/intl.dart';
 
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
@@ -28,11 +29,17 @@ class PermitInvalidCertification extends HttpOverrides {
 
 enum MyEpubStatus {
   none,
+  same,
+  first,
+  add,
   downloadable,
   downloading,
   succeeded,
   failed,
 }
+
+int NUM_OF_FIRST_COWNLOAD = 10;
+int NUM_OF_ADD_COWNLOAD = 30;
 
 final epubProvider = ChangeNotifierProvider((ref) => EpubNotifier(ref));
 
@@ -42,12 +49,14 @@ class EpubNotifier extends ChangeNotifier {
   EpubData epub = new EpubData();
   MyEpubStatus status = MyEpubStatus.none;
   int downloaded = 0;
-  bool isBrowserDownloading = false;
+  int downloadedIndex = 0;
+
+  int numOfDownloadRequired = NUM_OF_FIRST_COWNLOAD;
 
   InAppWebViewController? webViewController;
   InAppWebViewController? webViewController1;
   String? webBody;
-  DownloadController downloadController = DownloadController();
+  DownloadController downloadCtrl = DownloadController();
 
   Future writeBook() async {
     if (epub.siteId == null) return;
@@ -79,7 +88,7 @@ class EpubNotifier extends ChangeNotifier {
     book.siteId = epub.siteId!;
     book.author = epub.bookAuthor ?? '';
     book.chars = 0;
-    book.dluri = epub.downloadUri ?? '';
+    book.dluri = epub.dluri ?? '';
     book.ctime = DateTime.now();
 
     IndexData index = IndexData();
@@ -108,22 +117,44 @@ class EpubNotifier extends ChangeNotifier {
     await propFile.writeAsString(val, mode: FileMode.write, flush: true);
   }
 
-  Future checkHtml(String url, String body) async {
-    epub.reset();
-    isBrowserDownloading = false;
+  Future checkUri(String uri) async {
+    String? body = null;
 
-    if (url.toString().contains('www.aozora.gr.jp/cards/')) {
-      await checkAozora(url, body);
-    } else if (url.toString().contains('kakuyomu.jp/works/')) {
-      await checkKakuyomu(url, body);
-    } else if (url.toString().contains('ncode.syosetu.com/n')) {
-      await checkNarou(url, body);
-    } else if (url.toString().contains('novel18.syosetu.com/n')) {
-      await checkNarou(url, body);
+    if (uri.contains('www.aozora.gr.jp/cards/')) {
+      body = await downloadCtrl.download(uri);
+    } else if (uri.contains('kakuyomu.jp/works/')) {
+      body = await downloadCtrl.download(uri);
+    } else if (uri.contains('ncode.syosetu.com/n')) {
+      body = await downloadCtrl.download(uri);
+    } else if (uri.contains('novel18.syosetu.com/n')) {
+      body = await downloadCtrl.download8(uri);
+    }
+    checkHtml(uri, body);
+  }
+
+  Future checkHtml(String uri, String? body) async {
+    epub.reset();
+    downloadedIndex = 0;
+
+    if (body != null) {
+      if (uri.contains('www.aozora.gr.jp/cards/')) {
+        await checkAozora(uri, body);
+      } else if (uri.contains('kakuyomu.jp/works/')) {
+        await checkKakuyomu(uri, body);
+      } else if (uri.contains('ncode.syosetu.com/n')) {
+        await checkNarou(uri, body);
+      } else if (uri.contains('novel18.syosetu.com/n')) {
+        await checkNarou(uri, body);
+      }
     }
 
     if (epub.bookId != null && epub.uriList.isNotEmpty) {
-      status = MyEpubStatus.downloadable;
+      downloadedIndex = await getMaxIndex(epub.bookId!);
+      if (downloadedIndex > epub.uriList.length) downloadedIndex = epub.uriList.length;
+      if (downloadedIndex == epub.uriList.length)
+        status = MyEpubStatus.same;
+      else
+        status = MyEpubStatus.downloadable;
       this.notifyListeners();
     } else if (status != MyEpubStatus.none) {
       status = MyEpubStatus.none;
@@ -132,20 +163,26 @@ class EpubNotifier extends ChangeNotifier {
   }
 
   Future<void> download() async {
-    if (epub.uriList.length == 0 || epub.downloadUri == null) {
+    if (epub.uriList.length == 0 || epub.dluri == null) {
       log('urlList.length == 0');
       status = MyEpubStatus.failed;
       this.notifyListeners();
       return;
     }
-    if (epub.downloadUri.toString().contains('www.aozora.gr.jp/cards/')) {
+
+    numOfDownloadRequired = NUM_OF_FIRST_COWNLOAD;
+    if (downloadedIndex > 0) {
+      numOfDownloadRequired = downloadedIndex + NUM_OF_ADD_COWNLOAD;
+    }
+
+    if (epub.dluri.toString().contains('www.aozora.gr.jp/cards/')) {
       await downloadAozora();
-    } else if (epub.downloadUri.toString().contains('kakuyomu.jp/works/')) {
+    } else if (epub.dluri.toString().contains('kakuyomu.jp/works/')) {
       await downloadKakuyomu();
-    } else if (epub.downloadUri.toString().contains('ncode.syosetu.com/n')) {
+    } else if (epub.dluri.toString().contains('ncode.syosetu.com/n')) {
       await downloadNarou();
-    } else if (epub.downloadUri.toString().contains('novel18.syosetu.com/n')) {
-      await downloadNarou18();
+    } else if (epub.dluri.toString().contains('novel18.syosetu.com/n')) {
+      await downloadNarou8();
     } else {
       status = MyEpubStatus.failed;
       this.notifyListeners();
@@ -195,12 +232,50 @@ class EpubNotifier extends ChangeNotifier {
     }
   }
 
-  //--------
+  int calcChars(String text) {
+    text = text.replaceAll('\n', '');
+    text = text.replaceAll('<h3>', '');
+    text = text.replaceAll('</h3>', '');
+    // delete ruby
+    // <ruby><rb>獅子</rb><rp>（</rp><rt>しし</rt><rp>）</rp></ruby>
+    text = text.replaceAll('<ruby>', '');
+    text = text.replaceAll('</ruby>', '');
+    text = text.replaceAll('<rb>', '');
+    text = text.replaceAll('</rb>', '');
+    text = text.replaceAll('<rp>', '');
+    text = text.replaceAll('</rp>', '');
+    text = text.replaceAll('<rt>', '');
+    text = text.replaceAll('</rt>', '');
+    return text.length;
+  }
+
+  Future<int> getMaxIndex(String bookId) async {
+    int maxIndex = 0;
+
+    String appdir = (await getApplicationDocumentsDirectory()).path;
+    if (!Platform.isIOS && !Platform.isAndroid) {
+      appdir = appdir + '/test';
+    }
+    String datadir = appdir + '/book';
+    try {
+      final file = File('${datadir}/${bookId}/data/index.json');
+      if (file.existsSync()) {
+        String? txt1 = await file.readAsString();
+        Map<String, dynamic> j = json.decode(txt1);
+        IndexData bi = IndexData.fromJson(j);
+        maxIndex = bi.getMaxIndex();
+      }
+    } catch (_) {}
+
+    return maxIndex;
+  }
+
+  //-------------------------------------------------------
   // Aozora
-  //--------
+  //-------------------------------------------------------
 
   Future checkAozora(String url, String body) async {
-    epub.downloadUri = url;
+    epub.dluri = url;
 
     //https://www.aozora.gr.jp/cards/000148/card773.html
     //https://www.aozora.gr.jp/cards/000148/files/773_14560.html
@@ -239,12 +314,10 @@ class EpubNotifier extends ChangeNotifier {
     this.notifyListeners();
     downloaded = 0;
 
-    String uri = epub.uriList[0];
-    http.Response res = await http.get(Uri.parse(uri), headers: headers);
-    if (res.statusCode == 200) {
+    String? body = await downloadCtrl.downloadSjis(epub.uriList[0]);
+    if (body != null) {
       try {
-        String text1 = await CharsetConverter.decode("Shift_JIS", res.bodyBytes);
-        createAozoraText(text1);
+        createAozoraText(body);
 
         if (epub.fileList.length >= 2) {
           writeBook();
@@ -385,19 +458,18 @@ class EpubNotifier extends ChangeNotifier {
         f.fileName = 'text/ch${f.chapNo000}.txt';
         f.text = text;
         f.title = title;
-        f.chars = text.length;
+        f.chars = calcChars(text);
         epub.fileList.add(f);
       }
     }
   }
 
-  //----------
+  //-------------------------------------------------------
   // Kakuyomu
-  //----------
+  //-------------------------------------------------------
 
   Future<void> checkKakuyomu(String url, String body) async {
-    epub.downloadUri = url;
-    //epub.bookId = 'K' + url.substring(url.indexOf('works/') + 6);
+    epub.dluri = url;
     epub.siteId = url.substring(url.indexOf('works/') + 6);
     epub.bookId = 'K' + epub.siteId!;
     String userId = '';
@@ -457,19 +529,21 @@ class EpubNotifier extends ChangeNotifier {
     f0.chars = text0.length;
     epub.fileList.add(f0);
 
-    for (int i = 0; i < epub.uriList.length; i++) {
+    for (int i = downloadedIndex; i < epub.uriList.length; i++) {
       sleep(Duration(milliseconds: 200));
-      http.Response res1 = await http.get(Uri.parse(epub.uriList[i]), headers: headers);
-      if (res1.statusCode == 200) {
-        await createKakuyomuText(res1.body, i + 1);
+
+      String? body = await downloadCtrl.download(epub.uriList[i]);
+      if (body != null) {
+        await createKakuyomuText(body, i + 1);
       } else {
         break;
       }
+
       downloaded = i;
       if (downloaded % 5 == 0) {
         this.notifyListeners();
       }
-      if (i >= 10) break;
+      if (i >= numOfDownloadRequired) break;
     }
 
     if (epub.fileList.length >= 2) {
@@ -506,7 +580,7 @@ class EpubNotifier extends ChangeNotifier {
       text = text.replaceAll('</p>', '<br />');
 
       f.text = title + text;
-      f.chars = text.length;
+      f.chars = calcChars(text);
       f.chapNo = chap;
       f.fileName = 'text/ch${f.chapNo000}.txt';
       epub.fileList.add(f);
@@ -514,12 +588,12 @@ class EpubNotifier extends ChangeNotifier {
     return;
   }
 
-  //-------
+  //-------------------------------------------------------
   // Narou
-  //-------
+  //-------------------------------------------------------
 
   Future<void> checkNarou(String url, String body) async {
-    epub.downloadUri = url;
+    epub.dluri = url;
     epub.siteId = url.substring(url.indexOf('syosetu.com/') + 12);
     epub.bookId = 'N' + epub.siteId!;
     BeautifulSoup bs = BeautifulSoup(body);
@@ -551,62 +625,10 @@ class EpubNotifier extends ChangeNotifier {
     downloaded = 0;
 
     if (epub.uriList.length > 0) {
-      for (int i = 0; i < epub.uriList.length; i++) {
+      for (int i = downloadedIndex; i < epub.uriList.length; i++) {
         sleep(Duration(milliseconds: 200));
-        http.Response res1 = await http.get(Uri.parse(epub.uriList[i]), headers: headers);
-        log('${res1.statusCode}  ${epub.uriList[i]}');
-        if (res1.statusCode == 200) {
-          await createNarouText(res1.body, i + 1);
-        } else {
-          break;
-        }
-        downloaded = i;
-        if (downloaded % 5 == 0) {
-          this.notifyListeners();
-        }
-        if (i >= 10) break;
-      }
-    }
-    writeBook();
-    status = MyEpubStatus.succeeded;
-    this.notifyListeners();
-  }
 
-  Future<void> downloadNarou18() async {
-    if (webViewController == null) {
-      status = MyEpubStatus.failed;
-      return;
-    }
-
-    status = MyEpubStatus.downloading;
-    this.notifyListeners();
-    downloaded = 0;
-    isBrowserDownloading = true;
-
-    if (epub.uriList.length > 0) {
-      for (int i = 0; i < epub.uriList.length; i++) {
-        await Future.delayed(Duration(milliseconds: 100));
-
-        /*
-        this.webBody = null;
-        await webViewController1!.loadUrl(
-          urlRequest: URLRequest(
-            url: WebUri(epub.uriList[i]),
-          ),
-        );
-
-        for (int wait = 0; wait < 50; wait++) {
-          await Future.delayed(Duration(milliseconds: 100));
-          if (this.webBody != null) {
-            log('download finish wait=${wait}');
-            break;
-          }
-        }
-
-        //String? body = await webViewController!.getHtml();
-        String? body = webBody;
-        */
-        String? body = await downloadController.download18(epub.uriList[i]);
+        String? body = await downloadCtrl.download(epub.uriList[i]);
         if (body != null) {
           await createNarouText(body, i + 1);
         } else {
@@ -617,12 +639,45 @@ class EpubNotifier extends ChangeNotifier {
         if (downloaded % 5 == 0) {
           this.notifyListeners();
         }
-        if (i >= 10) break;
+        if (i >= numOfDownloadRequired) break;
       }
     }
     writeBook();
     status = MyEpubStatus.succeeded;
-    isBrowserDownloading = false;
+    this.notifyListeners();
+  }
+
+  Future<void> downloadNarou8() async {
+    if (webViewController == null) {
+      status = MyEpubStatus.failed;
+      return;
+    }
+
+    status = MyEpubStatus.downloading;
+    this.notifyListeners();
+    downloaded = 0;
+
+    if (epub.uriList.length > 0) {
+      for (int i = downloadedIndex; i < epub.uriList.length; i++) {
+        await Future.delayed(Duration(milliseconds: 100));
+
+        // https://ncode.syosetu.com/n6964jl/1/
+        String? body = await downloadCtrl.download8(epub.uriList[i]);
+        if (body != null) {
+          await createNarouText(body, i + 1);
+        } else {
+          break;
+        }
+
+        downloaded = i;
+        if (downloaded % 5 == 0) {
+          this.notifyListeners();
+        }
+        if (i >= numOfDownloadRequired) break;
+      }
+    }
+    writeBook();
+    status = MyEpubStatus.succeeded;
     this.notifyListeners();
   }
 
@@ -644,20 +699,26 @@ class EpubNotifier extends ChangeNotifier {
       if (el != null) f.title = el['content'];
     }
 
+    String text = '';
     //<div class="js-novel-text p-novel__text">
-    Bs4Element? ec = bs.find('div', class_: 'js-novel-text p-novel__text');
-    if (ec != null) {
-      String text = ec.innerHtml;
-      text = text.replaceAll('<br>', '<br />');
-      text = text.replaceAll('&nbsp;', '');
-      String title = '<h3>${f.title}</h3>\n';
+    List<Bs4Element> els = bs.findAll('div', class_: 'js-novel-text p-novel__text');
+    for (Bs4Element el in els) {
+      String t1 = el.innerHtml;
+      t1 = t1.replaceAll('<br>', '<br />');
+      t1 = t1.replaceAll('&nbsp;', '');
 
       // delete <p>
       text = deleteTag(text, '<p ');
       text = text.replaceAll('</p>', '<br />');
 
+      if (text != '') text += '<br />';
+      text += t1;
+    }
+
+    if (text != '') {
+      String title = '<h3>${f.title}</h3>\n';
       f.text = title + text;
-      f.chars = text.length;
+      f.chars = calcChars(text);
       f.fileName = 'text/ch${f.chapNo000}.txt';
       epub.fileList.add(f);
     }
@@ -665,43 +726,10 @@ class EpubNotifier extends ChangeNotifier {
     return f;
   }
 
-  Future createNarouText___(String body, int chap) async {
-    EpubFileData f = new EpubFileData();
-    f.chapNo = chap;
-    BeautifulSoup bs = BeautifulSoup(body);
-
-    Bs4Element? elTitle1 = bs.find('h1', class_: 'p-novel__title p-novel__title--rensai');
-    if (elTitle1 != null) f.title = elTitle1.innerHtml;
-
-    if (f.title == null) {
-      Bs4Element? elTitle2 = bs.find('meta', attrs: {'property': 'og:title'});
-      if (elTitle2 != null) f.title = elTitle2['content'] ?? '';
-    }
-
-    //<div class="p-novel__body">
-    Bs4Element? ec = bs.find('div', class_: 'p-novel__body');
-    if (ec != null) {
-      String text = ec.innerHtml;
-      text = text.replaceAll('<br>', '<br />');
-      text = text.replaceAll('&nbsp;', '');
-      String title = '<h3>${f.title}</h3>\n';
-
-      // delete <p>
-      text = deleteTag(text, '<p ');
-      text = text.replaceAll('</p>', '<br />');
-
-      f.text = title + text;
-      f.chars = text.length;
-      f.fileName = 'text/ch${f.chapNo000}.txt';
-      epub.fileList.add(f);
-    }
-
-    return f;
-  }
-
-  //-------
+  //-------------------------------------------------------
   // Hamel
-  //-------
+  //-------------------------------------------------------
+
   Future<void> checkHamel(String url, String body) async {
     epub.bookId = url.substring(url.indexOf('syosetu.com/') + 12);
 
@@ -721,7 +749,7 @@ class EpubNotifier extends ChangeNotifier {
 class DownloadController {
   DownloadController() {}
 
-  InAppWebViewController? webViewController18;
+  InAppWebViewController? webViewController8;
   String? webBody;
 
   Future<String?> download(String uri) async {
@@ -730,44 +758,60 @@ class DownloadController {
           'Mozilla/5.0 (iPhone; CPU iPhone OS 15_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148'
     };
     String? body = null;
-    http.Response res = await http.get(Uri.parse(uri), headers: headers);
-    if (res.statusCode == 200) {
-      body = res.body;
-    }
+    try {
+      http.Response res = await http.get(Uri.parse(uri), headers: headers);
+      if (res.statusCode == 200) {
+        body = res.body;
+      }
+    } catch (_) {}
     return body;
   }
 
-  Future<String?> download18(String uri) async {
-    if (webViewController18 == null) return null;
-
-    webBody = null;
-    await webViewController18!.loadUrl(
-      urlRequest: URLRequest(
-        url: WebUri(uri),
-      ),
-    );
-
-    for (int wait = 0; wait < 100; wait++) {
-      await Future.delayed(Duration(milliseconds: 100));
-      if (this.webBody != null) {
-        log('download finish wait=${wait}');
-        break;
+  Future<String?> downloadSjis(String uri) async {
+    Map<String, String> headers = {
+      'user-agent':
+          'Mozilla/5.0 (iPhone; CPU iPhone OS 15_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148'
+    };
+    String? body = null;
+    try {
+      http.Response res = await http.get(Uri.parse(uri), headers: headers);
+      if (res.statusCode == 200) {
+        body = await CharsetConverter.decode("Shift_JIS", res.bodyBytes);
       }
-    }
+    } catch (_) {}
+    return body;
+  }
+
+  Future<String?> download8(String uri) async {
+    if (webViewController8 == null) return null;
+    webBody = null;
+    try {
+      await webViewController8!.loadUrl(
+        urlRequest: URLRequest(url: WebUri(uri)),
+      );
+
+      for (int wait = 0; wait < 100; wait++) {
+        await Future.delayed(Duration(milliseconds: 100));
+        if (this.webBody != null) {
+          log('download finish wait=${wait}');
+          break;
+        }
+      }
+    } catch (_) {}
     return webBody;
   }
 
-  Widget browser18() {
+  Widget browser8() {
     PlatformInAppWebViewController.debugLoggingSettings.enabled = false;
     return InAppWebView(
       key: GlobalKey(),
       onWebViewCreated: (controller) async {
-        webViewController18 = controller;
+        webViewController8 = controller;
       },
       onLoadStart: (controller, url) {},
       onLoadStop: (controller, url) async {
         if (url != null) {
-          webBody = await webViewController18!.getHtml();
+          webBody = await webViewController8!.getHtml();
         }
       },
     );

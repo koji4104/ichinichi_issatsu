@@ -16,7 +16,11 @@ class EnvData {
   List<String> keys = [];
   String name = '';
 
-  EnvData({required int this.val, required List<int> this.vals, required List<String> this.keys, required String this.name}) {
+  EnvData(
+      {required int this.val,
+      required List<int> this.vals,
+      required List<String> this.keys,
+      required String this.name}) {
     round(val);
   }
 
@@ -115,6 +119,16 @@ class Environment {
     return col;
   }
 
+  String getH3Css() {
+    String col = '#4169E1'; // royal blue
+    if (back_color.val == 1) {
+      col = '#87CEFA'; // light sky blue
+    } else if (back_color.val == 2) {
+      col = '#87CEFA';
+    }
+    return col;
+  }
+
   Color getFrontColor({int? val}) {
     if (val == null) val = back_color.val;
     Color col = Color(0xFF000000);
@@ -148,7 +162,7 @@ class Environment {
         language_code.name: language_code.val,
         font_size.name: font_size.val,
         font_family.name: font_family.val,
-        line_height.name: line_height.val,
+        //line_height.name: line_height.val,
         dark_mode.name: dark_mode.val,
         back_color.name: back_color.val,
         writing_mode.name: writing_mode.val,
@@ -159,7 +173,7 @@ class Environment {
     fromJsonSub(j, language_code);
     fromJsonSub(j, font_size);
     fromJsonSub(j, font_family);
-    fromJsonSub(j, line_height);
+    //fromJsonSub(j, line_height);
     fromJsonSub(j, dark_mode);
     fromJsonSub(j, back_color);
     fromJsonSub(j, writing_mode);
@@ -184,7 +198,7 @@ class EnvNotifier extends ChangeNotifier {
     list.add(env.language_code);
     list.add(env.font_size);
     list.add(env.font_family);
-    list.add(env.line_height);
+    //list.add(env.line_height);
     list.add(env.dark_mode);
     list.add(env.back_color);
     list.add(env.writing_mode);

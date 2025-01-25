@@ -5,6 +5,8 @@ import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:path_provider/path_provider.dart';
 import 'dart:convert';
+import 'package:flutter_slidable/flutter_slidable.dart';
+import 'package:flutter/gestures.dart';
 
 import '/models/book_data.dart';
 import '/commons/base_screen.dart';
@@ -21,26 +23,19 @@ class BrowserScreen extends BaseScreen {
   GlobalKey webViewKey = GlobalKey();
   InAppWebViewController? webViewController;
 
-  //GlobalKey webViewKey1 = GlobalKey();
-  //InAppWebViewController? webViewController1;
+  String? selectedUri;
+  String? siteTitle;
+
+  List<String> uriList = [];
+  List<String> titleList = [];
+
+  FavoData initFavorite = FavoData();
+  FavoData favorite = FavoData();
 
   @override
   Future init() async {
-    log('BrowserScreen() init()');
-    readUri();
-  }
-
-  Future readUri() async {
-    uriList.clear();
-    titleList.clear();
-    uriList.addAll(initUriList);
-    titleList.addAll(initTitleList);
-    FavoriteData f = await readFavorite();
-    for (FavoriteInfo info in f.list) {
-      uriList.add(info.uri);
-      titleList.add(info.uri);
-    }
-    redraw();
+    //log('BrowserScreen() init()');
+    //readUri();
   }
 
   bool isActionButton() {
@@ -49,12 +44,27 @@ class BrowserScreen extends BaseScreen {
     return true;
   }
 
+  String getSiteTitle() {
+    if (selectedUri == null) {
+      siteTitle == 'Brows';
+    } else if (siteTitle == null) {
+      siteTitle == 'Brows';
+    }
+    return siteTitle!;
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     super.build(context, ref);
     ref.watch(browserScreenProvider);
     ref.watch(browserProvider);
     ref.watch(epubProvider);
+
+    //uriList = ref.watch(browserProvider).uriList;
+    //titleList = ref.watch(browserProvider).titleList;
+
+    initFavorite = ref.watch(browserProvider).initFavorite;
+    favorite = ref.watch(browserProvider).favorite;
 
     return PopScope(
       canPop: false,
@@ -68,7 +78,7 @@ class BrowserScreen extends BaseScreen {
       },
       child: Scaffold(
         appBar: AppBar(
-          title: Text('Brows'),
+          title: Text(siteTitle ?? 'Brows'),
           //leadingWidth: 150,
           leading: (isActionButton() == false)
               ? null
@@ -88,18 +98,35 @@ class BrowserScreen extends BaseScreen {
             if (isActionButton())
               IconButton(
                 icon: Icon(Icons.star_border),
-                onPressed: () {
-                  saveUri();
+                onPressed: () async {
+                  if (webViewController != null) {
+                    String? title = await webViewController!.getTitle();
+                    alertDialog('save', msg: title).then((ret) {
+                      ref.watch(browserProvider).webViewController = webViewController;
+                      ref.watch(browserProvider).saveFavorite();
+                    });
+                  }
                 },
               ),
-            SizedBox(width: 10)
+            SizedBox(width: 16)
           ],
         ),
         body: SafeArea(
           child: Stack(children: [
-            //browser1(),
-            ref.watch(epubProvider).downloadController.browser18(),
-            widget1(),
+            ref.watch(epubProvider).downloadCtrl.browser8(),
+            //widget1(),
+
+            Container(
+              color: myTheme.scaffoldBackgroundColor,
+              padding: DEF_MENU_PADDING,
+              child: RefreshIndicator(
+                onRefresh: () async {
+                  ref.watch(browserProvider).readUriList();
+                },
+                child: widget1(),
+              ),
+            ),
+
             downloadBar(),
           ]),
         ),
@@ -124,12 +151,22 @@ class BrowserScreen extends BaseScreen {
       },
       onLoadStart: (controller, url) {},
       onLoadStop: (controller, url) async {
-        if (url != null) {
-          if (ref.watch(epubProvider).isBrowserDownloading) {
-            String? body = await webViewController!.getHtml();
-            ref.watch(epubProvider).webBody = body;
-            return;
+        List<MetaTag> metaTagList = await webViewController!.getMetaTags();
+        for (MetaTag tag in metaTagList) {
+          if (tag.attrs!.length > 0) {
+            if (tag.attrs![0].name == 'property' && tag.attrs![0].value == 'og:title') {
+              log('onLoadStop og:title = ${tag.content}');
+              siteTitle = tag.content;
+              break;
+            } else if (tag.attrs![0].name == 'property' && tag.attrs![0].value == 'twitter:title') {
+              log('onLoadStop twitter:title = ${tag.content}');
+              siteTitle = tag.content;
+              break;
+            }
           }
+        }
+
+        if (url != null) {
           checkHtml(url: url.rawValue);
           redraw();
         }
@@ -137,33 +174,10 @@ class BrowserScreen extends BaseScreen {
     );
   }
 
-/*
-  Widget browser1() {
-    PlatformInAppWebViewController.debugLoggingSettings.enabled = false;
-    return InAppWebView(
-      key: webViewKey1,
-      onWebViewCreated: (controller) async {
-        webViewController1 = controller;
-        ref.watch(epubProvider).webViewController1 = webViewController1;
-      },
-      onLoadStart: (controller, url) {},
-      onLoadStop: (controller, url) async {
-        if (url != null) {
-          if (ref.watch(epubProvider).isBrowserDownloading) {
-            String? body = await webViewController1!.getHtml();
-            ref.watch(epubProvider).webBody = body;
-            return;
-          }
-        }
-      },
-    );
-  }
-*/
   checkHtml({String? url}) async {
     if (url == null) return;
     String? body = await webViewController!.getHtml();
     if (body == null) return;
-
     ref.watch(epubProvider).webViewController = webViewController;
     await ref.read(epubProvider).checkHtml(url, body);
   }
@@ -173,8 +187,9 @@ class BrowserScreen extends BaseScreen {
     ref.read(epubProvider).setStatusNone();
   }
 
-  Widget downloadBar() {
-    double barHeight = 220;
+  /*
+  Widget downloadBar1() {
+    double barHeight = 230;
     double ffBottom = 0;
     if (ref.watch(epubProvider).status == MyEpubStatus.none) {
       ffBottom = -1.0 * barHeight;
@@ -182,23 +197,29 @@ class BrowserScreen extends BaseScreen {
       ffBottom = 0;
     }
 
-    String label = '';
+    String label1 = '';
+    String label2 = '';
+    int already = ref.watch(epubProvider).downloadedIndex;
+    int done = ref.watch(epubProvider).downloaded;
+    int all = ref.watch(epubProvider).epub.uriList.length;
+
+    label1 = '${ref.watch(epubProvider).epub.bookTitle ?? ref.watch(epubProvider).epub.bookId}';
 
     if (ref.watch(epubProvider).status == MyEpubStatus.downloadable) {
-      label = '${ref.watch(epubProvider).epub.bookTitle ?? ref.watch(epubProvider).epub.bookId}';
-      if (ref.watch(epubProvider).epub.uriList.length > 1) {
-        label += ' (${ref.watch(epubProvider).epub.uriList.length})';
+      if (all > 1) {
+        label2 += ' (${all})';
+      }
+      if (already > 1) {
+        label2 += ' Already (${already})';
       }
     } else if (ref.watch(epubProvider).status == MyEpubStatus.succeeded) {
-      label = 'done';
+      label2 = 'Download complete (${all})';
     } else if (ref.watch(epubProvider).status == MyEpubStatus.failed) {
-      label = 'failed';
+      label2 = 'Failed';
     } else if (ref.watch(epubProvider).status == MyEpubStatus.downloading) {
-      label = 'downloading';
-      int done = ref.watch(epubProvider).downloaded;
-      int all = ref.watch(epubProvider).epub.uriList.length;
+      label2 = 'Downloading';
       if (done > 0 && all > 1) {
-        label += ' ${done}/${all}';
+        label2 += ' ${done} / ${all}';
       }
     }
 
@@ -210,7 +231,13 @@ class BrowserScreen extends BaseScreen {
           SizedBox(height: 0),
           Row(children: [
             SizedBox(width: 20),
-            Expanded(child: MyText(label, noScale: true, center: true)),
+            Expanded(child: MyText(label1, noScale: true, center: true)),
+            SizedBox(width: 20),
+          ]),
+          SizedBox(height: 8),
+          Row(children: [
+            SizedBox(width: 20),
+            Expanded(child: MyText(label2, noScale: true, center: true)),
             SizedBox(width: 20),
           ]),
           SizedBox(height: 8),
@@ -252,42 +279,64 @@ class BrowserScreen extends BaseScreen {
       child: bar,
     );
   }
-
-  String? selectedUri;
-
-  List<String> uriList = [];
-  List<String> titleList = [];
-
-  List<String> initUriList = [
-    'https://www.aozora.gr.jp/access_ranking/2022_xhtml.html',
-    'https://kakuyomu.jp',
-    'https://yomou.syosetu.com',
-    'https://noc.syosetu.com/top/top/',
-  ];
-  List<String> initTitleList = [
-    'https://www.aozora.gr.jp/access_ranking/2022_xhtml.html',
-    'https://kakuyomu.jp',
-    'https://yomou.syosetu.com',
-    'https://noc.syosetu.com/top/top/',
-  ];
+  */
 
   Widget getUriList() {
-    if (uriList.length <= 0) return Container();
+    if (initFavorite.list.length <= 0) return Container();
 
-    return Container(
-      padding: DEF_MENU_PADDING,
-      child: ListView.builder(
-        itemCount: uriList.length,
-        itemBuilder: (BuildContext context, int index) {
-          return MyUriListTile(
-            title: titleList[index],
-            onPressed: () {
-              selectedUri = uriList[index];
-              redraw();
-            },
-          );
+    List<FavoInfo> favoList = [];
+    List<Widget> list = [];
+    for (FavoInfo info in initFavorite.list) {
+      favoList.add(info);
+      list.add(MyUriListTile(
+        title: info.title,
+        onPressed: () {
+          selectedUri = info.uri;
+          redraw();
         },
-      ),
+      ));
+    }
+    for (FavoInfo info in favorite.list) {
+      favoList.add(info);
+      list.add(MyUriListTile(
+        title: info.title,
+        onPressed: () {
+          selectedUri = info.uri;
+          redraw();
+        },
+      ));
+    }
+    return ListView.builder(
+      itemCount: list.length,
+      itemBuilder: (BuildContext context, int index) {
+        return Slidable(
+          dragStartBehavior: DragStartBehavior.start,
+          key: UniqueKey(),
+          child: list[index],
+          endActionPane: ActionPane(
+            extentRatio: 0.25,
+            motion: const StretchMotion(),
+            children: [
+              if (favoList[index].type == 1)
+                SlidableAction(
+                  onPressed: (_) {
+                    deleteDialog().then((ret) {
+                      if (ret) {
+                        log('delette');
+                        ref.watch(browserProvider).deleteFavorite(favoList[index].uri);
+                      }
+                    });
+                  },
+                  backgroundColor: Colors.redAccent,
+                  icon: Icons.delete,
+                  label: null,
+                  spacing: 0,
+                  padding: EdgeInsets.fromLTRB(0, 0, 0, 0),
+                ),
+            ],
+          ),
+        );
+      },
     );
   }
 
@@ -328,60 +377,5 @@ class BrowserScreen extends BaseScreen {
         onPressed: onPressed,
       ),
     );
-  }
-
-  //'https://www.aozora.gr.jp/access_ranking/2022_xhtml.html',
-  //'https://kakuyomu.jp',
-  //'https://yomou.syosetu.com',
-  //'https://noc.syosetu.com/top/top/',
-  saveUri() async {
-    if (webViewController != null) {
-      WebUri? wUri = await webViewController!.getUrl();
-      if (wUri != null) {
-        String path = wUri.path;
-        if (path.contains('aozora.gr.jp') ||
-            path.contains('kakuyomu.jp') ||
-            path.contains('syosetu.com')) {
-          String appdir = (await getApplicationDocumentsDirectory()).path;
-          if (!Platform.isIOS && !Platform.isAndroid) {
-            appdir = appdir + '/test';
-          }
-          String datadir = appdir + '/data';
-          if (datadir == null) return;
-          final file = File('${datadir}/favorite.json');
-
-          FavoriteData d = FavoriteData();
-          if (file.existsSync()) {
-            String? txt = file.readAsStringSync();
-            Map<String, dynamic> j = json.decode(txt);
-            d = FavoriteData.fromJson(j);
-          }
-          FavoriteInfo info = FavoriteInfo();
-          info.uri = path;
-          d.list.add(info);
-          String jsonText = json.encode(d.toJson());
-          file.writeAsString(jsonText, mode: FileMode.write, flush: true);
-          redraw();
-        }
-      }
-    }
-  }
-
-  Future<FavoriteData> readFavorite() async {
-    FavoriteData d = FavoriteData();
-
-    String appdir = (await getApplicationDocumentsDirectory()).path;
-    if (!Platform.isIOS && !Platform.isAndroid) {
-      appdir = appdir + '/test';
-    }
-    String datadir = appdir + '/data';
-    if (datadir == null) return d;
-    final file = File('${datadir}/favorite.json');
-    if (file.existsSync()) {
-      String? txt = file.readAsStringSync();
-      Map<String, dynamic> j = json.decode(txt);
-      d = FavoriteData.fromJson(j);
-    }
-    return d;
   }
 }

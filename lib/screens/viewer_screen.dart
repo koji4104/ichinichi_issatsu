@@ -176,6 +176,7 @@ class ViewerScreen extends BaseScreen with WidgetsBindingObserver {
   }
 
   Widget loadingWidget() {
+    String txt = ref.read(viewerProvider).jumpStatusText;
     return Stack(children: [
       Container(color: env.getBackColor()),
       Positioned(
@@ -187,6 +188,12 @@ class ViewerScreen extends BaseScreen with WidgetsBindingObserver {
           size: 48,
           color: env.getFrontColor(),
         ),
+      ),
+      Positioned(
+        top: (_height / 5) + 80,
+        left: 0,
+        right: 0,
+        child: MyText(txt, center: true),
       ),
     ]);
   }
@@ -228,7 +235,7 @@ class ViewerScreen extends BaseScreen with WidgetsBindingObserver {
       Expanded(child: SizedBox(width: 1)),
       if (isActionBar())
         IconButton(
-          icon: Icon(Icons.bookmark),
+          icon: Icon(Icons.bookmark_border_outlined),
           color: env.getFrontColor(),
           onPressed: () {
             if (ref.watch(viewerProvider).bottomBarType == ViewerBottomBarType.bookmarkBar) {
@@ -618,51 +625,62 @@ class ViewerScreen extends BaseScreen with WidgetsBindingObserver {
         ),
       );
     }
-    if (list.length == 0) return Container();
-
     Widget bar = Container(
       color: myTheme.cardColor,
-      child: Column(
-        children: [
-          closeButtonRow(),
-          Expanded(
-            child: ListView.builder(
-              itemCount: list.length,
-              itemBuilder: (BuildContext context, int index) {
-                return Slidable(
-                  dragStartBehavior: DragStartBehavior.start,
-                  key: UniqueKey(),
-                  child: list[index],
-                  endActionPane: ActionPane(
-                    extentRatio: 0.25,
-                    motion: const StretchMotion(),
-                    children: [
-                      SlidableAction(
-                        onPressed: (_) {
-                          deleteDialog().then((ret) {
-                            if (ret) {
-                              log('delette');
-                              ref.watch(viewerProvider).deleteClip(index: index).then((ret) {
-                                redraw();
-                              });
-                            }
-                          });
-                        },
-                        backgroundColor: Colors.redAccent,
-                        icon: Icons.delete,
-                        label: null,
-                        spacing: 0,
-                        padding: EdgeInsets.fromLTRB(0, 0, 0, 0),
-                      ),
-                    ],
-                  ),
-                );
-              },
-            ),
-          )
-        ],
-      ),
+      child: Column(children: [
+        closeButtonRow(),
+        Row(children: [
+          Expanded(child: SizedBox(width: 1)),
+          Text('No data'),
+          Expanded(child: SizedBox(width: 1)),
+        ]),
+      ]),
     );
+    if (list.length > 0) {
+      bar = Container(
+        color: myTheme.cardColor,
+        child: Column(
+          children: [
+            closeButtonRow(),
+            Expanded(
+              child: ListView.builder(
+                itemCount: list.length,
+                itemBuilder: (BuildContext context, int index) {
+                  return Slidable(
+                    dragStartBehavior: DragStartBehavior.start,
+                    key: UniqueKey(),
+                    child: list[index],
+                    endActionPane: ActionPane(
+                      extentRatio: 0.25,
+                      motion: const StretchMotion(),
+                      children: [
+                        SlidableAction(
+                          onPressed: (_) {
+                            deleteDialog().then((ret) {
+                              if (ret) {
+                                log('delette');
+                                ref.watch(viewerProvider).deleteClip(index: index).then((ret) {
+                                  redraw();
+                                });
+                              }
+                            });
+                          },
+                          backgroundColor: Colors.redAccent,
+                          icon: Icons.delete,
+                          label: null,
+                          spacing: 0,
+                          padding: EdgeInsets.fromLTRB(0, 0, 0, 0),
+                        ),
+                      ],
+                    ),
+                  );
+                },
+              ),
+            )
+          ],
+        ),
+      );
+    }
 
     return AnimatedPositioned(
       duration: const Duration(milliseconds: 400),

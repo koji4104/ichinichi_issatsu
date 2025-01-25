@@ -155,6 +155,12 @@ class ViewerNotifier extends ChangeNotifier {
             if (calcWidth < 800) calcWidth = 800;
             // chars
 
+/*
+            double calcWidth = 5000;
+            if (i <= 1) {
+              calcWidth = 1000;
+            }
+*/
             listWidth.add(calcWidth);
             listState.add(0);
             listWebViewController.add(null);
@@ -265,7 +271,10 @@ class ViewerNotifier extends ChangeNotifier {
     }
   }
 
+  String jumpStatusText = '';
+
   Future jumpToIndex(int index, int ratio) async {
+    jumpStatusText = '';
     if (scrollController == null) return;
     for (int k = 0; k < 5; k++) {
       if (scrollController!.hasClients == false) {
@@ -282,6 +291,7 @@ class ViewerNotifier extends ChangeNotifier {
 
     if (index > listWidth.length - 1) index = listWidth.length - 1;
     isLoading = true;
+    this.notifyListeners();
 
     double curdx = scrollController!.position.pixels;
     double maxdx = scrollController!.position.maxScrollExtent;
@@ -316,36 +326,54 @@ class ViewerNotifier extends ChangeNotifier {
       log('jumpTo index dx>max ${dx.toInt()} > ${maxdx.toInt()}');
       dx = maxdx;
     }
+
+    int len = 3000;
     if (dx > curdx) {
       for (int i = 0; i < 1000; i++) {
-        if (dx > curdx + 2000) {
+        if (dx > curdx + len) {
           curdx = scrollController!.position.pixels;
           maxdx = scrollController!.position.maxScrollExtent;
-          log('jumpTo curdx=${curdx.toInt()} maxdx=${maxdx.toInt()} dx=${dx.toInt()}');
+
+          jumpStatusText = '${(curdx / 100).toInt()} / ${(dx / 100).toInt()}';
+          //log('jumpTo ${jumpStatusText}');
+
           await scrollController!
-              .animateTo(curdx + 2000, duration: Duration(milliseconds: 100), curve: Curves.linear);
+              .animateTo(curdx + len, duration: Duration(milliseconds: 100), curve: Curves.linear);
           if (i % 10 == 9) await Future.delayed(Duration(milliseconds: 100));
+          if (!Platform.isIOS && !Platform.isAndroid) {
+            Future.delayed(Duration(milliseconds: 1000));
+          }
           continue;
         }
       }
       //scrollController!.jumpTo(dx);
-      log('jumpTo2 [${index}][${(ratio / 100).toInt()}%] dx=${dx.toInt()} cur=${curdx.toInt()} max=${maxdx.toInt()}');
-      await scrollController!
-          .animateTo(dx, duration: Duration(milliseconds: 100), curve: Curves.linear);
+      //log('jumpTo2 [${index}][${(ratio / 100).toInt()}%] dx=${dx.toInt()} cur=${curdx.toInt()} max=${maxdx.toInt()}');
+      //await scrollController!
+      //    .animateTo(dx, duration: Duration(milliseconds: 100), curve: Curves.linear);
     } else {
       for (int i = 0; i < 1000; i++) {
-        if (dx < curdx - 2000) {
+        if (dx < curdx - len) {
           log('jumpTo curdx - 2000 ${curdx.toInt()}');
           curdx = scrollController!.position.pixels;
+          jumpStatusText = '${(curdx / 100).toInt()} / ${(dx / 100).toInt()}';
           await scrollController!
-              .animateTo(curdx - 2000, duration: Duration(milliseconds: 100), curve: Curves.linear);
+              .animateTo(curdx - len, duration: Duration(milliseconds: 100), curve: Curves.linear);
           continue;
         }
       }
-      scrollController!.jumpTo(dx);
+      //scrollController!.jumpTo(dx);
     }
+
+    await Future.delayed(Duration(milliseconds: 100));
+    dx = 0;
+    for (int i = 0; i < index + 1; i++) {
+      if (i < index) dx += listWidth[i];
+    }
+    dx += listWidth[index] * ratio / 10000;
+    scrollController!.jumpTo(dx);
+    jumpStatusText = '';
     log('jumpTo end');
-    await Future.delayed(Duration(milliseconds: 200));
+    await Future.delayed(Duration(milliseconds: 100));
     isLoading = false;
     this.notifyListeners();
     scrollingListener();
@@ -527,8 +555,14 @@ class ViewerNotifier extends ChangeNotifier {
     c += '  margin: 0;\n';
     c += '}\n';
     c += 'h1, h2, h3 {\n';
-    c += '  font-size: 1.0em;\n';
-    c += '  font-weight: bold;\n';
+    c += '  font-size: 1.2em;\n';
+    c += '  font-weight: normal;\n';
+    c += '  color: ${env.getH3Css()};\n';
+    if (env.writing_mode.val == 0) {
+      c += '  padding-left: 1em;\n';
+    } else {
+      c += '  padding-top: 1em;\n';
+    }
     c += '  line-height: ${env.line_height.val}%;\n';
     c += '}\n';
     c += 'h4, h5 {\n';
@@ -553,7 +587,7 @@ class ViewerNotifier extends ChangeNotifier {
         shrinkWrap: true,
         controller: scrollController,
         itemCount: listText.length,
-        cacheExtent: 2000,
+        cacheExtent: 3000,
         physics: physics,
         hitTestBehavior: HitTestBehavior.opaque,
         itemBuilder: (context, int index) {
@@ -610,7 +644,8 @@ class ViewerNotifier extends ChangeNotifier {
             if (env.writing_mode.val == 0 && webHeight > 100) {
               webHeight += scrollWidth;
               if (listWidth[index] != webHeight) {
-                log('onLoadStop height [${index}] ${env.font_size.val}px ${env.line_height.val}% ${listWidth[index].toInt()} -> ${webHeight.toInt()}');
+                //log('onLoadStop height [${index}] ${env.font_size.val}px ${env.line_height.val}% ${listWidth[index].toInt()} -> ${webHeight.toInt()}');
+                log('onLoadStop [${index}] ${listWidth[index].toInt()} -> ${webHeight.toInt()}');
                 listWidth[index] = webHeight;
               }
             } else if (webWidth > 100) {

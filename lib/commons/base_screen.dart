@@ -2,9 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import '/localizations.dart';
 import '/commons/widgets.dart';
-import '/controllers/env_controller.dart';
 import 'dart:io';
 import 'dart:developer';
+
+import '/controllers/env_controller.dart';
+import '/controllers/epub_controller.dart';
 
 /// BaseScreen
 class BaseScreen extends ConsumerWidget {
@@ -258,23 +260,113 @@ class BaseScreen extends ConsumerWidget {
       ]),
     );
   }
-}
 
-/// BaseSettings
-class BaseSettingsScreen1 extends BaseScreen {
-  BaseSettingsScreen1? rightScreen;
+  Widget downloadBar() {
+    double barHeight = 240;
+    double ffBottom = 0;
+    if (ref.watch(epubProvider).status == MyEpubStatus.none) {
+      ffBottom = -1.0 * barHeight;
+    } else {
+      ffBottom = 0;
+    }
 
-  @override
-  Future init() async {}
+    bool isClose = false;
+    String label1 = '';
+    String label2 = '';
+    int already = ref.watch(epubProvider).downloadedIndex;
+    int done = ref.watch(epubProvider).downloaded;
+    int all = ref.watch(epubProvider).epub.uriList.length;
 
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    super.build(context, ref);
-    return Container();
-  }
+    label1 = '${ref.watch(epubProvider).epub.bookTitle ?? ref.watch(epubProvider).epub.bookId}';
 
-  @override
-  Widget getList() {
-    return Container();
+    if (ref.watch(epubProvider).status == MyEpubStatus.downloadable) {
+      if (all > 1) {
+        label2 += ' ${all}';
+      }
+      if (already > 1) {
+        label2 += ' Already ${already}';
+      }
+    } else if (ref.watch(epubProvider).status == MyEpubStatus.succeeded) {
+      label2 = 'Download complete ${done} / ${all}';
+      isClose = true;
+    } else if (ref.watch(epubProvider).status == MyEpubStatus.same) {
+      label2 = 'Already downloaded ${already} / ${all}';
+      isClose = true;
+    } else if (ref.watch(epubProvider).status == MyEpubStatus.failed) {
+      label2 = 'Download failed';
+      isClose = true;
+    } else if (ref.watch(epubProvider).status == MyEpubStatus.downloading) {
+      label2 = 'Downloading';
+      isClose = true;
+      if (done > 0 && all > 1) {
+        label2 += ' ${done} / ${all}';
+      }
+    }
+
+    Widget bar = Container(
+      color: myTheme.cardColor,
+      child: Column(
+        children: [
+          closeButtonRow(),
+          Row(children: [
+            SizedBox(width: 20),
+            Expanded(child: MyText(label1, noScale: true, center: true)),
+            SizedBox(width: 20),
+          ]),
+          SizedBox(height: 6),
+          Row(children: [
+            SizedBox(width: 20),
+            Expanded(child: MyText(label2, noScale: true, center: true)),
+            SizedBox(width: 20),
+          ]),
+          SizedBox(height: 8),
+          Row(children: [
+            Expanded(flex: 1, child: SizedBox(width: 1)),
+            if (isClose)
+              MyTextButton(
+                noScale: true,
+                width: 140,
+                title: l10n('close'),
+                onPressed: () {
+                  ref.read(epubProvider).setStatusNone();
+                },
+              ),
+            if (isClose == false)
+              MyTextButton(
+                noScale: true,
+                width: 140,
+                title: l10n('cancel'),
+                onPressed: () {
+                  ref.read(epubProvider).setStatusNone();
+                },
+              ),
+            if (isClose == false) SizedBox(width: 16),
+            if (isClose == false)
+              MyTextButton(
+                noScale: true,
+                commit: true,
+                width: 140,
+                title: l10n('download'),
+                onPressed: () {
+                  ref.read(epubProvider).download();
+                },
+              ),
+            Expanded(flex: 1, child: SizedBox(width: 1)),
+          ]),
+          Expanded(child: SizedBox(height: 1)),
+        ],
+      ),
+    );
+
+    return AnimatedPositioned(
+      duration: const Duration(milliseconds: 500),
+      curve: Curves.linear,
+      left: 0,
+      top: null,
+      right: 0,
+      bottom: ffBottom,
+      height: barHeight,
+      child: bar,
+    );
   }
 }

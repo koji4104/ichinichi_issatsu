@@ -15,10 +15,12 @@ import '/commons/widgets.dart';
 import '/controllers/epub_controller.dart';
 import '/controllers/booklist_controller.dart';
 import '/models/book_data.dart';
+import '/models/epub_data.dart';
 import '/screens/browser_screen.dart';
 import '/screens/viewer_screen.dart';
 import '/screens/settings_screen.dart';
 import '/constants.dart';
+import '/controllers/epub_controller.dart';
 
 /// BookScreen
 class BookListScreen extends BaseScreen {
@@ -42,6 +44,8 @@ class BookListScreen extends BaseScreen {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     super.build(context, ref);
+    ref.watch(epubProvider);
+
     _width = MediaQuery.of(context).size.width;
     _height = MediaQuery.of(context).size.height;
 
@@ -58,19 +62,23 @@ class BookListScreen extends BaseScreen {
         actions: [dropdownFlag(), SizedBox(width: 20)],
       ),
       body: SafeArea(
-        child: Stack(
-          children: [
-            Container(
-              padding: DEF_MENU_PADDING,
-              child: RefreshIndicator(
-                onRefresh: () async {
-                  ref.watch(booklistProvider).readBookList();
-                },
-                child: getList(),
-              ),
+        child: Stack(children: [
+          Container(
+            padding: DEF_MENU_PADDING,
+            child: ref.watch(epubProvider).downloadCtrl.browser8(),
+          ),
+          Container(
+            color: myTheme.scaffoldBackgroundColor,
+            padding: DEF_MENU_PADDING,
+            child: RefreshIndicator(
+              onRefresh: () async {
+                ref.watch(booklistProvider).readBookList();
+              },
+              child: getList(),
             ),
-          ],
-        ),
+          ),
+          downloadBar(),
+        ]),
       ),
     );
   }
@@ -139,39 +147,17 @@ class BookListScreen extends BaseScreen {
             extentRatio: 0.50,
             motion: const StretchMotion(),
             children: [
-              SlidableAction(
-                onPressed: (_) {
-                  okDialog(msg: 're download').then((ret) {
-                    if (ret) {
-                      String dir = datadir + '/${bookList[index].bookId}';
-                      //if (Directory(dir).existsSync()) {
-                      //  Directory(dir).deleteSync(recursive: true);
-                      //  ref.watch(booklistProvider).readBookList();
-                      //}
-                    }
-                  });
-                },
-                backgroundColor: Colors.blueAccent,
-                icon: Icons.download,
-                label: null,
-                spacing: 0,
-                padding: EdgeInsets.fromLTRB(0, 0, 0, 0),
-              ),
               if (isAddDownload)
                 SlidableAction(
                   onPressed: (_) {
-                    okDialog(msg: 'add download').then((ret) {
+                    okDialog(msg: 'additional_download').then((ret) {
                       if (ret) {
-                        String dir = datadir + '/${bookList[index].bookId}';
-                        //if (Directory(dir).existsSync()) {
-                        //  Directory(dir).deleteSync(recursive: true);
-                        //  ref.watch(booklistProvider).readBookList();
-                        //}
+                        AddDownload(bookList[index]);
                       }
                     });
                   },
                   backgroundColor: Colors.blueAccent,
-                  icon: Icons.add,
+                  icon: Icons.download,
                   label: null,
                   spacing: 0,
                   padding: EdgeInsets.fromLTRB(0, 0, 0, 0),
@@ -292,9 +278,9 @@ class BookListScreen extends BaseScreen {
     if (data.prop.nowChars > 0 && data.prop.maxChars > 100) {
       prog = (data.prop.nowChars * 100 / data.prop.maxChars).toInt();
     }
-    Widget flagIcon = Container(width: 14);
+    Widget flagIcon = Container(width: 16);
     if (1 <= data.prop.flag && data.prop.flag <= 6) {
-      flagIcon = Icon(Icons.circle, size: 14.0, color: COL_FLAG_LIST[data.prop.flag]);
+      flagIcon = Icon(Icons.circle, size: 16.0, color: COL_FLAG_LIST[data.prop.flag]);
     }
 
     double scale = myTextScale;
@@ -355,8 +341,13 @@ class BookListScreen extends BaseScreen {
     ]);
 
     Widget child = Row(children: [
-      Column(children: [e, flagIcon, e]),
-      w,
+      SizedBox(width: 4),
+      Column(children: [
+        Expanded(flex: 1, child: SizedBox(height: 1)),
+        flagIcon,
+        Expanded(flex: 2, child: SizedBox(height: 1)),
+      ]),
+      SizedBox(width: 10),
       Expanded(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -383,5 +374,11 @@ class BookListScreen extends BaseScreen {
         onPressed: onPressed,
       ),
     );
+  }
+
+  Future AddDownload(BookData data) async {
+    await ref.watch(epubProvider).checkUri(data.dluri);
+    //EpubData epub = ref.watch(epubProvider).epub;
+    //if (epub.bookId != null && epub.uriList.isNotEmpty) {}
   }
 }

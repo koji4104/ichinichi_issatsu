@@ -93,7 +93,6 @@ class ReadlogController {
       sumSec += d.sec;
       sumChars += d.chars;
     }
-
     per_hour = (sumChars * 3600 / sumSec / CHARS_PAGE).toInt();
   }
 
@@ -104,30 +103,54 @@ class ReadlogController {
     }
     String logdir = appdir + '/data';
     await Directory('${logdir}').create(recursive: true);
-    final String path = '${logdir}/${logfile}';
 
     DateTime date = list[i].date;
     String sDate = DateFormat("yyyy-MM-dd HH:mm:ss").format(date);
 
-    String txt = '';
-    if (await File(path).exists()) {
-      txt += await File(path).readAsString();
-    }
+    bool done = false;
+    if (done == false) {
+      final String path = '${logdir}/${logfile}';
+      if (await File(path).exists()) {
+        String txt = await File(path).readAsString();
 
-    List<ReadlogData> tempList = [];
-    for (String line in txt.split('\n')) {
-      ReadlogData? d = ReadlogData.fromTsv(line);
-      if (d != null) tempList.add(d);
-    }
-    for (ReadlogData d in tempList) {
-      if (d.date == date) {
-        tempList.remove(d);
-
-        String tsv = listToTsv(tempList);
-        await File(path).writeAsString(tsv, mode: FileMode.write, flush: true);
-        break;
+        List<ReadlogData> logList = [];
+        for (String line in txt.split('\n')) {
+          ReadlogData? d = ReadlogData.fromTsv(line);
+          if (d != null) logList.add(d);
+        }
+        for (ReadlogData d in logList) {
+          if (d.date == date) {
+            logList.remove(d);
+            String tsv = listToTsv(logList);
+            await File(path).writeAsString(tsv, mode: FileMode.write, flush: true);
+            done = true;
+            break;
+          }
+        }
       }
     }
+    if (done == false) {
+      final String path = '${logdir}/${logfile}.1';
+      if (await File(path).exists()) {
+        String txt = await File(path).readAsString();
+
+        List<ReadlogData> logList = [];
+        for (String line in txt.split('\n')) {
+          ReadlogData? d = ReadlogData.fromTsv(line);
+          if (d != null) logList.add(d);
+        }
+        for (ReadlogData d in logList) {
+          if (d.date == date) {
+            logList.remove(d);
+            String tsv = listToTsv(logList);
+            await File(path).writeAsString(tsv, mode: FileMode.write, flush: true);
+            done = true;
+            break;
+          }
+        }
+      }
+    }
+    if (done) read();
   }
 
   String listToTsv(List<ReadlogData> tempList) {

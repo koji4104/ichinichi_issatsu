@@ -52,7 +52,11 @@ class Localized {
       'ok': 'OK',
       'download': 'Download',
       'per_hour': 'Per hour',
-      'page': 'pages',
+      'page': 'Pages',
+      'aozora_top': 'Aozora top',
+      'aozora_ranking': 'Aozora ranking',
+      'episode': 'Episode',
+      'additional_download': 'Check for additional downloads',
     },
     'ja': {
       'app_name': '一日一冊',
@@ -85,6 +89,10 @@ class Localized {
       'download': 'ダウンロード',
       'per_hour': '時速',
       'page': 'ページ',
+      'aozora_top': '青空文庫トップ',
+      'aozora_ranking': '青空文庫ランキング',
+      'episode': '話',
+      'additional_download': '追加のダウンロードを調べます',
     },
   };
 

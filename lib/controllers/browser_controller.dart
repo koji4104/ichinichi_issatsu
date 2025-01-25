@@ -13,23 +13,27 @@ import '/models/log_data.dart';
 import '/controllers/log_controller.dart';
 
 List<String> initUriList = [
+  'https://www.aozora.gr.jp/index.html',
   'https://www.aozora.gr.jp/access_ranking/2022_xhtml.html',
   'https://kakuyomu.jp',
   'https://yomou.syosetu.com',
-  'https://noc.syosetu.com/top/top/',
+  'https://syosetu.com/site/group/'
+  //'https://noc.syosetu.com/top/top/',
 ];
 List<String> initTitleList = [
-  'https://www.aozora.gr.jp/access_ranking/2022_xhtml.html',
+  'aozora_top',
+  'aozora_ranking',
   'https://kakuyomu.jp',
   'https://yomou.syosetu.com',
-  'https://noc.syosetu.com/top/top/',
+  'https://syosetu.com/site/group/'
+  //'https://noc.syosetu.com/top/top/',
 ];
 
 List<String> initUriList1 = [
   'https://aws.amazon.com/jp/',
 ];
 List<String> initTitleList1 = [
-  'https://aws.amazon.com/jp/',
+  'Amazon',
 ];
 
 final browserProvider = ChangeNotifierProvider((ref) => BrowserNotifier(ref));

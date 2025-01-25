@@ -150,7 +150,7 @@ class BookListScreen extends BaseScreen {
               if (isAddDownload)
                 SlidableAction(
                   onPressed: (_) {
-                    okDialog(msg: 'additional_download').then((ret) {
+                    okDialog(msg: l10n('additional_download')).then((ret) {
                       if (ret) {
                         AddDownload(bookList[index]);
                       }
@@ -312,14 +312,6 @@ class BookListScreen extends BaseScreen {
       textScaler: TextScaler.linear(scale),
     );
 
-    Widget wAuthor = Text(
-      '${data.author} ${(data.chars / CHARS_PAGE).toInt()}',
-      overflow: TextOverflow.ellipsis,
-      maxLines: 1,
-      textScaler: TextScaler.linear(myTextScale - 0.2),
-      textAlign: TextAlign.left,
-    );
-
     Widget wProg = Text(
       '${prog}%',
       overflow: TextOverflow.ellipsis,
@@ -327,17 +319,36 @@ class BookListScreen extends BaseScreen {
       textScaler: TextScaler.linear(myTextScale - 0.2),
     );
 
-    Widget wChars = Text(
-      '${(data.chars / CHARS_PAGE).toInt()}',
+    Widget wPages = Text(
+      '${(data.chars / CHARS_PAGE).toInt()} ${l10n('page')}',
       overflow: TextOverflow.ellipsis,
       maxLines: 1,
       textScaler: TextScaler.linear(myTextScale - 0.2),
     );
 
+    Widget wNumIndex = Text(
+      '${(data.index.list.length).toInt()} ${l10n('episode')}',
+      overflow: TextOverflow.ellipsis,
+      maxLines: 1,
+      textScaler: TextScaler.linear(myTextScale - 0.2),
+    );
+
+    bool isKakuyomu = false;
+    String type = data.bookId.substring(0, 1);
+    if (type == 'K' || type == 'N') isKakuyomu = true;
+
+    Widget wAuthor = Text(
+      '${data.author}',
+      overflow: TextOverflow.ellipsis,
+      maxLines: 1,
+      textScaler: TextScaler.linear(myTextScale - 0.2),
+      textAlign: TextAlign.left,
+    );
+
     Widget wAuthorRow = Row(children: [
       wAuthor,
-      w,
-      wChars,
+      SizedBox(width: 20),
+      isKakuyomu ? wNumIndex : wPages,
     ]);
 
     Widget child = Row(children: [
@@ -351,7 +362,7 @@ class BookListScreen extends BaseScreen {
       Expanded(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [e, wTitle, wAuthor, e],
+          children: [e, wTitle, wAuthorRow, e],
         ),
       ),
       w,

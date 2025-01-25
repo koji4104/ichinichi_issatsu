@@ -289,7 +289,7 @@ class BrowserScreen extends BaseScreen {
     for (FavoInfo info in initFavorite.list) {
       favoList.add(info);
       list.add(MyUriListTile(
-        title: info.title,
+        favo: info,
         onPressed: () {
           selectedUri = info.uri;
           redraw();
@@ -297,9 +297,10 @@ class BrowserScreen extends BaseScreen {
       ));
     }
     for (FavoInfo info in favorite.list) {
+      info.type = 1;
       favoList.add(info);
       list.add(MyUriListTile(
-        title: info.title,
+        favo: info,
         onPressed: () {
           selectedUri = info.uri;
           redraw();
@@ -341,25 +342,39 @@ class BrowserScreen extends BaseScreen {
   }
 
   Widget MyUriListTile({
-    required String title,
+    required FavoInfo favo,
     Function()? onPressed,
   }) {
-    Widget e = Expanded(child: SizedBox(width: 8));
-    Widget w = SizedBox(width: 6);
+    Widget e = Expanded(child: SizedBox(width: 1));
+    Widget w = SizedBox(width: 10);
     Icon icon = Icon(Icons.arrow_forward_ios, size: 14.0);
 
     double scale = myTextScale;
 
-    Widget wText = Text(
-      title,
+    Widget wTitle = Text(
+      l10n(favo.title),
       overflow: TextOverflow.ellipsis,
-      maxLines: 3,
+      maxLines: 2,
       textScaler: TextScaler.linear(scale),
     );
+    Widget wUri = Text(
+      Uri.decodeFull(favo.uri),
+      overflow: TextOverflow.ellipsis,
+      maxLines: 2,
+      textScaler: TextScaler.linear(scale - 0.2),
+    );
 
-    double height = 44 + (14 * myTextScale);
+    double height = 50 + (28 * myTextScale);
     Widget child = Row(children: [
-      Expanded(child: wText),
+      w,
+      Expanded(
+        child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+          e,
+          wTitle,
+          wUri,
+          e,
+        ]),
+      ),
       w,
       icon,
     ]);

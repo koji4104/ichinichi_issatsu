@@ -77,18 +77,19 @@ class ViewerNotifier extends ChangeNotifier {
     height = h;
 
     isLoading = true;
-    this.notifyListeners();
+    listText.clear();
+    listWidth.clear();
+    listWebViewController.clear();
+    listKey.clear();
+    listState.clear();
+    listContextMenu.clear();
 
     try {
-      listText.clear();
-      listWidth.clear();
-      listWebViewController.clear();
-      listKey.clear();
-      listState.clear();
-      listContextMenu.clear();
-
       scrollController = new ScrollController();
       scrollController!.addListener(scrollingListener);
+
+      isLoading = true;
+      this.notifyListeners();
 
       try {
         String appdir = (await getApplicationDocumentsDirectory()).path;
@@ -112,7 +113,7 @@ class ViewerNotifier extends ChangeNotifier {
             EpubData e = new EpubData();
             String text1 = e.head1 + text + e.head2;
             text1 = text1.replaceAll('<style>', '<style>${getStyle(env)}');
-            listText.add(text1);
+            //listText.add(text1);
 
             // chars
             int fsize = env.font_size.val;
@@ -145,10 +146,12 @@ class ViewerNotifier extends ChangeNotifier {
               calcWidth = 1000;
             }
 */
+
             listWidth.add(calcWidth);
             listState.add(0);
             listWebViewController.add(null);
             listKey.add(GlobalKey());
+            listText.add(text1);
 
             ContextMenu contextMenu = ContextMenu(
                 settings: ContextMenuSettings(hideDefaultSystemContextMenuItems: true),
@@ -366,7 +369,8 @@ class ViewerNotifier extends ChangeNotifier {
           jumpStatusText = '${(curdx / 100).toInt()} / ${(dx / 100).toInt()}';
           //log('jumpTo ${jumpStatusText}');
 
-          await scrollController!.animateTo(curdx + len, duration: Duration(milliseconds: 50), curve: Curves.linear);
+          await scrollController!
+              .animateTo(curdx + len, duration: Duration(milliseconds: 50), curve: Curves.linear);
           if (i % 10 == 9) await Future.delayed(Duration(milliseconds: 50));
           if (!Platform.isIOS && !Platform.isAndroid) {
             Future.delayed(Duration(milliseconds: 1000));
@@ -381,7 +385,8 @@ class ViewerNotifier extends ChangeNotifier {
           jumpStatusText = '${(curdx / 100).toInt()} / ${(dx / 100).toInt()}';
           //log('jumpTo ${jumpStatusText}');
 
-          await scrollController!.animateTo(curdx - len, duration: Duration(milliseconds: 50), curve: Curves.linear);
+          await scrollController!
+              .animateTo(curdx - len, duration: Duration(milliseconds: 50), curve: Curves.linear);
           if (i % 10 == 9) await Future.delayed(Duration(milliseconds: 50));
           continue;
         }
@@ -395,7 +400,8 @@ class ViewerNotifier extends ChangeNotifier {
     }
     dx += listWidth[index] * ratio / 10000;
 
-    await scrollController!.animateTo(dx, duration: Duration(milliseconds: 50), curve: Curves.linear);
+    await scrollController!
+        .animateTo(dx, duration: Duration(milliseconds: 50), curve: Curves.linear);
 
     jumpStatusText = '';
     log('jumpTo end');
@@ -596,7 +602,9 @@ class ViewerNotifier extends ChangeNotifier {
     if (listText.length == 0) return Container();
 
     PlatformInAppWebViewController.debugLoggingSettings.enabled = false;
-    ScrollPhysics physics = bottomBarType == ViewerBottomBarType.clipTextBar ? NeverScrollableScrollPhysics() : ScrollPhysics();
+    ScrollPhysics physics = bottomBarType == ViewerBottomBarType.clipTextBar
+        ? NeverScrollableScrollPhysics()
+        : ScrollPhysics();
     try {
       return ListView.builder(
         scrollDirection: env.writing_mode.val == 0 ? Axis.vertical : Axis.horizontal,
@@ -638,18 +646,20 @@ class ViewerNotifier extends ChangeNotifier {
         findInteractionController: null,
         contextMenu: listContextMenu[index],
         onWebViewCreated: (controller) async {
-          listWebViewController[index] = controller;
+          if (listWebViewController.length > index) listWebViewController[index] = controller;
         },
         onLoadStart: (controller, url) async {},
         onLoadStop: (controller, url) async {
           try {
             double webWidth = 0;
-            dynamic vw = await controller.evaluateJavascript(source: '''(() => { return document.body.scrollWidth; })()''');
+            dynamic vw = await controller
+                .evaluateJavascript(source: '''(() => { return document.body.scrollWidth; })()''');
             if (vw != null && vw != '') {
               webWidth = double.parse('${vw}');
             }
             double webHeight = 0;
-            dynamic vh = await controller.evaluateJavascript(source: '''(() => { return document.body.scrollHeight; })()''');
+            dynamic vh = await controller
+                .evaluateJavascript(source: '''(() => { return document.body.scrollHeight; })()''');
             if (vh != null && vh != '') {
               webHeight = double.parse('${vh}');
             }

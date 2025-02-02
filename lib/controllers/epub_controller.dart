@@ -129,9 +129,14 @@ class EpubNotifier extends ChangeNotifier {
     } else if (uri.contains('ncode.syosetu.com/n')) {
       body = await downloadCtrl.download(uri);
     } else if (uri.contains('novel18.syosetu.com/n')) {
-      body = await downloadCtrl.download8(uri);
+      body = await downloadCtrl.download8(uri, this);
     }
     checkHtml(uri, body);
+
+    if (status == MyEpubStatus.none) {
+      status = MyEpubStatus.failed;
+      this.notifyListeners();
+    }
   }
 
   Future checkHtml(String uri, String? body) async {
@@ -663,10 +668,10 @@ class EpubNotifier extends ChangeNotifier {
   }
 
   Future<void> downloadNarou8() async {
-    if (webViewController == null) {
-      status = MyEpubStatus.failed;
-      return;
-    }
+    //if (webViewController == null) {
+    //  status = MyEpubStatus.failed;
+    //  return;
+    //}
 
     status = MyEpubStatus.downloading;
     doneIndex = 0;
@@ -677,7 +682,7 @@ class EpubNotifier extends ChangeNotifier {
         await Future.delayed(Duration(milliseconds: 100));
 
         // https://ncode.syosetu.com/n6964jl/1/
-        String? body = await downloadCtrl.download8(epub.uriList[i]);
+        String? body = await downloadCtrl.download8(epub.uriList[i], this);
         if (body != null) {
           await createNarouText(body, i + 1);
         } else {
@@ -807,13 +812,15 @@ class DownloadController {
     return body;
   }
 
-  Future<String?> download8(String uri) async {
-    if (webViewController8 == null) return null;
+  Future<String?> download8(String uri, EpubNotifier noti) async {
+    //if (webViewController8 == null) {}
     webBody = null;
+    selectedUri = uri;
+    noti.notifyListeners();
     try {
-      await webViewController8!.loadUrl(
-        urlRequest: URLRequest(url: WebUri(uri)),
-      );
+      //await webViewController8!.loadUrl(
+      //  urlRequest: URLRequest(url: WebUri(uri)),
+      //);
 
       for (int wait = 0; wait < 100; wait++) {
         await Future.delayed(Duration(milliseconds: 100));

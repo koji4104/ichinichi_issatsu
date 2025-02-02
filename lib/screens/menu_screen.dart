@@ -49,7 +49,7 @@ class MenuScreen extends BaseScreen {
         onTap: _onItemTapped,
         items: const <BottomNavigationBarItem>[
           BottomNavigationBarItem(icon: Icon(Icons.home, size: 28), label: 'Home'),
-          BottomNavigationBarItem(icon: Icon(Icons.text_snippet, size: 28), label: 'Brows'),
+          BottomNavigationBarItem(icon: Icon(Icons.text_snippet_outlined, size: 28), label: 'Brows'),
           BottomNavigationBarItem(icon: Icon(Icons.settings, size: 28), label: 'Option'),
         ],
         type: BottomNavigationBarType.fixed,

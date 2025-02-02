@@ -1,13 +1,13 @@
-import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:developer';
-
+import 'dart:io';
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
-import 'dart:io';
-import '/constants.dart';
 import 'package:path_provider/path_provider.dart';
-import 'dart:convert';
+
+import '/constants.dart';
+import '/controllers/applog_controller.dart';
 
 class EnvData {
   int val;
@@ -16,11 +16,7 @@ class EnvData {
   List<String> keys = [];
   String name = '';
 
-  EnvData(
-      {required int this.val,
-      required List<int> this.vals,
-      required List<String> this.keys,
-      required String this.name}) {
+  EnvData({required int this.val, required List<int> this.vals, required List<String> this.keys, required String this.name}) {
     round(val);
   }
 
@@ -228,6 +224,7 @@ class EnvNotifier extends ChangeNotifier {
       }
     } on Exception catch (e) {
       log('err load() err=' + e.toString());
+      MyLog.err('EnvNotifier.load() ${e.toString()}');
     }
   }
 

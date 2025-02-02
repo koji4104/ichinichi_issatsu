@@ -150,7 +150,7 @@ class BookListScreen extends BaseScreen {
               if (isAddDownload)
                 SlidableAction(
                   onPressed: (_) {
-                    okDialog(msg: l10n('additional_download')).then((ret) {
+                    okDialog(msg: l10n('check_addition')).then((ret) {
                       if (ret) {
                         AddDownload(bookList[index]);
                       }

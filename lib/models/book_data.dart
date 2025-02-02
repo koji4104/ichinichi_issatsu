@@ -15,9 +15,6 @@ class BookData {
   String author = '';
   int chars = 0;
   String siteId = '';
-
-  //List<IndexData> indexList = [];
-
   String dluri = '';
   DateTime ctime = DateTime(2000, 1, 1);
 
@@ -98,12 +95,12 @@ class IndexData {
     }
   }
 
-  int getMaxIndex() {
-    int maxIndex = 0;
+  int getExistingIndex() {
+    int existingIndex = 0;
     for (IndexInfo i in list) {
-      if (maxIndex < i.index) maxIndex = i.index;
+      if (existingIndex < i.index) existingIndex = i.index;
     }
-    return maxIndex;
+    return existingIndex;
   }
 }
 

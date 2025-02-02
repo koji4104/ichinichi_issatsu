@@ -261,4 +261,31 @@ p {
     var arch = _createArchive();
     return ZipEncoder().encode(arch);
   }
+
+  static String deleteInvalidStrInJson(String str) {
+    str = str.replaceAll('"', '');
+    str = str.replaceAll('\\', '');
+    str = str.replaceAll('/', '');
+    str = str.replaceAll('\b', '');
+    str = str.replaceAll('\f', '');
+    str = str.replaceAll('\n', '');
+    str = str.replaceAll('\r', '');
+    str = str.replaceAll('\t', '');
+    str = deleteRuby(str);
+    return str;
+  }
+
+  static String deleteRuby(String str) {
+    // <ruby><rb>獅子</rb><rp>（</rp><rt>しし</rt><rp>）</rp></ruby>
+    // <ruby><rb>卍<rb><rp>（<rp><rt>まんじ<rt><rp>）<rp><ruby>
+    str = str.replaceAll('<ruby>', '');
+    str = str.replaceAll('</ruby>', '');
+    str = str.replaceAll('<rb>', '');
+    str = str.replaceAll('</rb>', '');
+    str = str.replaceAll('<rp>', '');
+    str = str.replaceAll('</rp>', '');
+    str = str.replaceAll('<rt>', '');
+    str = str.replaceAll('</rt>', '');
+    return str;
+  }
 }

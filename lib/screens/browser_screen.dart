@@ -60,9 +60,6 @@ class BrowserScreen extends BaseScreen {
     ref.watch(browserProvider);
     ref.watch(epubProvider);
 
-    //uriList = ref.watch(browserProvider).uriList;
-    //titleList = ref.watch(browserProvider).titleList;
-
     initFavorite = ref.watch(browserProvider).initFavorite;
     favorite = ref.watch(browserProvider).favorite;
 
@@ -113,9 +110,10 @@ class BrowserScreen extends BaseScreen {
         ),
         body: SafeArea(
           child: Stack(children: [
-            ref.watch(epubProvider).downloadCtrl.browser8(),
-            //widget1(),
-
+            Container(
+              padding: DEF_MENU_PADDING,
+              child: ref.watch(epubProvider).downloadCtrl.browser8(),
+            ),
             Container(
               color: myTheme.scaffoldBackgroundColor,
               padding: DEF_MENU_PADDING,
@@ -126,7 +124,6 @@ class BrowserScreen extends BaseScreen {
                 child: widget1(),
               ),
             ),
-
             downloadBar(),
           ]),
         ),
@@ -186,100 +183,6 @@ class BrowserScreen extends BaseScreen {
   Future onPressedCloseButton() async {
     ref.read(epubProvider).setStatusNone();
   }
-
-  /*
-  Widget downloadBar1() {
-    double barHeight = 230;
-    double ffBottom = 0;
-    if (ref.watch(epubProvider).status == MyEpubStatus.none) {
-      ffBottom = -1.0 * barHeight;
-    } else {
-      ffBottom = 0;
-    }
-
-    String label1 = '';
-    String label2 = '';
-    int already = ref.watch(epubProvider).downloadedIndex;
-    int done = ref.watch(epubProvider).downloaded;
-    int all = ref.watch(epubProvider).epub.uriList.length;
-
-    label1 = '${ref.watch(epubProvider).epub.bookTitle ?? ref.watch(epubProvider).epub.bookId}';
-
-    if (ref.watch(epubProvider).status == MyEpubStatus.downloadable) {
-      if (all > 1) {
-        label2 += ' (${all})';
-      }
-      if (already > 1) {
-        label2 += ' Already (${already})';
-      }
-    } else if (ref.watch(epubProvider).status == MyEpubStatus.succeeded) {
-      label2 = 'Download complete (${all})';
-    } else if (ref.watch(epubProvider).status == MyEpubStatus.failed) {
-      label2 = 'Failed';
-    } else if (ref.watch(epubProvider).status == MyEpubStatus.downloading) {
-      label2 = 'Downloading';
-      if (done > 0 && all > 1) {
-        label2 += ' ${done} / ${all}';
-      }
-    }
-
-    Widget bar = Container(
-      color: myTheme.cardColor,
-      child: Column(
-        children: [
-          closeButtonRow(),
-          SizedBox(height: 0),
-          Row(children: [
-            SizedBox(width: 20),
-            Expanded(child: MyText(label1, noScale: true, center: true)),
-            SizedBox(width: 20),
-          ]),
-          SizedBox(height: 8),
-          Row(children: [
-            SizedBox(width: 20),
-            Expanded(child: MyText(label2, noScale: true, center: true)),
-            SizedBox(width: 20),
-          ]),
-          SizedBox(height: 8),
-          Row(children: [
-            Expanded(flex: 1, child: SizedBox(width: 1)),
-            MyTextButton(
-              noScale: true,
-              width: 140,
-              title: l10n('cancel'),
-              onPressed: () {
-                ref.read(epubProvider).setStatusNone();
-              },
-            ),
-            SizedBox(width: 16),
-            MyTextButton(
-              noScale: true,
-              commit: true,
-              width: 140,
-              title: l10n('download'),
-              onPressed: () {
-                ref.read(epubProvider).download();
-              },
-            ),
-            Expanded(flex: 1, child: SizedBox(width: 1)),
-          ]),
-          Expanded(child: SizedBox(height: 1)),
-        ],
-      ),
-    );
-
-    return AnimatedPositioned(
-      duration: const Duration(milliseconds: 500),
-      curve: Curves.linear,
-      left: 0,
-      top: null,
-      right: 0,
-      bottom: ffBottom,
-      height: barHeight,
-      child: bar,
-    );
-  }
-  */
 
   Widget getUriList() {
     if (initFavorite.list.length <= 0) return Container();

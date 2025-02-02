@@ -190,13 +190,17 @@ class BaseScreen extends ConsumerWidget {
       onChanged: (value) {
         if (data.val != value) {
           ref.read(envProvider).saveVal(data, value).then((ret) {
-            if (ret) onDropdownChanged();
+            if (ret) onDropdownChanged(data);
           });
         }
       },
       dropdownColor: myTheme.secondaryHeaderColor,
       style: myTheme.textTheme.bodyMedium!,
     );
+  }
+
+  onDropdownChanged(EnvData data) {
+    ref.read(envProvider).notifyListeners();
   }
 
   Widget MyDropdownTest() {
@@ -216,10 +220,6 @@ class BaseScreen extends ConsumerWidget {
       dropdownColor: myTheme.cardColor,
       style: myTheme.textTheme.bodyMedium!,
     );
-  }
-
-  onDropdownChanged() {
-    ref.read(envProvider).notifyListeners();
   }
 
   TextStyle getTextStyle() {
@@ -261,8 +261,11 @@ class BaseScreen extends ConsumerWidget {
     );
   }
 
+  int NUM_OF_FIRST_COWNLOAD = 10;
+  int NUM_OF_ADD_COWNLOAD = 30;
+
   Widget downloadBar() {
-    double barHeight = 240;
+    double barHeight = Platform.isIOS ? 300 : 200;
     double ffBottom = 0;
     if (ref.watch(epubProvider).status == MyEpubStatus.none) {
       ffBottom = -1.0 * barHeight;
@@ -270,30 +273,66 @@ class BaseScreen extends ConsumerWidget {
       ffBottom = 0;
     }
 
+    int DL_COUNT1 = 20;
+    int DL_COUNT2 = 50;
+    int DL_SPARE = 10;
+
     bool isClose = false;
     String label1 = '';
     String label2 = '';
-    int already = ref.watch(epubProvider).downloadedIndex;
-    int done = ref.watch(epubProvider).downloaded;
+    int already = ref.watch(epubProvider).existingIndex;
+    int done = ref.watch(epubProvider).doneIndex;
     int all = ref.watch(epubProvider).epub.uriList.length;
-
+    int req1 = 1;
+    int req2 = 0;
     label1 = '${ref.watch(epubProvider).epub.bookTitle ?? ref.watch(epubProvider).epub.bookId}';
 
+    /*
+    if (!Platform.isIOS && !Platform.isAndroid) {
+      already = 30;
+      done = 0;
+      all = 54;
+      label1 = 'Test';
+    }
+    */
     if (ref.watch(epubProvider).status == MyEpubStatus.downloadable) {
-      if (all > 1) {
-        label2 += ' ${all}';
+      if (all > 0 && already == 0) {
+        if (all < DL_COUNT1 + DL_SPARE) {
+          req1 = all;
+          req2 = 0;
+        } else if (all < DL_COUNT2 + DL_SPARE) {
+          req1 = DL_COUNT1;
+          req2 = all;
+        } else {
+          req1 = DL_COUNT1;
+          req2 = DL_COUNT2;
+        }
+      } else if (all > 0 && already > 0) {
+        if (all < already + DL_COUNT1 + DL_SPARE) {
+          req1 = all;
+          req2 = 0;
+        } else if (all < already + DL_COUNT2 + DL_SPARE) {
+          req1 = already + DL_COUNT1;
+          req2 = all;
+        } else {
+          req1 = already + DL_COUNT1;
+          req2 = already + DL_COUNT2;
+        }
       }
-      if (already > 1) {
-        label2 += ' Already ${already}';
+
+      if (all > 1 && already > 1) {
+        label2 += '${already} / ${all} ${l10n('episode')}';
+      } else if (all > 1) {
+        label2 += '${all} ${l10n('episode')}';
       }
     } else if (ref.watch(epubProvider).status == MyEpubStatus.succeeded) {
-      label2 = 'Download complete ${done} / ${all}';
+      label2 = '${l10n('download_complete')} ${done} / ${all}';
       isClose = true;
     } else if (ref.watch(epubProvider).status == MyEpubStatus.same) {
-      label2 = 'Already downloaded ${already} / ${all}';
+      label2 = '${l10n('already_downloaded')} ${already} / ${all}';
       isClose = true;
     } else if (ref.watch(epubProvider).status == MyEpubStatus.failed) {
-      label2 = 'Download failed';
+      label2 = '${l10n('download_failed')}';
       isClose = true;
     } else if (ref.watch(epubProvider).status == MyEpubStatus.downloading) {
       label2 = 'Downloading';
@@ -301,6 +340,54 @@ class BaseScreen extends ConsumerWidget {
       if (done > 0 && all > 1) {
         label2 += ' ${done} / ${all}';
       }
+    }
+
+    Widget e = Expanded(flex: 1, child: SizedBox(width: 1));
+    Widget h = SizedBox(height: 4);
+    Widget btn = Column(children: []);
+    if (isClose) {
+      btn = Column(children: [
+        MyTextButton(
+          noScale: true,
+          width: 140,
+          title: l10n('close'),
+          onPressed: () {
+            ref.read(epubProvider).setStatusNone();
+          },
+        ),
+      ]);
+    } else {
+      btn = Column(children: [
+        MyTextButton(
+          noScale: true,
+          width: 180,
+          commit: true,
+          title: '${req1 - already} ${l10n('episode')} ${l10n('download')}',
+          onPressed: () {
+            ref.read(epubProvider).download(req1);
+          },
+        ),
+        if (req2 > 0) h,
+        if (req2 > 0)
+          MyTextButton(
+            noScale: true,
+            width: 180,
+            commit: true,
+            title: '${req2 - already} ${l10n('episode')} ${l10n('download')}',
+            onPressed: () {
+              ref.read(epubProvider).download(req2);
+            },
+          ),
+        h,
+        MyTextButton(
+          noScale: true,
+          width: 180,
+          title: l10n('cancel'),
+          onPressed: () {
+            ref.read(epubProvider).setStatusNone();
+          },
+        ),
+      ]);
     }
 
     Widget bar = Container(
@@ -313,13 +400,15 @@ class BaseScreen extends ConsumerWidget {
             Expanded(child: MyText(label1, noScale: true, center: true)),
             SizedBox(width: 20),
           ]),
-          SizedBox(height: 6),
+          SizedBox(height: 4),
           Row(children: [
             SizedBox(width: 20),
             Expanded(child: MyText(label2, noScale: true, center: true)),
             SizedBox(width: 20),
           ]),
-          SizedBox(height: 8),
+          SizedBox(height: 6),
+          btn,
+          /*
           Row(children: [
             Expanded(flex: 1, child: SizedBox(width: 1)),
             if (isClose)
@@ -352,7 +441,9 @@ class BaseScreen extends ConsumerWidget {
                 },
               ),
             Expanded(flex: 1, child: SizedBox(width: 1)),
+
           ]),
+          */
           Expanded(child: SizedBox(height: 1)),
         ],
       ),

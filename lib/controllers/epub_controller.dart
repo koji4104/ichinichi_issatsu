@@ -1,24 +1,21 @@
 import 'dart:convert' as convert;
 import 'dart:convert';
+import 'dart:typed_data'; // Uint8List
 import 'dart:developer';
 import 'dart:io';
-import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'dart:async';
+import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:flutter/material.dart';
-import 'package:ichinichi_issatsu/commons/widgets.dart';
-import 'package:intl/intl.dart';
-
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
-
 import 'package:beautiful_soup_dart/beautiful_soup.dart';
 import 'package:charset_converter/charset_converter.dart';
-import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
 import 'package:path_provider/path_provider.dart';
-import 'package:path_provider/path_provider.dart';
+import 'package:intl/intl.dart';
 
 import '/models/book_data.dart';
 import '/models/epub_data.dart';
+import '/controllers/applog_controller.dart';
 
 class PermitInvalidCertification extends HttpOverrides {
   @override
@@ -38,23 +35,24 @@ enum MyEpubStatus {
   failed,
 }
 
-int NUM_OF_FIRST_COWNLOAD = 10;
-int NUM_OF_ADD_COWNLOAD = 30;
-
 final epubProvider = ChangeNotifierProvider((ref) => EpubNotifier(ref));
 
 class EpubNotifier extends ChangeNotifier {
-  EpubNotifier(ref) {}
+  EpubNotifier(ref) {
+    if (!Platform.isIOS && !Platform.isAndroid) {
+      //status = MyEpubStatus.downloadable;
+    }
+  }
 
   EpubData epub = new EpubData();
   MyEpubStatus status = MyEpubStatus.none;
-  int downloaded = 0;
-  int downloadedIndex = 0;
-
-  int numOfDownloadRequired = NUM_OF_FIRST_COWNLOAD;
+  int doneIndex = 0;
+  int existingIndex = 0;
+  int requiredIndex = 1;
 
   InAppWebViewController? webViewController;
-  InAppWebViewController? webViewController1;
+
+  //InAppWebViewController? webViewController1;
   String? webBody;
   DownloadController downloadCtrl = DownloadController();
 
@@ -91,11 +89,15 @@ class EpubNotifier extends ChangeNotifier {
     book.dluri = epub.dluri ?? '';
     book.ctime = DateTime.now();
 
+    book.title = EpubData.deleteInvalidStrInJson(book.title);
+    book.author = EpubData.deleteInvalidStrInJson(book.author);
+
     IndexData index = IndexData();
     for (EpubFileData f in epub.fileList) {
       if (f.chapNo >= 0) {
         IndexInfo ch = IndexInfo();
         ch.title = f.title ?? '';
+        ch.title = EpubData.deleteInvalidStrInJson(ch.title);
         ch.index = f.chapNo;
         ch.chars = f.chars;
         book.chars += f.chars;
@@ -134,7 +136,7 @@ class EpubNotifier extends ChangeNotifier {
 
   Future checkHtml(String uri, String? body) async {
     epub.reset();
-    downloadedIndex = 0;
+    existingIndex = 0;
 
     if (body != null) {
       if (uri.contains('www.aozora.gr.jp/cards/')) {
@@ -149,9 +151,9 @@ class EpubNotifier extends ChangeNotifier {
     }
 
     if (epub.bookId != null && epub.uriList.isNotEmpty) {
-      downloadedIndex = await getMaxIndex(epub.bookId!);
-      if (downloadedIndex > epub.uriList.length) downloadedIndex = epub.uriList.length;
-      if (downloadedIndex == epub.uriList.length)
+      existingIndex = await getExistingIndex(epub.bookId!);
+      if (existingIndex > epub.uriList.length) existingIndex = epub.uriList.length;
+      if (existingIndex == epub.uriList.length)
         status = MyEpubStatus.same;
       else
         status = MyEpubStatus.downloadable;
@@ -162,7 +164,7 @@ class EpubNotifier extends ChangeNotifier {
     }
   }
 
-  Future<void> download() async {
+  Future<void> download(int required) async {
     if (epub.uriList.length == 0 || epub.dluri == null) {
       log('urlList.length == 0');
       status = MyEpubStatus.failed;
@@ -170,10 +172,7 @@ class EpubNotifier extends ChangeNotifier {
       return;
     }
 
-    numOfDownloadRequired = NUM_OF_FIRST_COWNLOAD;
-    if (downloadedIndex > 0) {
-      numOfDownloadRequired = downloadedIndex + NUM_OF_ADD_COWNLOAD;
-    }
+    requiredIndex = required;
 
     if (epub.dluri.toString().contains('www.aozora.gr.jp/cards/')) {
       await downloadAozora();
@@ -190,6 +189,8 @@ class EpubNotifier extends ChangeNotifier {
   }
 
   /// tag = '<a '  '<div'
+  /// text = deleteTag(text, '<a ');
+  /// text = text.replaceAll('</a>', '');
   String deleteTag(String text, String tag) {
     int s1 = 0;
     for (int i = 0; i < 1000; i++) {
@@ -205,6 +206,8 @@ class EpubNotifier extends ChangeNotifier {
   }
 
   /// tag = '<h3'
+  /// <h3 class="o-midashi">第三の手記</h3>
+  /// <h3>第三の手記</h3>
   String deleteClassAttr(String text, String tag) {
     int s1 = 0;
     for (int i = 0; i < 1000; i++) {
@@ -249,8 +252,8 @@ class EpubNotifier extends ChangeNotifier {
     return text.length;
   }
 
-  Future<int> getMaxIndex(String bookId) async {
-    int maxIndex = 0;
+  Future<int> getExistingIndex(String bookId) async {
+    int existingIndex = 0;
 
     String appdir = (await getApplicationDocumentsDirectory()).path;
     if (!Platform.isIOS && !Platform.isAndroid) {
@@ -263,11 +266,11 @@ class EpubNotifier extends ChangeNotifier {
         String? txt1 = await file.readAsString();
         Map<String, dynamic> j = json.decode(txt1);
         IndexData bi = IndexData.fromJson(j);
-        maxIndex = bi.getMaxIndex();
+        existingIndex = bi.getExistingIndex();
       }
     } catch (_) {}
 
-    return maxIndex;
+    return existingIndex;
   }
 
   //-------------------------------------------------------
@@ -311,19 +314,21 @@ class EpubNotifier extends ChangeNotifier {
     if (epub.bookId == null) return;
 
     status = MyEpubStatus.downloading;
+    doneIndex = 0;
     this.notifyListeners();
-    downloaded = 0;
 
     String? body = await downloadCtrl.downloadSjis(epub.uriList[0]);
     if (body != null) {
       try {
         createAozoraText(body);
-
         if (epub.fileList.length >= 2) {
           writeBook();
+          doneIndex = 1;
           status = MyEpubStatus.succeeded;
         }
       } catch (_) {}
+    } else {
+      MyLog.warn('download() failed ${epub.uriList[0]}');
     }
 
     if (status != MyEpubStatus.succeeded) status = MyEpubStatus.failed;
@@ -380,6 +385,13 @@ class EpubNotifier extends ChangeNotifier {
     // delete '<a '
     text = deleteTag(text, '<a ');
     text = text.replaceAll('</a>', '');
+
+    // delete '<img '
+    //text = deleteTag(text, '<img ');
+
+    // delete '<span'
+    //text = deleteTag(text, '<span');
+    //text = text.replaceAll('</span>', '');
 
     // delete class '<h3'
     text = deleteClassAttr(text, '<h3');
@@ -515,7 +527,7 @@ class EpubNotifier extends ChangeNotifier {
 
   Future<void> downloadKakuyomu() async {
     status = MyEpubStatus.downloading;
-    downloaded = 0;
+    doneIndex = 0;
     this.notifyListeners();
 
     String text0 = '';
@@ -529,7 +541,7 @@ class EpubNotifier extends ChangeNotifier {
     f0.chars = text0.length;
     epub.fileList.add(f0);
 
-    for (int i = downloadedIndex; i < epub.uriList.length; i++) {
+    for (int i = existingIndex; i < epub.uriList.length; i++) {
       sleep(Duration(milliseconds: 200));
 
       String? body = await downloadCtrl.download(epub.uriList[i]);
@@ -539,11 +551,11 @@ class EpubNotifier extends ChangeNotifier {
         break;
       }
 
-      downloaded = i;
-      if (downloaded % 5 == 0) {
+      doneIndex = i + 1;
+      if (doneIndex % 2 == 0) {
         this.notifyListeners();
       }
-      if (i >= numOfDownloadRequired) break;
+      if (i >= requiredIndex) break;
     }
 
     if (epub.fileList.length >= 2) {
@@ -578,6 +590,9 @@ class EpubNotifier extends ChangeNotifier {
       // delete <p>
       text = deleteTag(text, '<p ');
       text = text.replaceAll('</p>', '<br />');
+
+      // delete <img
+      text = deleteTag(text, '<img');
 
       f.text = title + text;
       f.chars = calcChars(text);
@@ -621,11 +636,11 @@ class EpubNotifier extends ChangeNotifier {
 
   Future<void> downloadNarou() async {
     status = MyEpubStatus.downloading;
+    doneIndex = 0;
     this.notifyListeners();
-    downloaded = 0;
 
     if (epub.uriList.length > 0) {
-      for (int i = downloadedIndex; i < epub.uriList.length; i++) {
+      for (int i = existingIndex; i < epub.uriList.length; i++) {
         sleep(Duration(milliseconds: 200));
 
         String? body = await downloadCtrl.download(epub.uriList[i]);
@@ -635,11 +650,11 @@ class EpubNotifier extends ChangeNotifier {
           break;
         }
 
-        downloaded = i;
-        if (downloaded % 5 == 0) {
+        doneIndex = i + 1;
+        if (doneIndex % 2 == 0) {
           this.notifyListeners();
         }
-        if (i >= numOfDownloadRequired) break;
+        if (i >= requiredIndex) break;
       }
     }
     writeBook();
@@ -654,11 +669,11 @@ class EpubNotifier extends ChangeNotifier {
     }
 
     status = MyEpubStatus.downloading;
+    doneIndex = 0;
     this.notifyListeners();
-    downloaded = 0;
 
     if (epub.uriList.length > 0) {
-      for (int i = downloadedIndex; i < epub.uriList.length; i++) {
+      for (int i = existingIndex; i < epub.uriList.length; i++) {
         await Future.delayed(Duration(milliseconds: 100));
 
         // https://ncode.syosetu.com/n6964jl/1/
@@ -669,11 +684,11 @@ class EpubNotifier extends ChangeNotifier {
           break;
         }
 
-        downloaded = i;
-        if (downloaded % 5 == 0) {
+        doneIndex = i + 1;
+        if (doneIndex % 2 == 0) {
           this.notifyListeners();
         }
-        if (i >= numOfDownloadRequired) break;
+        if (i >= requiredIndex) break;
       }
     }
     writeBook();
@@ -710,6 +725,9 @@ class EpubNotifier extends ChangeNotifier {
       // delete <p>
       text = deleteTag(text, '<p ');
       text = text.replaceAll('</p>', '<br />');
+
+      // delete <img
+      text = deleteTag(text, '<img');
 
       if (text != '') text += '<br />';
       text += t1;
@@ -751,8 +769,10 @@ class DownloadController {
 
   InAppWebViewController? webViewController8;
   String? webBody;
+  String? selectedUri;
 
   Future<String?> download(String uri) async {
+    HttpOverrides.global = PermitInvalidCertification();
     Map<String, String> headers = {
       'user-agent':
           'Mozilla/5.0 (iPhone; CPU iPhone OS 15_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148'
@@ -763,11 +783,14 @@ class DownloadController {
       if (res.statusCode == 200) {
         body = res.body;
       }
-    } catch (_) {}
+    } catch (e) {
+      MyLog.err('download() ${e.toString()}');
+    }
     return body;
   }
 
   Future<String?> downloadSjis(String uri) async {
+    HttpOverrides.global = PermitInvalidCertification();
     Map<String, String> headers = {
       'user-agent':
           'Mozilla/5.0 (iPhone; CPU iPhone OS 15_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148'
@@ -778,7 +801,9 @@ class DownloadController {
       if (res.statusCode == 200) {
         body = await CharsetConverter.decode("Shift_JIS", res.bodyBytes);
       }
-    } catch (_) {}
+    } catch (e) {
+      MyLog.err('downloadSjis() ${e.toString()}');
+    }
     return body;
   }
 
@@ -797,19 +822,27 @@ class DownloadController {
           break;
         }
       }
-    } catch (_) {}
+    } catch (e) {
+      MyLog.err('download8() ${e.toString()}');
+    }
     return webBody;
   }
 
   Widget browser8() {
+    if (selectedUri == null) return Container();
     PlatformInAppWebViewController.debugLoggingSettings.enabled = false;
     return InAppWebView(
       key: GlobalKey(),
+      initialUrlRequest: URLRequest(url: WebUri(selectedUri!)),
+      //initialUrlRequest: URLRequest(url: WebUri('')),
       onWebViewCreated: (controller) async {
         webViewController8 = controller;
       },
-      onLoadStart: (controller, url) {},
+      onLoadStart: (controller, url) {
+        MyLog.debug('browser8 onLoadStart url=${url}');
+      },
       onLoadStop: (controller, url) async {
+        MyLog.debug('browser8 onLoad Stop url=${url}');
         if (url != null) {
           webBody = await webViewController8!.getHtml();
         }

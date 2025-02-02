@@ -3,8 +3,30 @@ import 'dart:io';
 import 'package:intl/intl.dart';
 import 'package:path_provider/path_provider.dart';
 
-class ReadlogData {
-  ReadlogData() {}
+class MyLogData {
+  String date = '';
+  String user = '';
+  String level = '';
+  String event = '';
+  String msg = '';
+
+  MyLogData({String? date, String? user, String? level, String? event, String? msg}) {
+    this.date = date ?? '';
+    this.user = user ?? '';
+    this.level = level ?? '';
+    this.event = event ?? '';
+    this.msg = msg ?? '';
+  }
+}
+
+String sample = '''
+2022-04-01 00:00:00\tuser\terror\tapp\tmessage1
+2022-04-02 00:00:00\tuser\twarn\tapp\tmessage2
+2022-04-03 00:00:00\tuser\tinfo\tapp\tmessage3
+''';
+
+class ViewlogData {
+  ViewlogData() {}
 
   DateTime date = DateTime(2000, 1, 1);
   int sec = 0;
@@ -26,10 +48,10 @@ class ReadlogData {
     if (abookId != null) this.bookId = abookId;
   }
 
-  static ReadlogData? fromTsv(String line) {
+  static ViewlogData? fromTsv(String line) {
     List r = line.split('\t');
     if (r.length >= 4) {
-      ReadlogData data = ReadlogData();
+      ViewlogData data = ViewlogData();
       try {
         data.date = DateTime.parse(r[0]);
         data.sec = int.parse(r[1]);

@@ -3,11 +3,11 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:flutter/services.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 
-import 'log_screen.dart';
+import '/screens/applog_screen.dart';
+import '/screens/viewlog_screen.dart';
 import '/commons/base_screen.dart';
 import '/commons/widgets.dart';
-import '/controllers/env_controller.dart';
-import '/controllers/log_controller.dart';
+import '/controllers/viewlog_controller.dart';
 
 /// Settings
 class SettingsScreen extends BaseScreen {
@@ -48,7 +48,8 @@ class SettingsScreen extends BaseScreen {
 
     String sph = l10n('per_hour');
     String spage = l10n('page');
-    int speed = readLog.per_hour;
+
+    int speed = ref.watch(viewlogProvider).per_hour;
 
     list.add(SizedBox(height: 20));
     list.add(
@@ -57,26 +58,13 @@ class SettingsScreen extends BaseScreen {
         onPressed: () {
           Navigator.of(context).push(
             MaterialPageRoute(
-              builder: (context) => ReadlogScreen(),
+              builder: (context) => ViewlogScreen(),
             ),
           );
         },
       ),
     );
-
-    list.add(SizedBox(height: 20));
-    list.add(
-      MyListTile(
-        title1: MyText('Logs'),
-        onPressed: () {
-          Navigator.of(context).push(
-            MaterialPageRoute(
-              builder: (context) => LogScreen(),
-            ),
-          );
-        },
-      ),
-    );
+    list.add(SizedBox(height: 10));
     list.add(
       MyListTile(
         title1: MyText('Licenses'),
@@ -97,7 +85,21 @@ class SettingsScreen extends BaseScreen {
         },
       ),
     );
-    list.add(MyLabel(''));
+
+    list.add(SizedBox(height: 10));
+    list.add(
+      MyListTile(
+        title1: MyText('Logs'),
+        onPressed: () {
+          Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (context) => ApplogScreen(),
+            ),
+          );
+        },
+      ),
+    );
+    list.add(SizedBox(height: 10));
     return Column(children: list);
   }
 }

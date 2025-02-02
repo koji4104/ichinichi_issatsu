@@ -56,7 +56,11 @@ class Localized {
       'aozora_top': 'Aozora top',
       'aozora_ranking': 'Aozora ranking',
       'episode': 'Episode',
-      'additional_download': 'Check for additional downloads',
+      'check_addition': 'Check the addition.',
+      'download_complete': 'Complete',
+      'already_downloaded': 'Already downloaded',
+      'download_failed': 'Download failed',
+      'close': 'Close',
     },
     'ja': {
       'app_name': '一日一冊',
@@ -92,7 +96,11 @@ class Localized {
       'aozora_top': '青空文庫トップ',
       'aozora_ranking': '青空文庫ランキング',
       'episode': '話',
-      'additional_download': '追加のダウンロードを調べます',
+      'check_addition': '更新をチェックします',
+      'download_complete': '完了',
+      'already_downloaded': '最新の状態',
+      'download_failed': 'ダウンロード失敗',
+      'close': '閉じる',
     },
   };
 

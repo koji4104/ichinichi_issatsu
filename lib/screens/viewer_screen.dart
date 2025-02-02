@@ -18,6 +18,7 @@ import '/models/epub_data.dart';
 import '/controllers/viewer_controller.dart';
 import '/controllers/env_controller.dart';
 import '/screens/settings_screen.dart';
+import '/controllers/viewlog_controller.dart';
 
 final stateProvider = ChangeNotifierProvider((ref) => stateNotifier(ref));
 
@@ -56,7 +57,7 @@ class ViewerScreen extends BaseScreen with WidgetsBindingObserver {
       WidgetsBinding.instance.addObserver(this);
     }
     await reload();
-    ref.watch(viewerProvider).startReadlog();
+    await startReadlog();
   }
 
   @override
@@ -71,13 +72,13 @@ class ViewerScreen extends BaseScreen with WidgetsBindingObserver {
         log('inactive'); // no
       } else if (state == AppLifecycleState.resumed) {
         log('resumed');
-        ref.watch(viewerProvider).startReadlog();
+        startReadlog();
       } else if (state == AppLifecycleState.paused) {
         log('paused');
-        ref.watch(viewerProvider).endReadlog();
+        endReadlog();
       } else if (state == AppLifecycleState.detached) {
         log('detached');
-        ref.watch(viewerProvider).endReadlog();
+        endReadlog();
       }
     }
   }
@@ -107,7 +108,7 @@ class ViewerScreen extends BaseScreen with WidgetsBindingObserver {
       canPop: true,
       onPopInvokedWithResult: (didPop, result) async {
         log('pop');
-        ref.watch(viewerProvider).endReadlog();
+        endReadlog();
       },
       child: Scaffold(
         backgroundColor: env.getBackColor(),
@@ -206,8 +207,16 @@ class ViewerScreen extends BaseScreen with WidgetsBindingObserver {
     ref.read(viewerProvider).scrollLeft();
   }
 
-  Future reload() async {
-    ref.read(viewerProvider).load(env, book, _width, _height);
+  Future startReadlog() async {
+    int nowChars = ref.watch(viewerProvider).nowChars;
+    //readLog.init(nowChars);
+    ref.watch(viewlogProvider).init(nowChars);
+  }
+
+  Future endReadlog() async {
+    int nowChars = ref.watch(viewerProvider).nowChars;
+    //readLog.save(nowChars, book.bookId);
+    ref.watch(viewlogProvider).save(nowChars, book);
   }
 
   Widget actionRow() {
@@ -219,7 +228,7 @@ class ViewerScreen extends BaseScreen with WidgetsBindingObserver {
           icon: Icon(Icons.arrow_back_ios_new),
           color: env.getFrontColor(),
           onPressed: () {
-            ref.watch(viewerProvider).endReadlog();
+            endReadlog();
             Navigator.of(context).pop();
           }),
       if (isActionBar()) SizedBox(width: pad),
@@ -249,7 +258,7 @@ class ViewerScreen extends BaseScreen with WidgetsBindingObserver {
       if (isActionBar()) SizedBox(width: pad),
       if (isActionBar())
         IconButton(
-          icon: Icon(Icons.edit),
+          icon: Icon(Icons.edit_outlined),
           color: env.getFrontColor(),
           onPressed: () {
             if (ref.watch(viewerProvider).bottomBarType == ViewerBottomBarType.clipTextBar) {
@@ -263,7 +272,7 @@ class ViewerScreen extends BaseScreen with WidgetsBindingObserver {
       if (isActionBar()) SizedBox(width: pad),
       if (isActionBar())
         IconButton(
-          icon: Icon(Icons.article),
+          icon: Icon(Icons.article_outlined),
           color: env.getFrontColor(),
           onPressed: () {
             ref.watch(viewerProvider).bottomBarType = ViewerBottomBarType.clipListBar;
@@ -544,8 +553,20 @@ class ViewerScreen extends BaseScreen with WidgetsBindingObserver {
   }
 
   @override
-  onDropdownChanged() {
-    reload();
+  onDropdownChanged(EnvData data) {
+    if (data.name == 'font_size') {
+      reload();
+    } else {
+      refresh();
+    }
+  }
+
+  Future reload() async {
+    ref.read(viewerProvider).load(env, book, _width, _height);
+  }
+
+  Future refresh() async {
+    ref.read(viewerProvider).refresh();
   }
 
   Widget tocBar() {

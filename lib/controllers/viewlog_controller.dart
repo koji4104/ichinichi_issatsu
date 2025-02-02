@@ -1,30 +1,26 @@
-import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:developer';
 import 'package:intl/intl.dart';
 import 'dart:io';
-import 'dart:convert';
-
 import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
-import 'dart:io';
-import '/constants.dart';
 import 'package:path_provider/path_provider.dart';
-import 'dart:convert';
 
+import '/constants.dart';
 import '/models/log_data.dart';
+import '/models/book_data.dart';
 
-ReadlogController readLog = ReadlogController();
+final viewlogProvider = ChangeNotifierProvider((ref) => ViewlogNotifier(ref));
 
-class ReadlogController {
-  ReadlogController() {
+class ViewlogNotifier extends ChangeNotifier {
+  ViewlogNotifier(ref) {
     read();
   }
 
-  List<ReadlogData> list = [];
+  List<ViewlogData> list = [];
   DateTime startDate = DateTime.now();
   int startChars = 0;
-  String logfile = 'read.txt';
+  String logfile = 'view.log';
   int per_hour = 0; // page/h
   int sumSec = 0;
   int sumChars = 0;
@@ -34,7 +30,7 @@ class ReadlogController {
     startChars = nowChars;
   }
 
-  Future save(int chars, String id) async {
+  Future save(int chars, BookData book) async {
     String appdir = (await getApplicationDocumentsDirectory()).path;
     if (!Platform.isIOS && !Platform.isAndroid) {
       appdir = appdir + '/test';
@@ -43,7 +39,7 @@ class ReadlogController {
     await Directory('${logdir}').create(recursive: true);
     final String path = '${logdir}/${logfile}';
 
-    if (await File(path).exists() && File(path).lengthSync() > 64 * 1024) {
+    if (await File(path).exists() && File(path).lengthSync() > 100 * 1024) {
       if (await File(path + '.1').exists()) File(path + '.1').deleteSync();
       File(path).renameSync(path + '.1');
     }
@@ -53,7 +49,8 @@ class ReadlogController {
     int defChars = chars - startChars;
 
     if (sec >= 30 && defChars >= 450) {
-      String tsv = '${date}\t${sec}\t${defChars}\t${id}\n';
+      String title = book.title;
+      String tsv = '${date}\t${sec}\t${defChars}\t${title}\n';
       await File(path).writeAsString(tsv, mode: FileMode.append, flush: true);
     }
   }
@@ -79,7 +76,7 @@ class ReadlogController {
     }
 
     for (String line in txt.split('\n')) {
-      ReadlogData? d = ReadlogData.fromTsv(line);
+      ViewlogData? d = ViewlogData.fromTsv(line);
       if (d != null) list.add(d);
     }
 
@@ -89,11 +86,12 @@ class ReadlogController {
 
     sumSec = 1;
     sumChars = 0;
-    for (ReadlogData d in list) {
+    for (ViewlogData d in list) {
       sumSec += d.sec;
       sumChars += d.chars;
     }
     per_hour = (sumChars * 3600 / sumSec / CHARS_PAGE).toInt();
+    this.notifyListeners();
   }
 
   Future delete(int i) async {
@@ -113,12 +111,12 @@ class ReadlogController {
       if (await File(path).exists()) {
         String txt = await File(path).readAsString();
 
-        List<ReadlogData> logList = [];
+        List<ViewlogData> logList = [];
         for (String line in txt.split('\n')) {
-          ReadlogData? d = ReadlogData.fromTsv(line);
+          ViewlogData? d = ViewlogData.fromTsv(line);
           if (d != null) logList.add(d);
         }
-        for (ReadlogData d in logList) {
+        for (ViewlogData d in logList) {
           if (d.date == date) {
             logList.remove(d);
             String tsv = listToTsv(logList);
@@ -134,12 +132,12 @@ class ReadlogController {
       if (await File(path).exists()) {
         String txt = await File(path).readAsString();
 
-        List<ReadlogData> logList = [];
+        List<ViewlogData> logList = [];
         for (String line in txt.split('\n')) {
-          ReadlogData? d = ReadlogData.fromTsv(line);
+          ViewlogData? d = ViewlogData.fromTsv(line);
           if (d != null) logList.add(d);
         }
-        for (ReadlogData d in logList) {
+        for (ViewlogData d in logList) {
           if (d.date == date) {
             logList.remove(d);
             String tsv = listToTsv(logList);
@@ -153,9 +151,9 @@ class ReadlogController {
     if (done) read();
   }
 
-  String listToTsv(List<ReadlogData> tempList) {
+  String listToTsv(List<ViewlogData> tempList) {
     String txt = '';
-    for (ReadlogData d in tempList) {
+    for (ViewlogData d in tempList) {
       String sdate = DateFormat("yyyy-MM-dd HH:mm:ss").format(d.date);
       txt += '${sdate}\t${d.sec}\t${d.chars}\t${d.bookId}\n';
     }

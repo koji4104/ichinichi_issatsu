@@ -10,7 +10,7 @@ import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 
 import '/models/book_data.dart';
 import '/models/log_data.dart';
-import '/controllers/log_controller.dart';
+import '/controllers/applog_controller.dart';
 
 List<String> initUriList = [
   'https://www.aozora.gr.jp/index.html',
@@ -59,7 +59,7 @@ class BrowserNotifier extends ChangeNotifier {
 
   Future readInitFavo() async {
     initFavorite.list.clear();
-    if (Platform.isAndroid || Platform.isIOS) {
+    if (Platform.isAndroid || Platform.isIOS || true) {
       for (int i = 0; i < initUriList.length; i++) {
         FavoInfo fi = FavoInfo();
         fi.uri = initUriList[i];

@@ -189,7 +189,7 @@ class ViewerNotifier extends ChangeNotifier {
         datadir = appdir + '/book';
 
         for (int i = 0; i < 10000; i++) {
-          String path1 = '${datadir}/${book!.bookId}/text/ch${(i).toString().padLeft(3, '0')}.txt';
+          String path1 = '${datadir}/${book!.bookId}/text/ch${(i).toString().padLeft(4, '0')}.txt';
           if (File(path1).existsSync()) {
             String text = await File(path1).readAsStringSync();
 
@@ -211,13 +211,18 @@ class ViewerNotifier extends ChangeNotifier {
         await Future.delayed(Duration(milliseconds: 100));
 
         int ni = nowIndex;
-        if (listWebViewCtrl.length > ni && listWebViewCtrl[ni] != null) {
+        if (listWebViewCtrl.length > ni && listWebViewCtrl[ni] != null && listText.length > ni) {
           await listWebViewCtrl[ni]!.loadData(data: listText[ni]);
         }
-        if (ni > 0 && listWebViewCtrl.length > ni - 1 && listWebViewCtrl[ni - 1] != null) {
+        if (ni > 0 &&
+            listWebViewCtrl.length > ni - 1 &&
+            listWebViewCtrl[ni - 1] != null &&
+            listText.length > ni - 1) {
           await listWebViewCtrl[ni - 1]!.loadData(data: listText[ni - 1]);
         }
-        if (listWebViewCtrl.length > ni + 1 && listWebViewCtrl[ni + 1] != null) {
+        if (listWebViewCtrl.length > ni + 1 &&
+            listWebViewCtrl[ni + 1] != null &&
+            listText.length > ni + 1) {
           await listWebViewCtrl[ni + 1]!.loadData(data: listText[ni + 1]);
         }
         this.notifyListeners();
@@ -344,7 +349,8 @@ class ViewerNotifier extends ChangeNotifier {
           jumpStatusText = '${(curdx / 100).toInt()} / ${(dx / 100).toInt()}';
           //log('jumpTo ${jumpStatusText}');
 
-          await scrollController!.animateTo(curdx + len, duration: Duration(milliseconds: 50), curve: Curves.linear);
+          await scrollController!
+              .animateTo(curdx + len, duration: Duration(milliseconds: 50), curve: Curves.linear);
           if (i % 10 == 9) await Future.delayed(Duration(milliseconds: 50));
           if (!Platform.isIOS && !Platform.isAndroid) {
             Future.delayed(Duration(milliseconds: 100));
@@ -359,7 +365,8 @@ class ViewerNotifier extends ChangeNotifier {
           jumpStatusText = '${(curdx / 100).toInt()} / ${(dx / 100).toInt()}';
           //log('jumpTo ${jumpStatusText}');
 
-          await scrollController!.animateTo(curdx - len, duration: Duration(milliseconds: 50), curve: Curves.linear);
+          await scrollController!
+              .animateTo(curdx - len, duration: Duration(milliseconds: 50), curve: Curves.linear);
           if (i % 10 == 9) await Future.delayed(Duration(milliseconds: 50));
           continue;
         }
@@ -372,7 +379,8 @@ class ViewerNotifier extends ChangeNotifier {
       if (i < index) dx += listWidth[i];
     }
     dx += listWidth[index] * ratio / 10000;
-    await scrollController!.animateTo(dx, duration: Duration(milliseconds: 50), curve: Curves.linear);
+    await scrollController!
+        .animateTo(dx, duration: Duration(milliseconds: 50), curve: Curves.linear);
     jumpStatusText = '';
     log('jumpTo end');
     isLoading = false;
@@ -501,7 +509,7 @@ class ViewerNotifier extends ChangeNotifier {
     if (scrollController == null) return;
     if (book == null) return;
     if (isLoading == true) return;
-    log('saveIndex [${nowIndex}] ${nowRatio}');
+    //log('saveIndex [${nowIndex}] ${nowRatio}');
 
     book!.prop.nowIndex = nowIndex;
     book!.prop.nowRatio = nowRatio;
@@ -554,9 +562,9 @@ class ViewerNotifier extends ChangeNotifier {
     c += '  font-weight: normal;\n';
     c += '  color: ${env.getH3Css()};\n';
     if (env.writing_mode.val == 0) {
-      c += '  padding-left: 1em;\n';
+      c += '  padding-left: 0em;\n';
     } else {
-      c += '  padding-top: 1em;\n';
+      c += '  padding-top: 0em;\n';
     }
     c += '  line-height: ${env.line_height.val}%;\n';
     c += '}\n';
@@ -572,7 +580,9 @@ class ViewerNotifier extends ChangeNotifier {
     if (listText.length == 0) return Container();
 
     PlatformInAppWebViewController.debugLoggingSettings.enabled = false;
-    ScrollPhysics physics = bottomBarType == ViewerBottomBarType.clipTextBar ? NeverScrollableScrollPhysics() : ScrollPhysics();
+    ScrollPhysics physics = bottomBarType == ViewerBottomBarType.clipTextBar
+        ? NeverScrollableScrollPhysics()
+        : ScrollPhysics();
     try {
       return ListView.builder(
         scrollDirection: env.writing_mode.val == 0 ? Axis.vertical : Axis.horizontal,
@@ -620,12 +630,14 @@ class ViewerNotifier extends ChangeNotifier {
         onLoadStop: (controller, url) async {
           try {
             double webWidth = 0;
-            dynamic vw = await controller.evaluateJavascript(source: '''(() => { return document.body.scrollWidth; })()''');
+            dynamic vw = await controller
+                .evaluateJavascript(source: '''(() => { return document.body.scrollWidth; })()''');
             if (vw != null && vw != '') {
               webWidth = double.parse('${vw}');
             }
             double webHeight = 0;
-            dynamic vh = await controller.evaluateJavascript(source: '''(() => { return document.body.scrollHeight; })()''');
+            dynamic vh = await controller
+                .evaluateJavascript(source: '''(() => { return document.body.scrollHeight; })()''');
             if (vh != null && vh != '') {
               webHeight = double.parse('${vh}');
             }
@@ -636,9 +648,10 @@ class ViewerNotifier extends ChangeNotifier {
                 if (!Platform.isIOS && webHeight > 5000) {
                   webHeight = 5000;
                 }
-                //webHeight [38] 2747 -> 2484
+                // webHeight [38] 2747 -> 2484
                 if (listWidth[index] != webHeight) {
-                  log('webHeight [${index}] ${listWidth[index].toInt()} -> ${webHeight.toInt()}');
+                  if ((listWidth[index] - webHeight).abs() > 200)
+                    log('webHeight [${index}] ${listWidth[index].toInt()} -> ${webHeight.toInt()}');
                   listWidth[index] = webHeight;
                 }
               }
@@ -649,7 +662,8 @@ class ViewerNotifier extends ChangeNotifier {
                   webWidth = 5000;
                 }
                 if (listWidth[index] != webWidth) {
-                  log('webWidth [${index}] ${listWidth[index].toInt()} -> ${webWidth.toInt()}');
+                  if ((listWidth[index] - webWidth).abs() > 200)
+                    log('webWidth [${index}] ${listWidth[index].toInt()} -> ${webWidth.toInt()}');
                   listWidth[index] = webWidth;
                 }
               }

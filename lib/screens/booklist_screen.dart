@@ -379,4 +379,9 @@ class BookListScreen extends BaseScreen {
   Future onDownloadFinished() async {
     ref.watch(booklistProvider).readBookList();
   }
+
+  @override
+  Future onPressedCloseButton() async {
+    ref.read(epubProvider).setStatusNone();
+  }
 }

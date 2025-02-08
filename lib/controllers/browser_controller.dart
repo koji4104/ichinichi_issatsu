@@ -15,17 +15,17 @@ import '/controllers/applog_controller.dart';
 List<String> initUriList = [
   'https://www.aozora.gr.jp/index.html',
   'https://www.aozora.gr.jp/access_ranking/2022_xhtml.html',
-  'https://kakuyomu.jp',
   'https://yomou.syosetu.com',
-  'https://syosetu.com/site/group/'
+  'https://syosetu.com/site/group/',
+  'https://kakuyomu.jp',
   //'https://noc.syosetu.com/top/top/',
 ];
 List<String> initTitleList = [
   'aozora_top',
   'aozora_ranking',
-  'https://kakuyomu.jp',
   'https://yomou.syosetu.com',
-  'https://syosetu.com/site/group/'
+  'https://syosetu.com/site/group/',
+  'https://kakuyomu.jp',
   //'https://noc.syosetu.com/top/top/',
 ];
 

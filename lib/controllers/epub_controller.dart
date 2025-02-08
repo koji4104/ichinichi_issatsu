@@ -64,8 +64,9 @@ class EpubNotifier extends ChangeNotifier {
     String datadir = appdir + '/book';
 
     String text0 = '';
-    text0 += '<h2>' + (epub.bookTitle ?? epub.bookId!) + '</h2>\n';
-    text0 += epub.bookAuthor != null ? '<h2>' + epub.bookAuthor! + '</h2>\n' : '';
+    text0 += '<h2>' + (epub.bookTitle ?? epub.bookId!) + '</h2>';
+    text0 += epub.bookAuthor != null ? '<h2>' + epub.bookAuthor! + '</h2>' : '';
+    text0 += '<br /><br />';
     EpubFileData f0 = EpubFileData();
     f0.chapNo = 0;
     f0.fileName = 'text/ch${f0.chapNo0000}.txt';
@@ -182,27 +183,33 @@ class EpubNotifier extends ChangeNotifier {
     }
   }
 
-  Future<void> download(int required) async {
+  Future<bool> download(int required) async {
+    bool ret = false;
     if (epub.uriList.length == 0 || epub.dluri == null) {
       log('urlList.length == 0');
       status = MyEpubStatus.failed;
       this.notifyListeners();
-      return;
+      return ret;
     }
     requiredIndex = required;
 
     if (epub.dluri.toString().contains('www.aozora.gr.jp/cards/')) {
       await downloadAozora();
+      ret = true;
     } else if (epub.dluri.toString().contains('kakuyomu.jp/works/')) {
       await downloadKakuyomu();
+      ret = true;
     } else if (epub.dluri.toString().contains('ncode.syosetu.com/n')) {
       await downloadNarou();
+      ret = true;
     } else if (epub.dluri.toString().contains('novel18.syosetu.com/n')) {
       await downloadNarou8();
+      ret = true;
     } else {
       status = MyEpubStatus.failed;
       this.notifyListeners();
     }
+    return ret;
   }
 
   /// tag = '<a '  '<div'
@@ -240,7 +247,10 @@ class EpubNotifier extends ChangeNotifier {
     return text;
   }
 
-  Map<String, String> headers = {'user-agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 15_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148'};
+  Map<String, String> headers = {
+    'user-agent':
+        'Mozilla/5.0 (iPhone; CPU iPhone OS 15_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148'
+  };
 
   setStatusNone() {
     epub.reset();
@@ -289,17 +299,6 @@ class EpubNotifier extends ChangeNotifier {
         existingIndex = ichap;
       }
     } catch (_) {}
-    /*
-    try {
-      final file = File('${datadir}/${bookId}/data/index.json');
-      if (file.existsSync()) {
-        String? txt1 = await file.readAsString();
-        Map<String, dynamic> j = json.decode(txt1);
-        IndexData bi = IndexData.fromJson(j);
-        existingIndex = bi.getExistingIndex();
-      }
-    } catch (_) {}
-*/
 
     return existingIndex;
   }
@@ -514,11 +513,11 @@ class EpubNotifier extends ChangeNotifier {
         }
 
         for (int i = 0; i < 100; i++) {
-          if (t1.length < 110000) {
+          if (t1.length < 30000) {
             listText.add(t1);
             break;
           }
-          int s1 = t1.indexOf('<br />', 90000);
+          int s1 = t1.indexOf('<br />', 25000);
           if (s1 > 0) {
             String t2 = t1.substring(0, s1 + 6);
             if (i >= 1) {
@@ -589,7 +588,8 @@ class EpubNotifier extends ChangeNotifier {
             for (var MapEntry(:key, :value) in map.entries) {
               if (value['__typename'] != null && value['id'] != null) {
                 if (value['__typename'] == 'Episode') {
-                  epub.uriList.add('https://kakuyomu.jp/works/${epub.siteId}/episodes/${value['id']}');
+                  epub.uriList
+                      .add('https://kakuyomu.jp/works/${epub.siteId}/episodes/${value['id']}');
                 } else if (value['__typename'] == 'Work') {
                   if (value['id'] == epub.siteId) {
                     epub.bookTitle = value['title'];
@@ -861,7 +861,10 @@ class DownloadController {
 
   Future<String?> download(String uri) async {
     HttpOverrides.global = PermitInvalidCertification();
-    Map<String, String> headers = {'user-agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 15_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148'};
+    Map<String, String> headers = {
+      'user-agent':
+          'Mozilla/5.0 (iPhone; CPU iPhone OS 15_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148'
+    };
     String? body = null;
     try {
       http.Response res = await http.get(Uri.parse(uri), headers: headers);
@@ -876,7 +879,10 @@ class DownloadController {
 
   Future<String?> downloadSjis(String uri) async {
     HttpOverrides.global = PermitInvalidCertification();
-    Map<String, String> headers = {'user-agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 15_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148'};
+    Map<String, String> headers = {
+      'user-agent':
+          'Mozilla/5.0 (iPhone; CPU iPhone OS 15_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148'
+    };
     String? body = null;
     try {
       http.Response res = await http.get(Uri.parse(uri), headers: headers);

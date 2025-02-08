@@ -79,7 +79,7 @@ class BaseScreen extends ConsumerWidget {
           actionsAlignment: MainAxisAlignment.center,
           shape: RoundedRectangleBorder(borderRadius: DEF_BORDER_RADIUS),
           titlePadding: EdgeInsets.all(0.0),
-          contentPadding: EdgeInsets.fromLTRB(8, 8, 8, 0),
+          contentPadding: EdgeInsets.fromLTRB(16, 16, 16, 0),
           actionsPadding: EdgeInsets.fromLTRB(8, 16, 8, 16),
           buttonPadding: EdgeInsets.all(0.0),
           iconPadding: EdgeInsets.all(0.0),
@@ -133,7 +133,8 @@ class BaseScreen extends ConsumerWidget {
       child: TextButton(
         style: TextButton.styleFrom(
           backgroundColor: bgcol,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(DEF_RADIUS))),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(DEF_RADIUS))),
           side: bdcol != null ? BorderSide(color: bdcol) : null,
         ),
         child: Text(
@@ -219,7 +220,7 @@ class BaseScreen extends ConsumerWidget {
       child: Column(children: [
         Container(
           color: myTheme.scaffoldBackgroundColor,
-          height: 4,
+          height: 1,
         ),
         Row(children: [
           SizedBox(width: 2),
@@ -231,6 +232,8 @@ class BaseScreen extends ConsumerWidget {
       ]),
     );
   }
+
+  bool isDownloadFinished = false;
 
   @override
   Future onDownloadFinished() async {}
@@ -292,7 +295,6 @@ class BaseScreen extends ConsumerWidget {
     } else if (ref.watch(epubProvider).status == MyEpubStatus.succeeded) {
       label2 = '${l10n('download_complete')} ${done} / ${all}';
       isClose = true;
-      onDownloadFinished();
     } else if (ref.watch(epubProvider).status == MyEpubStatus.same) {
       label2 = '${l10n('already_downloaded')} ${already} / ${all}';
       isClose = true;
@@ -310,11 +312,13 @@ class BaseScreen extends ConsumerWidget {
     Widget e = Expanded(flex: 1, child: SizedBox(width: 1));
     Widget h = SizedBox(height: 4);
     Widget btn = Column(children: []);
+    double btnWidth = 240;
+
     if (isClose) {
       btn = Column(children: [
         MyTextButton(
           noScale: true,
-          width: 140,
+          width: btnWidth,
           title: l10n('close'),
           onPressed: () {
             ref.read(epubProvider).setStatusNone();
@@ -325,7 +329,7 @@ class BaseScreen extends ConsumerWidget {
       btn = Column(children: [
         MyTextButton(
           noScale: true,
-          width: 140,
+          width: btnWidth,
           title: l10n('Cancel'),
           onPressed: () {
             ref.read(epubProvider).needtoStopDownloading = true;
@@ -336,28 +340,36 @@ class BaseScreen extends ConsumerWidget {
       btn = Column(children: [
         MyTextButton(
           noScale: true,
-          width: 180,
+          width: btnWidth,
           commit: true,
           title: '${req1} ${l10n('episode')} ${l10n('up_to')} ${l10n('download')}',
           onPressed: () {
-            ref.read(epubProvider).download(req1);
+            ref.read(epubProvider).download(req1).then((ret) {
+              if (ret) {
+                onDownloadFinished();
+              }
+            });
           },
         ),
         if (req2 > 0) h,
         if (req2 > 0)
           MyTextButton(
             noScale: true,
-            width: 180,
+            width: btnWidth,
             commit: true,
             title: '${req2} ${l10n('episode')} ${l10n('up_to')} ${l10n('download')}',
             onPressed: () {
-              ref.read(epubProvider).download(req2);
+              ref.read(epubProvider).download(req2).then((ret) {
+                if (ret) {
+                  onDownloadFinished();
+                }
+              });
             },
           ),
         h,
         MyTextButton(
           noScale: true,
-          width: 180,
+          width: btnWidth,
           title: l10n('cancel'),
           onPressed: () {
             ref.read(epubProvider).setStatusNone();

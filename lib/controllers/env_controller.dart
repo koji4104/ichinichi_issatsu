@@ -16,7 +16,11 @@ class EnvData {
   List<String> keys = [];
   String name = '';
 
-  EnvData({required int this.val, required List<int> this.vals, required List<String> this.keys, required String this.name}) {
+  EnvData(
+      {required int this.val,
+      required List<int> this.vals,
+      required List<String> this.keys,
+      required String this.name}) {
     round(val);
   }
 
@@ -125,6 +129,7 @@ class Environment {
     return col;
   }
 
+  /// from text back color
   Color getFrontColor({int? val}) {
     if (val == null) val = back_color.val;
     Color col = Color(0xFF000000);

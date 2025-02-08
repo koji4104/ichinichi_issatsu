@@ -129,7 +129,8 @@ class ViewerScreen extends BaseScreen with WidgetsBindingObserver {
                 child: RawGestureDetector(
                   behavior: HitTestBehavior.translucent,
                   gestures: {
-                    TapGestureRecognizer: GestureRecognizerFactoryWithHandlers<TapGestureRecognizer>(
+                    TapGestureRecognizer:
+                        GestureRecognizerFactoryWithHandlers<TapGestureRecognizer>(
                       () => TapGestureRecognizer(),
                       (TapGestureRecognizer instance) {
                         instance
@@ -140,8 +141,10 @@ class ViewerScreen extends BaseScreen with WidgetsBindingObserver {
                             } else if (dx > _width - 120) {
                               //scrollLeft();
                             } else {
-                              if (ref.watch(viewerProvider).bottomBarType != ViewerBottomBarType.actionBar) {
-                                ref.watch(viewerProvider).bottomBarType = ViewerBottomBarType.actionBar;
+                              if (ref.watch(viewerProvider).bottomBarType !=
+                                  ViewerBottomBarType.actionBar) {
+                                ref.watch(viewerProvider).bottomBarType =
+                                    ViewerBottomBarType.actionBar;
                                 redraw();
                               } else {
                                 ref.watch(viewerProvider).bottomBarType = ViewerBottomBarType.none;
@@ -191,10 +194,14 @@ class ViewerScreen extends BaseScreen with WidgetsBindingObserver {
         ),
       ),
       Positioned(
-        top: (_height / 5) + 80,
+        top: (_height / 5) + 60,
         left: 0,
         right: 0,
-        child: MyText(txt, center: true),
+        child: Text(
+          txt,
+          style: TextStyle(color: env.getFrontColor()),
+          textAlign: TextAlign.center,
+        ),
       ),
     ]);
   }
@@ -319,7 +326,7 @@ class ViewerScreen extends BaseScreen with WidgetsBindingObserver {
             SizedBox(width: 4),
           ]),
           SizedBox(height: 6),
-          SizedBox(height: 1, child: Container(color: isActionBar() ? myTheme.dividerColor : null)),
+          //SizedBox(height: 1, child: Container(color: isActionBar() ? myTheme.dividerColor : null)),
         ],
       ),
     );
@@ -517,7 +524,7 @@ class ViewerScreen extends BaseScreen with WidgetsBindingObserver {
 
   /// settingsBar
   Widget settingsBar() {
-    double barHeight = 340;
+    double barHeight = 350;
     double ffBottom = -1.0 * barHeight;
     if (ref.watch(viewerProvider).bottomBarType == ViewerBottomBarType.settingsBar) {
       ffBottom = 0;
@@ -529,6 +536,7 @@ class ViewerScreen extends BaseScreen with WidgetsBindingObserver {
     list.add(MySettingsTile(data: env.back_color));
     list.add(MySettingsTile(data: env.writing_mode));
     list.add(MySettingsTile(data: env.font_family));
+    list.add(MySettingsTile(data: env.dark_mode));
 
     Widget bar = Container(
       color: myTheme.cardColor,
@@ -549,7 +557,7 @@ class ViewerScreen extends BaseScreen with WidgetsBindingObserver {
 
   @override
   onDropdownChanged(EnvData data) {
-    if (data.name == 'font_size') {
+    if (data.name == 'font_size' || data.name == 'writing_mode') {
       reload();
     } else {
       refresh();

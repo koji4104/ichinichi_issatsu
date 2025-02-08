@@ -47,10 +47,10 @@ class MenuScreen extends BaseScreen {
         unselectedItemColor: myTheme.disabledColor,
         currentIndex: index,
         onTap: _onItemTapped,
-        items: const <BottomNavigationBarItem>[
-          BottomNavigationBarItem(icon: Icon(Icons.home, size: 28), label: 'Home'),
-          BottomNavigationBarItem(icon: Icon(Icons.text_snippet_outlined, size: 28), label: 'Brows'),
-          BottomNavigationBarItem(icon: Icon(Icons.settings, size: 28), label: 'Option'),
+        items: [
+          BottomNavigationBarItem(icon: Icon(Icons.home, size: ICON_BUTTON_SIZE), label: l10n('home')),
+          BottomNavigationBarItem(icon: Icon(Icons.search, size: ICON_BUTTON_SIZE), label: l10n('brows')),
+          BottomNavigationBarItem(icon: Icon(Icons.settings, size: ICON_BUTTON_SIZE), label: l10n('option')),
         ],
         type: BottomNavigationBarType.fixed,
       ),

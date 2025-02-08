@@ -51,12 +51,11 @@ class BookListScreen extends BaseScreen {
 
     return Scaffold(
       appBar: AppBar(
-        title: MyText('Home', noScale: true),
+        title: MyText(l10n('home'), noScale: true),
         leading: IconButton(
           onPressed: () async {
             ref.watch(booklistProvider).readBookList();
           },
-          iconSize: 24.0,
           icon: Icon(Icons.refresh),
         ),
         actions: [dropdownFlag(), SizedBox(width: 20)],
@@ -107,7 +106,7 @@ class BookListScreen extends BaseScreen {
       itemBuilder: (BuildContext context, int index) {
         bool isAddDownload = false;
         String type = bookList[index].bookId.substring(0, 1);
-        if (type == 'K' || type == 'N') isAddDownload = true;
+        if (type == 'K' || type == 'N' || type == 'T') isAddDownload = true;
 
         return Slidable(
           dragStartBehavior: DragStartBehavior.start,
@@ -195,10 +194,9 @@ class BookListScreen extends BaseScreen {
       context: this.context,
       builder: (BuildContext context) {
         List<Widget> list = [];
-        for (int i = 0; i < getIconList(50).length; i++) {
+        for (int i = 0; i < getIconList(28).length; i++) {
           list.add(
             IconButton(
-              //iconSize: 24,
               icon: getIconList(28)[i],
               padding: EdgeInsets.all(4),
               onPressed: () {
@@ -246,9 +244,9 @@ class BookListScreen extends BaseScreen {
 
   Widget dropdownFlag() {
     List<DropdownMenuItem> list = [];
-    for (int i = 0; i < getIconList(18).length; i++) {
+    for (int i = 0; i < getIconList(ICON_BUTTON_SIZE).length; i++) {
       list.add(
-        DropdownMenuItem<int>(value: i, child: getIconList(18)[i]),
+        DropdownMenuItem<int>(value: i, child: getIconList(ICON_BUTTON_SIZE)[i]),
       );
     }
 
@@ -290,20 +288,6 @@ class BookListScreen extends BaseScreen {
       if (hr > 3) hr = 3.0;
       height += (14 * scale) * hr;
     }
-    Widget rText = RichText(
-      text: TextSpan(
-        style: TextStyle(color: Colors.black),
-        children: [
-          TextSpan(
-            text: data.title,
-          ),
-          TextSpan(
-            text: '/RichText',
-            style: TextStyle(color: Colors.grey),
-          ),
-        ],
-      ),
-    );
 
     Widget wTitle = Text(
       data.title,
@@ -327,7 +311,7 @@ class BookListScreen extends BaseScreen {
     );
 
     Widget wNumIndex = Text(
-      '${(data.index.list.length).toInt()} ${l10n('episode')}',
+      '${(data.index.list.length - 1).toInt()} ${l10n('episode')}',
       overflow: TextOverflow.ellipsis,
       maxLines: 1,
       textScaler: TextScaler.linear(myTextScale - 0.2),
@@ -335,7 +319,7 @@ class BookListScreen extends BaseScreen {
 
     bool isKakuyomu = false;
     String type = data.bookId.substring(0, 1);
-    if (type == 'K' || type == 'N') isKakuyomu = true;
+    if (type == 'K' || type == 'N' || type == 'T') isKakuyomu = true;
 
     Widget wAuthor = Text(
       '${data.author}',
@@ -389,7 +373,10 @@ class BookListScreen extends BaseScreen {
 
   Future AddDownload(BookData data) async {
     await ref.watch(epubProvider).checkUri(data.dluri);
-    //EpubData epub = ref.watch(epubProvider).epub;
-    //if (epub.bookId != null && epub.uriList.isNotEmpty) {}
+  }
+
+  @override
+  Future onDownloadFinished() async {
+    ref.watch(booklistProvider).readBookList();
   }
 }

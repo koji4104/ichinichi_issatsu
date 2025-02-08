@@ -25,11 +25,10 @@ class ViewlogScreen extends BaseScreen {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text('Logs'),
+        title: Text('View Logs'),
         leadingWidth: 150,
         leading: Row(children: [
           IconButton(
-            iconSize: 24,
             icon: Icon(Icons.arrow_back_ios_new),
             onPressed: () {
               Navigator.of(context).pop();
@@ -37,7 +36,6 @@ class ViewlogScreen extends BaseScreen {
           ),
           SizedBox(width: 10),
           IconButton(
-            iconSize: 28,
             icon: Icon(Icons.refresh),
             onPressed: () async {
               await ref.watch(viewlogProvider).read();
@@ -53,6 +51,7 @@ class ViewlogScreen extends BaseScreen {
             padding: DEF_MENU_PADDING,
             child: Column(children: [
               speed(),
+              desc(),
               SizedBox(height: 12),
               Expanded(child: getList()),
             ]),
@@ -67,6 +66,15 @@ class ViewlogScreen extends BaseScreen {
     String spage = l10n('page');
     String text = '${ref.watch(viewlogProvider).per_hour}';
     return MyText('${sph} ${text} ${spage}');
+  }
+
+  Widget desc() {
+    return Row(
+      children: [
+        Expanded(child: SizedBox(width: 1)),
+        Text('${l10n('swipe_to_delete')}', textScaler: TextScaler.linear(myTextScale * 0.8)),
+      ],
+    );
   }
 
   Widget getList() {

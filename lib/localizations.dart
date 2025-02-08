@@ -61,6 +61,12 @@ class Localized {
       'already_downloaded': 'Already downloaded',
       'download_failed': 'Download failed',
       'close': 'Close',
+      'swipe_to_delete': 'Swipe to delete',
+      'copy_to_clipboard': 'Copy to clipboard',
+      'home': 'Home',
+      'brows': 'Find',
+      'option': 'Option',
+      'up_to': 'up to',
     },
     'ja': {
       'app_name': '一日一冊',
@@ -101,6 +107,12 @@ class Localized {
       'already_downloaded': '最新の状態',
       'download_failed': 'ダウンロード失敗',
       'close': '閉じる',
+      'swipe_to_delete': 'スワイプで削除可能',
+      'copy_to_clipboard': 'クリップボードにコピー',
+      'home': 'ホーム',
+      'brows': '探す',
+      'option': 'オプション',
+      'up_to': 'まで',
     },
   };
 

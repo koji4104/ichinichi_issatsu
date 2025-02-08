@@ -1,13 +1,8 @@
 import 'package:flutter/foundation.dart' show kIsWeb;
-import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:developer';
 import 'package:intl/intl.dart';
 import 'dart:io';
-import 'dart:convert';
 
-import 'package:flutter/material.dart';
-import 'package:hooks_riverpod/hooks_riverpod.dart';
-import 'dart:io';
 import '/constants.dart';
 import 'package:path_provider/path_provider.dart';
 import 'dart:convert';
@@ -30,7 +25,7 @@ class MyLog {
   }
 
   static debug(String msg) async {
-    await MyLog.write('debug', 'app', msg);
+    //await MyLog.write('debug', 'app', msg);
   }
 
   static write(String level, String event, String msg) async {

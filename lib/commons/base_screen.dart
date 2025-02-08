@@ -33,8 +33,6 @@ class BaseScreen extends ConsumerWidget {
 
     ref.watch(envProvider);
     myLanguageCode = env.language_code.val == 0 ? 'ja' : 'en';
-    //myTheme = Env.dark_mode.val == 0 ? myLightTheme : myDarkTheme;
-    //log('Env.dark_mode.val ${Env.dark_mode.val}');
 
     if (bInit == false) {
       bInit = true;
@@ -134,12 +132,8 @@ class BaseScreen extends ConsumerWidget {
       width: width != null ? width : 120,
       child: TextButton(
         style: TextButton.styleFrom(
-          //surfaceTintColor: Colors.black,
-          //foregroundColor: fgcol,
           backgroundColor: bgcol,
-          //shape: RoundedRectangleBorder(borderRadius: DEF_BORDER_RADIUS),
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(DEF_RADIUS))),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(DEF_RADIUS))),
           side: bdcol != null ? BorderSide(color: bdcol) : null,
         ),
         child: Text(
@@ -203,29 +197,6 @@ class BaseScreen extends ConsumerWidget {
     ref.read(envProvider).notifyListeners();
   }
 
-  Widget MyDropdownTest() {
-    List<String> sList = ['AAA', 'BBB'];
-    List<DropdownMenuItem> list = [];
-    for (int i = 0; i < sList.length; i++) {
-      DropdownMenuItem<int> w = DropdownMenuItem<int>(
-        value: i,
-        child: MyText(sList[i]),
-      );
-      list.add(w);
-    }
-    return DropdownButton(
-      items: list,
-      value: 0,
-      onChanged: (value) {},
-      dropdownColor: myTheme.cardColor,
-      style: myTheme.textTheme.bodyMedium!,
-    );
-  }
-
-  TextStyle getTextStyle() {
-    return TextStyle(color: myTheme.textTheme.bodyMedium!.color);
-  }
-
   @override
   Future onPressedCloseButton() async {
     redraw();
@@ -261,8 +232,8 @@ class BaseScreen extends ConsumerWidget {
     );
   }
 
-  int NUM_OF_FIRST_COWNLOAD = 10;
-  int NUM_OF_ADD_COWNLOAD = 30;
+  @override
+  Future onDownloadFinished() async {}
 
   Widget downloadBar() {
     double barHeight = Platform.isIOS ? 300 : 200;
@@ -278,6 +249,7 @@ class BaseScreen extends ConsumerWidget {
     int DL_SPARE = 10;
 
     bool isClose = false;
+    bool isCancel = false;
     String label1 = '';
     String label2 = '';
     int already = ref.watch(epubProvider).existingIndex;
@@ -287,14 +259,6 @@ class BaseScreen extends ConsumerWidget {
     int req2 = 0;
     label1 = '${ref.watch(epubProvider).epub.bookTitle ?? ref.watch(epubProvider).epub.bookId}';
 
-    /*
-    if (!Platform.isIOS && !Platform.isAndroid) {
-      already = 30;
-      done = 0;
-      all = 54;
-      label1 = 'Test';
-    }
-    */
     if (ref.watch(epubProvider).status == MyEpubStatus.downloadable) {
       if (all > 0 && already == 0) {
         if (all < DL_COUNT1 + DL_SPARE) {
@@ -328,6 +292,7 @@ class BaseScreen extends ConsumerWidget {
     } else if (ref.watch(epubProvider).status == MyEpubStatus.succeeded) {
       label2 = '${l10n('download_complete')} ${done} / ${all}';
       isClose = true;
+      onDownloadFinished();
     } else if (ref.watch(epubProvider).status == MyEpubStatus.same) {
       label2 = '${l10n('already_downloaded')} ${already} / ${all}';
       isClose = true;
@@ -336,7 +301,7 @@ class BaseScreen extends ConsumerWidget {
       isClose = true;
     } else if (ref.watch(epubProvider).status == MyEpubStatus.downloading) {
       label2 = 'Downloading';
-      isClose = true;
+      isCancel = true;
       if (done > 0 && all > 1) {
         label2 += ' ${done} / ${all}';
       }
@@ -356,13 +321,24 @@ class BaseScreen extends ConsumerWidget {
           },
         ),
       ]);
+    } else if (isCancel) {
+      btn = Column(children: [
+        MyTextButton(
+          noScale: true,
+          width: 140,
+          title: l10n('Cancel'),
+          onPressed: () {
+            ref.read(epubProvider).needtoStopDownloading = true;
+          },
+        ),
+      ]);
     } else {
       btn = Column(children: [
         MyTextButton(
           noScale: true,
           width: 180,
           commit: true,
-          title: '${req1 - already} ${l10n('episode')} ${l10n('download')}',
+          title: '${req1} ${l10n('episode')} ${l10n('up_to')} ${l10n('download')}',
           onPressed: () {
             ref.read(epubProvider).download(req1);
           },
@@ -373,7 +349,7 @@ class BaseScreen extends ConsumerWidget {
             noScale: true,
             width: 180,
             commit: true,
-            title: '${req2 - already} ${l10n('episode')} ${l10n('download')}',
+            title: '${req2} ${l10n('episode')} ${l10n('up_to')} ${l10n('download')}',
             onPressed: () {
               ref.read(epubProvider).download(req2);
             },
@@ -408,42 +384,6 @@ class BaseScreen extends ConsumerWidget {
           ]),
           SizedBox(height: 6),
           btn,
-          /*
-          Row(children: [
-            Expanded(flex: 1, child: SizedBox(width: 1)),
-            if (isClose)
-              MyTextButton(
-                noScale: true,
-                width: 140,
-                title: l10n('close'),
-                onPressed: () {
-                  ref.read(epubProvider).setStatusNone();
-                },
-              ),
-            if (isClose == false)
-              MyTextButton(
-                noScale: true,
-                width: 140,
-                title: l10n('cancel'),
-                onPressed: () {
-                  ref.read(epubProvider).setStatusNone();
-                },
-              ),
-            if (isClose == false) SizedBox(width: 16),
-            if (isClose == false)
-              MyTextButton(
-                noScale: true,
-                commit: true,
-                width: 140,
-                title: l10n('download'),
-                onPressed: () {
-                  ref.read(epubProvider).download();
-                },
-              ),
-            Expanded(flex: 1, child: SizedBox(width: 1)),
-
-          ]),
-          */
           Expanded(child: SizedBox(height: 1)),
         ],
       ),

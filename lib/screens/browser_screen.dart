@@ -14,6 +14,7 @@ import '/commons/widgets.dart';
 import '/controllers/epub_controller.dart';
 import '/controllers/browser_controller.dart';
 import '/screens/booklist_screen.dart';
+import '/controllers/booklist_controller.dart';
 
 final browserScreenProvider = ChangeNotifierProvider((ref) => ChangeNotifier());
 
@@ -33,10 +34,7 @@ class BrowserScreen extends BaseScreen {
   FavoData favorite = FavoData();
 
   @override
-  Future init() async {
-    //log('BrowserScreen() init()');
-    //readUri();
-  }
+  Future init() async {}
 
   bool isActionButton() {
     if (webViewController == null) return false;
@@ -46,9 +44,9 @@ class BrowserScreen extends BaseScreen {
 
   String getSiteTitle() {
     if (selectedUri == null) {
-      siteTitle == 'Brows';
+      siteTitle = l10n('brows');
     } else if (siteTitle == null) {
-      siteTitle == 'Brows';
+      siteTitle = l10n('brows');
     }
     return siteTitle!;
   }
@@ -75,12 +73,10 @@ class BrowserScreen extends BaseScreen {
       },
       child: Scaffold(
         appBar: AppBar(
-          title: Text(siteTitle ?? 'Brows'),
-          //leadingWidth: 150,
+          title: Text(siteTitle ?? l10n('brows')),
           leading: (isActionButton() == false)
               ? null
               : IconButton(
-                  iconSize: 22,
                   icon: Icon(Icons.arrow_back_ios_new),
                   onPressed: () async {
                     if (webViewController != null) {
@@ -295,5 +291,10 @@ class BrowserScreen extends BaseScreen {
         onPressed: onPressed,
       ),
     );
+  }
+
+  @override
+  Future onDownloadFinished() async {
+    ref.watch(booklistProvider).readBookList();
   }
 }

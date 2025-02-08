@@ -8,8 +8,10 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
+import 'package:ichinichi_issatsu/controllers/applog_controller.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:webview_flutter/webview_flutter.dart';
+import 'package:flutter/services.dart';
 
 import '/commons/base_screen.dart';
 import '/commons/widgets.dart';
@@ -19,6 +21,7 @@ import '/controllers/viewer_controller.dart';
 import '/controllers/env_controller.dart';
 import '/screens/settings_screen.dart';
 import '/controllers/viewlog_controller.dart';
+import '/controllers/applog_controller.dart';
 
 final stateProvider = ChangeNotifierProvider((ref) => stateNotifier(ref));
 
@@ -126,8 +129,7 @@ class ViewerScreen extends BaseScreen with WidgetsBindingObserver {
                 child: RawGestureDetector(
                   behavior: HitTestBehavior.translucent,
                   gestures: {
-                    TapGestureRecognizer:
-                        GestureRecognizerFactoryWithHandlers<TapGestureRecognizer>(
+                    TapGestureRecognizer: GestureRecognizerFactoryWithHandlers<TapGestureRecognizer>(
                       () => TapGestureRecognizer(),
                       (TapGestureRecognizer instance) {
                         instance
@@ -138,10 +140,8 @@ class ViewerScreen extends BaseScreen with WidgetsBindingObserver {
                             } else if (dx > _width - 120) {
                               //scrollLeft();
                             } else {
-                              if (ref.watch(viewerProvider).bottomBarType !=
-                                  ViewerBottomBarType.actionBar) {
-                                ref.watch(viewerProvider).bottomBarType =
-                                    ViewerBottomBarType.actionBar;
+                              if (ref.watch(viewerProvider).bottomBarType != ViewerBottomBarType.actionBar) {
+                                ref.watch(viewerProvider).bottomBarType = ViewerBottomBarType.actionBar;
                                 redraw();
                               } else {
                                 ref.watch(viewerProvider).bottomBarType = ViewerBottomBarType.none;
@@ -186,7 +186,7 @@ class ViewerScreen extends BaseScreen with WidgetsBindingObserver {
         right: 0,
         child: Icon(
           Icons.refresh,
-          size: 48,
+          size: 32,
           color: env.getFrontColor(),
         ),
       ),
@@ -209,13 +209,12 @@ class ViewerScreen extends BaseScreen with WidgetsBindingObserver {
 
   Future startReadlog() async {
     int nowChars = ref.watch(viewerProvider).nowChars;
-    //readLog.init(nowChars);
     ref.watch(viewlogProvider).init(nowChars);
+    MyLog.info('Opened ${book.title}');
   }
 
   Future endReadlog() async {
     int nowChars = ref.watch(viewerProvider).nowChars;
-    //readLog.save(nowChars, book.bookId);
     ref.watch(viewlogProvider).save(nowChars, book);
   }
 
@@ -224,7 +223,6 @@ class ViewerScreen extends BaseScreen with WidgetsBindingObserver {
     return Row(children: [
       SizedBox(width: 4),
       IconButton(
-          iconSize: 22,
           icon: Icon(Icons.arrow_back_ios_new),
           color: env.getFrontColor(),
           onPressed: () {
@@ -409,7 +407,6 @@ class ViewerScreen extends BaseScreen with WidgetsBindingObserver {
           wMax,
           SizedBox(height: 12),
           MyTextButton(
-            //noScale: true,
             title: l10n('move_maxpage'),
             width: 280,
             onPressed: () async {
@@ -422,7 +419,6 @@ class ViewerScreen extends BaseScreen with WidgetsBindingObserver {
           ),
           SizedBox(height: 6),
           MyTextButton(
-              //noScale: true,
               title: l10n('reset_maxpage'),
               width: 280,
               onPressed: () async {
@@ -533,7 +529,6 @@ class ViewerScreen extends BaseScreen with WidgetsBindingObserver {
     list.add(MySettingsTile(data: env.back_color));
     list.add(MySettingsTile(data: env.writing_mode));
     list.add(MySettingsTile(data: env.font_family));
-    //list.add(MySettingsTile(data: env.line_height));
 
     Widget bar = Container(
       color: myTheme.cardColor,
@@ -585,8 +580,11 @@ class ViewerScreen extends BaseScreen with WidgetsBindingObserver {
       String txt = '${book.index.list[i].title}';
       String pages = '${(sum / 450).toInt()}';
 
+      int nowIndex = ref.watch(viewerProvider).nowIndex;
+
       list.add(
         MyTocTile(
+          check: (i == nowIndex),
           title1: MyText(txt, maxLength: 24),
           title2: MyText(pages),
           onPressed: () {
@@ -628,7 +626,6 @@ class ViewerScreen extends BaseScreen with WidgetsBindingObserver {
     if (ref.watch(viewerProvider).bottomBarType == ViewerBottomBarType.clipListBar) {
       ffBottom = 0;
     }
-
     ClipData d = ref.watch(viewerProvider).readClip();
 
     List<Widget> list = [];
@@ -646,6 +643,30 @@ class ViewerScreen extends BaseScreen with WidgetsBindingObserver {
         ),
       );
     }
+
+    String clipText = '';
+    for (int i = 0; i < d.list.length; i++) {
+      clipText += d.list[i].text + '\n';
+    }
+
+    Widget w = Row(
+      children: [
+        SizedBox(width: 30),
+        MyTextButton(
+          title: l10n('copy_to_clipboard'),
+          width: 170,
+          scaleRatio: 0.9,
+          onPressed: () async {
+            final data = ClipboardData(text: clipText);
+            await Clipboard.setData(data);
+          },
+        ),
+        Expanded(child: SizedBox(width: 1)),
+        Text('${l10n('swipe_to_delete')}', textScaler: TextScaler.linear(myTextScale * 0.8)),
+        SizedBox(width: 20),
+      ],
+    );
+
     Widget bar = Container(
       color: myTheme.cardColor,
       child: Column(children: [
@@ -657,12 +678,14 @@ class ViewerScreen extends BaseScreen with WidgetsBindingObserver {
         ]),
       ]),
     );
+
     if (list.length > 0) {
       bar = Container(
         color: myTheme.cardColor,
         child: Column(
           children: [
             closeButtonRow(),
+            w,
             Expanded(
               child: ListView.builder(
                 itemCount: list.length,

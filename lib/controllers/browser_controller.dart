@@ -147,7 +147,7 @@ class BrowserNotifier extends ChangeNotifier {
           final file = File('${datadir}/favo.json');
           if (file.existsSync()) {
             file.writeAsString(jsonText, mode: FileMode.write, flush: true);
-            this.notifyListeners(); //redraw();
+            this.notifyListeners();
           }
         }
       }

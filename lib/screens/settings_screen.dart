@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
-import 'package:flutter/services.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 
 import '/screens/applog_screen.dart';
@@ -20,7 +19,7 @@ class SettingsScreen extends BaseScreen {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(l10n("settings_title")),
+        title: Text(l10n("option")),
         actions: <Widget>[],
       ),
       body: SingleChildScrollView(

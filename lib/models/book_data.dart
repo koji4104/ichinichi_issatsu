@@ -39,10 +39,6 @@ class BookData {
     if (j.containsKey('siteId')) siteId = j['siteId'] ?? '';
     if (j.containsKey('dluri')) dluri = j['dluri'] ?? '';
 
-    if (!Platform.isIOS && !Platform.isMacOS) {
-      title = bookId;
-    }
-
     if (j.containsKey('ctime')) {
       String date = j['ctime'];
       try {
@@ -126,7 +122,6 @@ class ClipInfo {
 
 class ClipData {
   ClipData();
-
   List<ClipInfo> list = [];
 
   sort() {

@@ -12,10 +12,10 @@ const double DEF_APPBAR_HEIGHT = 40.0;
 const double DEF_VIEW_SCROLL_WIDTH = 40.0;
 const double DEF_VIEW_PADDING_W = 20.0;
 const double DEF_VIEW_PADDING_H = 50.0;
-const EdgeInsetsGeometry DEF_VIEW_PADDING_TB =
-    EdgeInsets.fromLTRB(DEF_VIEW_PADDING_W, 40, DEF_VIEW_PADDING_W, 40);
-const EdgeInsetsGeometry DEF_VIEW_PADDING_RL =
-    EdgeInsets.fromLTRB(0, DEF_VIEW_PADDING_H + 10, 0, DEF_VIEW_PADDING_H - 10);
+const EdgeInsetsGeometry DEF_VIEW_PADDING_TB = EdgeInsets.fromLTRB(DEF_VIEW_PADDING_W, 40, DEF_VIEW_PADDING_W, 40);
+const EdgeInsetsGeometry DEF_VIEW_PADDING_RL = EdgeInsets.fromLTRB(0, DEF_VIEW_PADDING_H + 10, 0, DEF_VIEW_PADDING_H - 10);
+
+const ICON_BUTTON_SIZE = 24.0;
 
 const double DEF_VIEW_LINE_WIDTH = DEF_VIEW_PADDING_W + DEF_VIEW_PADDING_W + 10;
 const double DEF_VIEW_LINE_HEIGHT = DEF_VIEW_PADDING_H + DEF_VIEW_PADDING_H + 90;
@@ -45,35 +45,16 @@ Color COL_FLAG4 = Color(0xff00FFFF);
 Color COL_FLAG5 = Color(0xffFF00FF);
 Color COL_FLAG6 = Color(0xffFFFF00);
 
-List<Color?> COL_FLAG_LIST = [
-  null,
-  COL_FLAG1,
-  COL_FLAG2,
-  COL_FLAG3,
-  COL_FLAG4,
-  COL_FLAG5,
-  COL_FLAG6
-];
+List<Color?> COL_FLAG_LIST = [null, COL_FLAG1, COL_FLAG2, COL_FLAG3, COL_FLAG4, COL_FLAG5, COL_FLAG6];
 
-TextStyle TEXTSTYLE_DARK_SMALL =
-    ThemeData.dark().textTheme.bodySmall!.copyWith(fontSize: 12.0, color: COL_DARK_TEXT);
-TextStyle TEXTSTYLE_DARK_MEDIUM =
-    ThemeData.dark().textTheme.bodyMedium!.copyWith(fontSize: 14.0, color: COL_DARK_TEXT);
-TextStyle TEXTSTYLE_DARK_LARGE =
-    ThemeData.dark().textTheme.bodyLarge!.copyWith(fontSize: 16.0, color: COL_DARK_TEXT);
+TextStyle TEXTSTYLE_DARK_SMALL = ThemeData.dark().textTheme.bodySmall!.copyWith(fontSize: 12.0, color: COL_DARK_TEXT);
+TextStyle TEXTSTYLE_DARK_MEDIUM = ThemeData.dark().textTheme.bodyMedium!.copyWith(fontSize: 14.0, color: COL_DARK_TEXT);
+TextStyle TEXTSTYLE_DARK_LARGE = ThemeData.dark().textTheme.bodyLarge!.copyWith(fontSize: 16.0, color: COL_DARK_TEXT);
 
-TextStyle TEXTSTYLE_LIGHT_SMALL =
-    ThemeData.light().textTheme.bodySmall!.copyWith(fontSize: 12.0, color: COL_LIGHT_TEXT);
-TextStyle TEXTSTYLE_LIGHT_MEDIUM =
-    ThemeData.light().textTheme.bodyMedium!.copyWith(fontSize: 14.0, color: COL_LIGHT_TEXT);
-TextStyle TEXTSTYLE_LIGHT_LARGE =
-    ThemeData.light().textTheme.bodyLarge!.copyWith(fontSize: 16.0, color: COL_LIGHT_TEXT);
+TextStyle TEXTSTYLE_LIGHT_SMALL = ThemeData.light().textTheme.bodySmall!.copyWith(fontSize: 12.0, color: COL_LIGHT_TEXT);
+TextStyle TEXTSTYLE_LIGHT_MEDIUM = ThemeData.light().textTheme.bodyMedium!.copyWith(fontSize: 14.0, color: COL_LIGHT_TEXT);
+TextStyle TEXTSTYLE_LIGHT_LARGE = ThemeData.light().textTheme.bodyLarge!.copyWith(fontSize: 16.0, color: COL_LIGHT_TEXT);
 
-/// e.g.
-/// - myTheme.backgroundColor
-/// - myTheme.cardColor
-/// - myTheme.textTheme.bodyMedium (size 14)
-/// - myTheme.textTheme.titleMedium (size 16)
 ThemeData myDarkTheme = ThemeData.dark().copyWith(
   pageTransitionsTheme: MyPageTransitionsTheme(),
   dialogBackgroundColor: COL_DARK_BACK,
@@ -110,7 +91,7 @@ ThemeData myDarkTheme = ThemeData.dark().copyWith(
   iconButtonTheme: IconButtonThemeData(
     style: IconButton.styleFrom(
       foregroundColor: COL_DARK_TEXT,
-      iconSize: 28,
+      iconSize: ICON_BUTTON_SIZE,
       padding: EdgeInsets.all(0),
       minimumSize: Size(0, 0),
     ),
@@ -121,6 +102,7 @@ ThemeData myDarkTheme = ThemeData.dark().copyWith(
     contentTextStyle: ThemeData.dark().textTheme.bodyMedium!.copyWith(),
   ),
   appBarTheme: AppBarTheme(
+    iconTheme: IconThemeData(size: ICON_BUTTON_SIZE),
     backgroundColor: COL_DARK_BACK,
     titleTextStyle: ThemeData.dark().textTheme.bodyMedium!.copyWith(),
     toolbarHeight: DEF_APPBAR_HEIGHT,
@@ -162,7 +144,7 @@ ThemeData myLightTheme = ThemeData.light().copyWith(
   iconButtonTheme: IconButtonThemeData(
     style: IconButton.styleFrom(
       foregroundColor: COL_LIGHT_TEXT,
-      iconSize: 28,
+      iconSize: ICON_BUTTON_SIZE,
       padding: EdgeInsets.all(0),
       minimumSize: Size(0, 0),
     ),
@@ -170,10 +152,10 @@ ThemeData myLightTheme = ThemeData.light().copyWith(
   snackBarTheme: SnackBarThemeData(
     backgroundColor: Color(0xFFeeeeee),
     actionTextColor: COL_LIGHT_TEXT,
-    contentTextStyle:
-        ThemeData.dark().textTheme.bodyMedium!.copyWith(fontSize: 14.0, color: COL_LIGHT_TEXT),
+    contentTextStyle: ThemeData.dark().textTheme.bodyMedium!.copyWith(fontSize: 14.0, color: COL_LIGHT_TEXT),
   ),
   appBarTheme: AppBarTheme(
+    iconTheme: IconThemeData(size: ICON_BUTTON_SIZE),
     backgroundColor: COL_LIGHT_BACK,
     titleTextStyle: ThemeData.light().textTheme.bodyMedium!.copyWith(),
     toolbarHeight: DEF_APPBAR_HEIGHT,
@@ -183,7 +165,6 @@ ThemeData myLightTheme = ThemeData.light().copyWith(
 // Swipe to cancel. From left to right.
 class MyPageTransitionsTheme extends PageTransitionsTheme {
   const MyPageTransitionsTheme();
-
   static const PageTransitionsBuilder builder = CupertinoPageTransitionsBuilder();
 
   @override
@@ -196,19 +177,6 @@ class MyPageTransitionsTheme extends PageTransitionsTheme {
   ) {
     return builder.buildTransitions<T>(route, context, animation, secondaryAnimation, child);
   }
-}
-
-Widget MyLabel(String label, {int? size, Color? color}) {
-  return Align(
-    alignment: Alignment.centerLeft,
-    child: Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-      child: Text(
-        label,
-        textScaler: TextScaler.linear(myTextScale),
-      ),
-    ),
-  );
 }
 
 Widget MyText(String text, {int? maxLength, int? maxLines, bool? noScale, bool? center}) {
@@ -231,51 +199,6 @@ Widget MyText(String text, {int? maxLength, int? maxLines, bool? noScale, bool? 
   );
 }
 
-/// Invert colors with frame
-Widget MyIconButton({
-  required IconData icon,
-  double? iconSize,
-  required void Function()? onPressed,
-}) {
-  if (iconSize == null) iconSize = 24;
-  return IconButton(
-    icon: Icon(icon),
-    style: IconButton.styleFrom(
-      iconSize: iconSize,
-      //fixedSize: Size(21, 21),
-      //maximumSize: Size(22, 22),
-      foregroundColor: myTheme.cardColor,
-      backgroundColor: myTheme.textTheme.bodyMedium!.color!,
-      padding: EdgeInsets.all(0),
-      shape: RoundedRectangleBorder(borderRadius: DEF_BORDER_RADIUS),
-    ),
-    onPressed: onPressed,
-  );
-}
-
-Widget MyBackColorButton({
-  required IconData icon,
-  double? iconSize,
-  required Color foregroundColor,
-  required Color backgroundColor,
-  required void Function()? onPressed,
-}) {
-  if (iconSize == null) iconSize = 24;
-  return IconButton(
-    icon: Icon(icon),
-    style: IconButton.styleFrom(
-      iconSize: iconSize,
-      //fixedSize: Size(21, 21),
-      //maximumSize: Size(22, 22),
-      foregroundColor: foregroundColor,
-      backgroundColor: backgroundColor,
-      padding: EdgeInsets.all(0),
-      shape: RoundedRectangleBorder(borderRadius: DEF_BORDER_RADIUS),
-    ),
-    onPressed: onPressed,
-  );
-}
-
 /// MyTextButton
 /// - title
 /// - onPressed
@@ -287,6 +210,7 @@ Widget MyTextButton({
   bool? commit,
   bool? delete,
   bool? noScale,
+  double? scaleRatio,
 }) {
   double fsize = myTheme.textTheme.bodyMedium!.fontSize!;
   Color? fgcol = myTheme.textTheme.bodyMedium!.color!;
@@ -306,14 +230,15 @@ Widget MyTextButton({
   if (noScale != null) {
     if (scale > 1.3) scale = 1.3;
   }
+  if (scaleRatio != null) {
+    scale *= scaleRatio;
+  }
+
   return Container(
     width: width != null ? width : 300,
     child: TextButton(
       style: TextButton.styleFrom(
-        //surfaceTintColor: Colors.black,
-        //foregroundColor: fgcol,
         backgroundColor: bgcol,
-        //shape: RoundedRectangleBorder(borderRadius: DEF_BORDER_RADIUS),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(DEF_RADIUS))),
         side: bdcol != null ? BorderSide(color: bdcol) : null,
       ),
@@ -333,13 +258,13 @@ Widget MyTextButton({
 /// - title2
 /// - onPressed
 /// - multiline: null or true
-/// - radio: null or true or false
-Widget MyListTile(
-    {required Widget title1,
-    Widget? title2,
-    Function()? onPressed,
-    bool? multiline,
-    bool? textonly}) {
+Widget MyListTile({
+  required Widget title1,
+  Widget? title2,
+  Function()? onPressed,
+  bool? multiline,
+  bool? textonly,
+}) {
   Widget e = Expanded(child: SizedBox(width: 8));
   if (multiline != null) e = SizedBox(width: 8);
   Widget w = SizedBox(width: 10);
@@ -362,12 +287,20 @@ Widget MyListTile(
   );
 }
 
-Widget MyTocTile({required Widget title1, required Widget title2, required Function() onPressed}) {
+Widget MyTocTile({
+  required Widget title1,
+  required Widget title2,
+  required Function() onPressed,
+  bool? check,
+}) {
   Widget e = Expanded(child: SizedBox(width: 1));
   Widget w = SizedBox(width: 16);
   Icon icon = Icon(Icons.arrow_forward_ios, size: 14.0, color: myTheme.textTheme.bodyMedium!.color);
+  Icon icon1 = Icon(Icons.circle, size: 10.0, color: Colors.blueAccent);
 
   Widget txt = Row(children: [
+    (check != null && check == true) ? icon1 : SizedBox(width: 10),
+    SizedBox(width: 8),
     Expanded(child: title1),
     w,
     title2,
@@ -399,15 +332,13 @@ Widget MyClipListTile({required String text, Function()? onPressed}) {
 
   Widget child = Row(children: [
     Expanded(child: wText),
-    SizedBox(width: 1),
-    btn,
   ]);
   return Container(
     decoration: BoxDecoration(
       color: myTheme.cardColor,
-      border: Border(bottom: BorderSide(color: myTheme.dividerColor, width: 0.5)),
+      border: Border(bottom: BorderSide(color: myTheme.dividerColor, width: 1)),
     ),
-    padding: EdgeInsets.fromLTRB(20, 2, 8, 2),
+    padding: EdgeInsets.fromLTRB(20, 4, 20, 8),
     child: child,
   );
 }

@@ -43,7 +43,6 @@ class BookListNotifier extends ChangeNotifier {
       if (FileSystemEntity.isDirectorySync(e.path) == true) {
         log('readBookList ${e.path}');
         String bookId = basename(e.path);
-        //await MyLog.info(basename(e.path));
 
         if (File('${e.path}/data/book.json').existsSync()) {
           try {

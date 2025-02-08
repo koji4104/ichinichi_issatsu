@@ -1,19 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
-import 'package:ichinichi_issatsu/constants.dart';
-import 'dart:developer';
 
 import 'package:intl/intl.dart';
 import 'dart:io';
 import 'package:path_provider/path_provider.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
-import 'package:flutter_slidable/flutter_slidable.dart';
-import 'package:flutter/gestures.dart';
 
 import '/commons/base_screen.dart';
 import '/controllers/applog_controller.dart';
 import '/models/log_data.dart';
-import '/models/book_data.dart';
 import '/commons/widgets.dart';
 
 final logListProvider = StateProvider<List<MyLogData>>((ref) {
@@ -31,7 +26,6 @@ class ApplogScreen extends BaseScreen {
     return Scaffold(
       appBar: AppBar(
         title: Text('Logs'),
-        //backgroundColor: Color(0xFF000000),
         actions: <Widget>[],
       ),
       body: SafeArea(
@@ -42,11 +36,6 @@ class ApplogScreen extends BaseScreen {
           ),
         ]),
       ),
-      //body: Container(
-      //  child: Stack(children: <Widget>[
-      //    getTable(context, ref, list),
-      //  ]),
-      //),
     );
   }
 
@@ -59,23 +48,24 @@ class ApplogScreen extends BaseScreen {
     List<TextSpan> spans = [];
     TextStyle tsErr = TextStyle(color: Colors.redAccent);
     TextStyle tsWarn = TextStyle(color: Colors.orangeAccent);
-    TextStyle tsInfo = TextStyle(color: myTheme.textTheme.bodyMedium!.color); //TextStyle(color: Color(0xFFFFFFFF));
+    TextStyle tsInfo = TextStyle(color: myTheme.textTheme.bodyMedium!.color);
     TextStyle tsDebug = TextStyle(color: Colors.grey);
     TextStyle tsTime = TextStyle(color: Colors.grey);
 
-    String format = MediaQuery.of(context).size.width > 500 ? "yyyy-MM-dd HH:mm.ss" : "MM-dd HH:mm";
+    String format = "yyyy-MM-dd HH:mm";
     for (MyLogData d in list) {
       try {
         String stime = DateFormat(format).format(DateTime.parse(d.date));
         Wrap w = Wrap(children: [getText(stime), getText(d.msg)]);
-        spans.add(TextSpan(text: stime, style: tsTime));
-        if (d.level.toLowerCase().contains('err'))
-          spans.add(TextSpan(text: ' error', style: tsErr));
-        else if (d.level.toLowerCase().contains('warn'))
-          spans.add(TextSpan(text: ' warn', style: tsWarn));
-        else if (d.level.toLowerCase().contains('debug')) spans.add(TextSpan(text: ' debug', style: tsDebug));
+        spans.add(TextSpan(text: stime + '\n', style: tsTime));
 
-        spans.add(TextSpan(text: ' ' + d.msg + '\n', style: tsInfo));
+        if (d.level.toLowerCase().contains('err'))
+          spans.add(TextSpan(text: 'error ', style: tsErr));
+        else if (d.level.toLowerCase().contains('warn'))
+          spans.add(TextSpan(text: 'warn ', style: tsWarn));
+        else if (d.level.toLowerCase().contains('debug')) spans.add(TextSpan(text: 'debug ', style: tsDebug));
+
+        spans.add(TextSpan(text: d.msg + '\n', style: tsInfo));
       } on Exception catch (e) {}
     }
 

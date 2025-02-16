@@ -156,16 +156,17 @@ class ViewlogScreen extends BaseScreen {
     int per_hour = 0;
     if (data.sec > 0) {
       per_hour = (data.chars * 3600 / data.sec / CHARS_PAGE).toInt();
+      if (per_hour > 999) per_hour = 999;
     }
 
     Widget wDate = Text(
       DateFormat("MM-dd HH:mm").format(data.date),
-      textScaler: TextScaler.linear(myTextScale),
+      textScaler: TextScaler.linear(myTextScale - 0.1),
       textAlign: TextAlign.left,
     );
     Widget wMin = Text(
-      '${(data.sec / 60).toInt().toString().padLeft(4, ' ')}',
-      textScaler: TextScaler.linear(myTextScale),
+      '${(data.sec / 60).toInt().toString().padLeft(3, ' ')}',
+      textScaler: TextScaler.linear(myTextScale - 0.1),
       textAlign: TextAlign.right,
     );
     Widget wMin1 = Text(
@@ -174,9 +175,12 @@ class ViewlogScreen extends BaseScreen {
       textAlign: TextAlign.left,
       //style: TextStyle(color: myTheme.disabledColor),
     );
+
+    double npage = data.chars / CHARS_PAGE;
+    if (npage > 999) npage = 999;
     Widget wPage = Text(
-      '${(data.chars / CHARS_PAGE).toInt().toString().padLeft(4, ' ')}',
-      textScaler: TextScaler.linear(myTextScale),
+      '${npage.toInt().toString().padLeft(3, ' ')}',
+      textScaler: TextScaler.linear(myTextScale - 0.1),
       textAlign: TextAlign.right,
     );
     Widget wPage1 = Text(
@@ -186,8 +190,8 @@ class ViewlogScreen extends BaseScreen {
       //style: TextStyle(color: myTheme.disabledColor),
     );
     Widget wSpeed = Text(
-      '${per_hour.toString().padLeft(4, ' ')}',
-      textScaler: TextScaler.linear(myTextScale),
+      '${per_hour.toString().padLeft(3, ' ')}',
+      textScaler: TextScaler.linear(myTextScale - 0.1),
       textAlign: TextAlign.right,
     );
     Widget wSpeed1 = Text(
@@ -195,8 +199,6 @@ class ViewlogScreen extends BaseScreen {
       textScaler: TextScaler.linear(myTextScale - 0.2),
       textAlign: TextAlign.left,
     );
-    double titleScale = myTextScale - 0.2;
-    //if(title.length>40) title = title.substring(0,40);
     Widget wTitle = Text(
       data.bookId,
       maxLines: 1,

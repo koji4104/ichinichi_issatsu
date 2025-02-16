@@ -1,5 +1,5 @@
 name: ichinichi_issatsu
-description: book reader
+description: book reader.
 
 version: 1.0.0+1
 
@@ -10,30 +10,15 @@ dependencies:
   flutter:
     sdk: flutter
 
-  cupertino_icons: ^1.0.6
-  shared_preferences: ^2.2.2
-  flutter_native_splash: ^2.4.4
-
-  flutter_inappwebview: ^6.1.5
-  webview_flutter: ^4.10.0
-
   http: ^1.2.2
-  json_annotation: ^4.8.0
   hooks_riverpod: ^2.5.1
   path_provider: ^2.1.4
   intl: ^0.18.1
 
-  data_table_2: ^2.5.15
-  image: ^4.2.0
-  archive: ^3.4.10
-  charset_converter: ^2.2.1
-
-  flutter_slidable: ^3.1.1
-  another_flushbar: ^1.12.30
-  package_info_plus: ^8.1.1
-  scrollview_observer: ^1.23.0
-
-  flutter_widget_from_html: ^0.15.3
+  charset_converter: ^2.3.0
+  flutter_slidable: ^4.0.0
+  package_info_plus: ^8.2.1 # License
+  flutter_inappwebview: ^6.1.5
 
   beautiful_soup_dart:
     path: beautiful_soup_dart
@@ -48,9 +33,6 @@ dev_dependencies:
   # package. See that file for information about deactivating specific lint
   # rules and activating additional ones.
   flutter_lints: ^3.0.0
-
-flutter_native_splash:
-  color: "#303030"
 
 flutter:
   uses-material-design: true

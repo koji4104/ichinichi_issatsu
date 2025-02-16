@@ -53,10 +53,10 @@ class BookListScreen extends BaseScreen {
       appBar: AppBar(
         title: MyText(l10n('home'), noScale: true),
         leading: IconButton(
+          icon: Icon(Icons.refresh),
           onPressed: () async {
             ref.watch(booklistProvider).readBookList();
           },
-          icon: Icon(Icons.refresh),
         ),
         actions: [dropdownFlag(), SizedBox(width: 20)],
       ),

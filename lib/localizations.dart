@@ -107,7 +107,7 @@ class Localized {
       'already_downloaded': '最新の状態',
       'download_failed': 'ダウンロード失敗',
       'close': '閉じる',
-      'swipe_to_delete': 'スワイプで削除可能',
+      'swipe_to_delete': 'スワイプで削除できます',
       'copy_to_clipboard': 'クリップボードにコピー',
       'home': 'ホーム',
       'brows': '探す',

@@ -39,7 +39,10 @@ final epubProvider = ChangeNotifierProvider((ref) => EpubNotifier(ref));
 
 class EpubNotifier extends ChangeNotifier {
   EpubNotifier(ref) {
-    if (!Platform.isIOS && !Platform.isAndroid) {}
+    if (!Platform.isIOS && !Platform.isAndroid) {
+      //status = MyEpubStatus.downloading;
+      //doneIndex = 2;
+    }
   }
 
   EpubData epub = new EpubData();
@@ -116,7 +119,7 @@ class EpubNotifier extends ChangeNotifier {
 
     book.chars = 0;
     for (IndexInfo i in index.list) {
-      book.chars = i.chars;
+      book.chars += i.chars;
     }
 
     String jsonText = json.encode(book.toJson());
@@ -145,7 +148,7 @@ class EpubNotifier extends ChangeNotifier {
     } else if (uri.contains('novel18.syosetu.com/n')) {
       body = await downloadCtrl.download8(uri, this);
     }
-    checkHtml(uri, body);
+    await checkHtml(uri, body);
 
     if (status == MyEpubStatus.none) {
       status = MyEpubStatus.failed;
@@ -209,6 +212,7 @@ class EpubNotifier extends ChangeNotifier {
       status = MyEpubStatus.failed;
       this.notifyListeners();
     }
+    await Future.delayed(Duration(milliseconds: 500));
     return ret;
   }
 
@@ -247,10 +251,7 @@ class EpubNotifier extends ChangeNotifier {
     return text;
   }
 
-  Map<String, String> headers = {
-    'user-agent':
-        'Mozilla/5.0 (iPhone; CPU iPhone OS 15_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148'
-  };
+  Map<String, String> headers = {'user-agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 15_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148'};
 
   setStatusNone() {
     epub.reset();
@@ -370,9 +371,9 @@ class EpubNotifier extends ChangeNotifier {
     String? body = await downloadCtrl.downloadSjis(epub.uriList[0]);
     if (body != null) {
       try {
-        createAozoraText(body);
+        await createAozoraText(body);
         if (epub.fileList.length >= 1) {
-          writeBook();
+          await writeBook();
           doneIndex = 1;
           status = MyEpubStatus.succeeded;
         }
@@ -512,12 +513,15 @@ class EpubNotifier extends ChangeNotifier {
           }
         }
 
+        // ドグマ104
+        // 30000/25000 = 33
+        // 15000/10000 = 79
         for (int i = 0; i < 100; i++) {
-          if (t1.length < 30000) {
+          if (t1.length < 15000) {
             listText.add(t1);
             break;
           }
-          int s1 = t1.indexOf('<br />', 25000);
+          int s1 = t1.indexOf('<br />', 10000);
           if (s1 > 0) {
             String t2 = t1.substring(0, s1 + 6);
             if (i >= 1) {
@@ -585,11 +589,12 @@ class EpubNotifier extends ChangeNotifier {
         if (json1['props']['pageProps'] != null) {
           if (json1['props']['pageProps']['__APOLLO_STATE__'] != null) {
             var map = json1['props']['pageProps']['__APOLLO_STATE__'];
+
+            // title uriList
             for (var MapEntry(:key, :value) in map.entries) {
               if (value['__typename'] != null && value['id'] != null) {
                 if (value['__typename'] == 'Episode') {
-                  epub.uriList
-                      .add('https://kakuyomu.jp/works/${epub.siteId}/episodes/${value['id']}');
+                  epub.uriList.add('https://kakuyomu.jp/works/${epub.siteId}/episodes/${value['id']}');
                 } else if (value['__typename'] == 'Work') {
                   if (value['id'] == epub.siteId) {
                     epub.bookTitle = value['title'];
@@ -597,9 +602,18 @@ class EpubNotifier extends ChangeNotifier {
                     var ref = aut['__ref'] ?? '';
                     userId = ref.toString().substring(ref.toString().indexOf('UserAccount:') + 12);
                   }
-                } else if (value['__typename'] == 'UserAccount') {
-                  if (value['id'] == userId) {
-                    epub.bookAuthor = value['activityName'];
+                }
+              }
+            }
+
+            // author
+            if (userId != '') {
+              for (var MapEntry(:key, :value) in map.entries) {
+                if (value['__typename'] != null && value['id'] != null) {
+                  if (value['__typename'] == 'UserAccount') {
+                    if (value['id'] == userId) {
+                      epub.bookAuthor = value['activityName'];
+                    }
                   }
                 }
               }
@@ -640,7 +654,7 @@ class EpubNotifier extends ChangeNotifier {
     }
 
     if (epub.fileList.length >= 2) {
-      writeBook();
+      await writeBook();
       status = MyEpubStatus.succeeded;
     } else {
       status = MyEpubStatus.failed;
@@ -709,13 +723,36 @@ class EpubNotifier extends ChangeNotifier {
       epub.bookAuthor = elAuthor['content'] ?? '';
     }
 
-    List<Bs4Element> els = bs.findAll('a', class_: 'p-eplist__subtitle');
-    for (Bs4Element e in els) {
-      String? s = e.getAttrValue('href');
-      if (s != null) {
-        String u = 'https://ncode.syosetu.com' + s;
-        epub.uriList.add(u);
+    String? nextBody;
+    for (int i = 0; i < 100; i++) {
+      if (nextBody != null) {
+        bs = BeautifulSoup(nextBody);
       }
+
+      List<Bs4Element> els = bs.findAll('a', class_: 'p-eplist__subtitle');
+      for (Bs4Element e in els) {
+        String? s = e.getAttrValue('href');
+        if (s != null) {
+          String u = 'https://ncode.syosetu.com' + s;
+          epub.uriList.add(u);
+        }
+      }
+
+      nextBody = null;
+      Bs4Element? elNext = bs.find('a', class_: 'c-pager__item--next');
+      if (elNext != null) {
+        String? s = elNext.getAttrValue('href'); // /n8611bv/?p=2
+        if (s != null) {
+          await Future.delayed(Duration(milliseconds: 500));
+          String u = 'https://ncode.syosetu.com' + s;
+          if (url.contains('ncode.syosetu.com/n')) {
+            nextBody = await downloadCtrl.download(u);
+          } else if (url.contains('novel18.syosetu.com/n')) {
+            nextBody = await downloadCtrl.download8(u, this);
+          }
+        }
+      }
+      if (nextBody == null) break;
     }
   }
 
@@ -744,7 +781,7 @@ class EpubNotifier extends ChangeNotifier {
         if (needtoStopDownloading == true) break;
       }
     }
-    writeBook();
+    await writeBook();
     status = MyEpubStatus.succeeded;
     this.notifyListeners();
   }
@@ -775,7 +812,7 @@ class EpubNotifier extends ChangeNotifier {
         if (needtoStopDownloading == true) break;
       }
     }
-    writeBook();
+    await writeBook();
     status = MyEpubStatus.succeeded;
     this.notifyListeners();
   }
@@ -861,10 +898,7 @@ class DownloadController {
 
   Future<String?> download(String uri) async {
     HttpOverrides.global = PermitInvalidCertification();
-    Map<String, String> headers = {
-      'user-agent':
-          'Mozilla/5.0 (iPhone; CPU iPhone OS 15_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148'
-    };
+    Map<String, String> headers = {'user-agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 15_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148'};
     String? body = null;
     try {
       http.Response res = await http.get(Uri.parse(uri), headers: headers);
@@ -879,10 +913,7 @@ class DownloadController {
 
   Future<String?> downloadSjis(String uri) async {
     HttpOverrides.global = PermitInvalidCertification();
-    Map<String, String> headers = {
-      'user-agent':
-          'Mozilla/5.0 (iPhone; CPU iPhone OS 15_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148'
-    };
+    Map<String, String> headers = {'user-agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 15_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148'};
     String? body = null;
     try {
       http.Response res = await http.get(Uri.parse(uri), headers: headers);

@@ -133,8 +133,7 @@ class BaseScreen extends ConsumerWidget {
       child: TextButton(
         style: TextButton.styleFrom(
           backgroundColor: bgcol,
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(DEF_RADIUS))),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(DEF_RADIUS))),
           side: bdcol != null ? BorderSide(color: bdcol) : null,
         ),
         child: Text(
@@ -218,10 +217,8 @@ class BaseScreen extends ConsumerWidget {
   Widget closeButtonRow() {
     return Container(
       child: Column(children: [
-        Container(
-          color: myTheme.scaffoldBackgroundColor,
-          height: 1,
-        ),
+        //Container(color: myTheme.scaffoldBackgroundColor, height: 1),
+        SizedBox(height: 2),
         Row(children: [
           SizedBox(width: 2),
           closeButton(),
@@ -243,22 +240,23 @@ class BaseScreen extends ConsumerWidget {
     double ffBottom = 0;
     if (ref.watch(epubProvider).status == MyEpubStatus.none) {
       ffBottom = -1.0 * barHeight;
+    } else if (ref.watch(epubProvider).status == MyEpubStatus.downloading) {
+      ffBottom = -1.0 * 80;
     } else {
       ffBottom = 0;
     }
 
-    int DL_COUNT1 = 20;
+    int DL_COUNT1 = 10;
     int DL_COUNT2 = 50;
     int DL_SPARE = 10;
 
     bool isClose = false;
-    bool isCancel = false;
     String label1 = '';
     String label2 = '';
     int already = ref.watch(epubProvider).existingIndex;
     int done = ref.watch(epubProvider).doneIndex;
     int all = ref.watch(epubProvider).epub.uriList.length;
-    int req1 = 1;
+    int req1 = 0;
     int req2 = 0;
     label1 = '${ref.watch(epubProvider).epub.bookTitle ?? ref.watch(epubProvider).epub.bookId}';
 
@@ -302,10 +300,9 @@ class BaseScreen extends ConsumerWidget {
       label2 = '${l10n('download_failed')}';
       isClose = true;
     } else if (ref.watch(epubProvider).status == MyEpubStatus.downloading) {
-      label2 = 'Downloading';
-      isCancel = true;
-      if (done > 0 && all > 1) {
-        label2 += ' ${done} / ${all}';
+      label1 = 'Downloading';
+      if (done > 0) {
+        label1 += ' ${done} / ${all}';
       }
     }
 
@@ -325,24 +322,17 @@ class BaseScreen extends ConsumerWidget {
           },
         ),
       ]);
-    } else if (isCancel) {
-      btn = Column(children: [
-        MyTextButton(
-          noScale: true,
-          width: btnWidth,
-          title: l10n('Cancel'),
-          onPressed: () {
-            ref.read(epubProvider).needtoStopDownloading = true;
-          },
-        ),
-      ]);
-    } else {
+    } else if (req1 > 0) {
+      String btnTitle1 = '${req1} ${l10n('episode')} ${l10n('up_to')} ${l10n('download')}';
+      if (req1 == 1) btnTitle1 = '${l10n('download')}';
+      String btnTitle2 = '${req2} ${l10n('episode')} ${l10n('up_to')} ${l10n('download')}';
+
       btn = Column(children: [
         MyTextButton(
           noScale: true,
           width: btnWidth,
           commit: true,
-          title: '${req1} ${l10n('episode')} ${l10n('up_to')} ${l10n('download')}',
+          title: btnTitle1,
           onPressed: () {
             ref.read(epubProvider).download(req1).then((ret) {
               if (ret) {
@@ -357,7 +347,7 @@ class BaseScreen extends ConsumerWidget {
             noScale: true,
             width: btnWidth,
             commit: true,
-            title: '${req2} ${l10n('episode')} ${l10n('up_to')} ${l10n('download')}',
+            title: btnTitle2,
             onPressed: () {
               ref.read(epubProvider).download(req2).then((ret) {
                 if (ret) {
@@ -388,12 +378,13 @@ class BaseScreen extends ConsumerWidget {
             Expanded(child: MyText(label1, noScale: true, center: true)),
             SizedBox(width: 20),
           ]),
-          SizedBox(height: 4),
-          Row(children: [
-            SizedBox(width: 20),
-            Expanded(child: MyText(label2, noScale: true, center: true)),
-            SizedBox(width: 20),
-          ]),
+          if (label2 != '') SizedBox(height: 4),
+          if (label2 != '')
+            Row(children: [
+              SizedBox(width: 20),
+              Expanded(child: MyText(label2, noScale: true, center: true)),
+              SizedBox(width: 20),
+            ]),
           SizedBox(height: 6),
           btn,
           Expanded(child: SizedBox(height: 1)),

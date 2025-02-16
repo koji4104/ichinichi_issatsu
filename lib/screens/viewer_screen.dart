@@ -3,14 +3,12 @@ import 'dart:io';
 import 'dart:convert';
 
 import 'package:flutter_slidable/flutter_slidable.dart';
-import 'package:another_flushbar/flushbar.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:ichinichi_issatsu/controllers/applog_controller.dart';
 import 'package:path_provider/path_provider.dart';
-import 'package:webview_flutter/webview_flutter.dart';
 import 'package:flutter/services.dart';
 
 import '/commons/base_screen.dart';
@@ -129,8 +127,7 @@ class ViewerScreen extends BaseScreen with WidgetsBindingObserver {
                 child: RawGestureDetector(
                   behavior: HitTestBehavior.translucent,
                   gestures: {
-                    TapGestureRecognizer:
-                        GestureRecognizerFactoryWithHandlers<TapGestureRecognizer>(
+                    TapGestureRecognizer: GestureRecognizerFactoryWithHandlers<TapGestureRecognizer>(
                       () => TapGestureRecognizer(),
                       (TapGestureRecognizer instance) {
                         instance
@@ -141,10 +138,8 @@ class ViewerScreen extends BaseScreen with WidgetsBindingObserver {
                             } else if (dx > _width - 120) {
                               //scrollLeft();
                             } else {
-                              if (ref.watch(viewerProvider).bottomBarType !=
-                                  ViewerBottomBarType.actionBar) {
-                                ref.watch(viewerProvider).bottomBarType =
-                                    ViewerBottomBarType.actionBar;
+                              if (ref.watch(viewerProvider).bottomBarType != ViewerBottomBarType.actionBar) {
+                                ref.watch(viewerProvider).bottomBarType = ViewerBottomBarType.actionBar;
                                 redraw();
                               } else {
                                 ref.watch(viewerProvider).bottomBarType = ViewerBottomBarType.none;
@@ -180,7 +175,7 @@ class ViewerScreen extends BaseScreen with WidgetsBindingObserver {
   }
 
   Widget loadingWidget() {
-    String txt = ref.read(viewerProvider).jumpStatusText;
+    //String txt = ref.read(viewerProvider).jumpStatusText;
     return Stack(children: [
       Container(color: env.getBackColor()),
       Positioned(
@@ -191,16 +186,6 @@ class ViewerScreen extends BaseScreen with WidgetsBindingObserver {
           Icons.refresh,
           size: 32,
           color: env.getFrontColor(),
-        ),
-      ),
-      Positioned(
-        top: (_height / 5) + 60,
-        left: 0,
-        right: 0,
-        child: Text(
-          txt,
-          style: TextStyle(color: env.getFrontColor()),
-          textAlign: TextAlign.center,
         ),
       ),
     ]);
@@ -217,7 +202,7 @@ class ViewerScreen extends BaseScreen with WidgetsBindingObserver {
   Future startReadlog() async {
     int nowChars = ref.watch(viewerProvider).nowChars;
     ref.watch(viewlogProvider).init(nowChars);
-    MyLog.info('Opened ${book.title}');
+    MyLog.info('Open ${book.title}');
   }
 
   Future endReadlog() async {
@@ -326,7 +311,6 @@ class ViewerScreen extends BaseScreen with WidgetsBindingObserver {
             SizedBox(width: 4),
           ]),
           SizedBox(height: 6),
-          //SizedBox(height: 1, child: Container(color: isActionBar() ? myTheme.dividerColor : null)),
         ],
       ),
     );
@@ -573,7 +557,7 @@ class ViewerScreen extends BaseScreen with WidgetsBindingObserver {
   }
 
   Widget tocBar() {
-    double barHeight = _height / 2;
+    double barHeight = book.index.list.length > 20 ? _height * 2 / 3 : _height / 2;
     double ffBottom = -1.0 * barHeight;
     if (ref.watch(viewerProvider).bottomBarType == ViewerBottomBarType.tocBar) {
       ffBottom = 0;

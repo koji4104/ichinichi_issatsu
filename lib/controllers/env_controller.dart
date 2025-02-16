@@ -1,4 +1,4 @@
-import 'package:shared_preferences/shared_preferences.dart';
+//import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:developer';
 import 'dart:io';
 import 'dart:convert';
@@ -16,11 +16,7 @@ class EnvData {
   List<String> keys = [];
   String name = '';
 
-  EnvData(
-      {required int this.val,
-      required List<int> this.vals,
-      required List<String> this.keys,
-      required String this.name}) {
+  EnvData({required int this.val, required List<int> this.vals, required List<String> this.keys, required String this.name}) {
     round(val);
   }
 

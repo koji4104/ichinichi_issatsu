@@ -3,7 +3,6 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import '/screens/menu_screen.dart';
 import 'commons/widgets.dart';
 import '/controllers/env_controller.dart';
-import 'dart:developer';
 
 void main() {
   runApp(ProviderScope(child: MyApp()));

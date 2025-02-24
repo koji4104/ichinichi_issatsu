@@ -130,7 +130,7 @@ class BookListScreen extends BaseScreen {
                   });
                 },
                 foregroundColor: Colors.white,
-                backgroundColor: myTheme.scaffoldBackgroundColor,
+                backgroundColor: Color(0xFF444444),
                 icon: Icons.circle_outlined,
                 label: l10n('tag'),
                 spacing: 0,
@@ -151,8 +151,8 @@ class BookListScreen extends BaseScreen {
                       }
                     });
                   },
-                  foregroundColor: Colors.blueAccent,
-                  backgroundColor: myTheme.scaffoldBackgroundColor,
+                  foregroundColor: Colors.white,
+                  backgroundColor: Colors.blueGrey,
                   icon: Icons.download,
                   label: l10n('download'),
                   spacing: 0,
@@ -172,8 +172,8 @@ class BookListScreen extends BaseScreen {
                     }
                   });
                 },
-                foregroundColor: Colors.redAccent,
-                backgroundColor: myTheme.scaffoldBackgroundColor,
+                foregroundColor: Colors.white,
+                backgroundColor: Colors.redAccent,
                 icon: Icons.delete,
                 label: l10n('delete'),
                 spacing: 0,

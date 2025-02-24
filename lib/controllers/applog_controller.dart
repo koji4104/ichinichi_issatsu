@@ -1,12 +1,9 @@
-import 'package:flutter/foundation.dart' show kIsWeb;
 import 'dart:developer';
 import 'package:intl/intl.dart';
+import 'package:path_provider/path_provider.dart';
 import 'dart:io';
 
 import '/constants.dart';
-import 'package:path_provider/path_provider.dart';
-import 'dart:convert';
-
 import '/models/log_data.dart';
 
 class MyLog {
@@ -37,11 +34,13 @@ class MyLog {
       String l = level;
       String e = event;
 
-      String appdir = (await getApplicationDocumentsDirectory()).path;
-      if (!Platform.isIOS && !Platform.isAndroid) {
-        appdir = appdir + '/test';
+      if (APP_DIR == '') {
+        APP_DIR = (await getApplicationDocumentsDirectory()).path;
+        if (!Platform.isIOS && !Platform.isAndroid) {
+          APP_DIR = APP_DIR + '/test';
+        }
       }
-      String logdir = appdir + '/data';
+      String logdir = APP_DIR + '/data';
       await Directory('${logdir}').create(recursive: true);
       final String path = '${logdir}/$_fname';
 
@@ -62,11 +61,13 @@ class MyLog {
     List<MyLogData> list = [];
     try {
       String txt = '';
-      String appdir = (await getApplicationDocumentsDirectory()).path;
-      if (!Platform.isIOS && !Platform.isAndroid) {
-        appdir = appdir + '/test';
+      if (APP_DIR == '') {
+        APP_DIR = (await getApplicationDocumentsDirectory()).path;
+        if (!Platform.isIOS && !Platform.isAndroid) {
+          APP_DIR = APP_DIR + '/test';
+        }
       }
-      String logdir = appdir + '/data';
+      String logdir = APP_DIR + '/data';
       await Directory('${logdir}').create(recursive: true);
       final String path = '${logdir}/$_fname';
 

@@ -19,12 +19,6 @@ class MyLogData {
   }
 }
 
-String sample = '''
-2022-04-01 00:00:00\tuser\terror\tapp\tmessage1
-2022-04-02 00:00:00\tuser\twarn\tapp\tmessage2
-2022-04-03 00:00:00\tuser\tinfo\tapp\tmessage3
-''';
-
 class ViewlogData {
   ViewlogData() {}
 
@@ -32,12 +26,14 @@ class ViewlogData {
   int sec = 0;
   int chars = 0;
   String bookId = '';
+  String bookTitle = '';
 
   ReadlogData1(
     String? adate,
     String? amin,
     String? achars,
     String? abookId,
+    String? abookTitle,
   ) {
     if (adate == null || amin == null || achars == null) return;
     try {
@@ -57,6 +53,7 @@ class ViewlogData {
         data.sec = int.parse(r[1]);
         data.chars = int.parse(r[2]);
         data.bookId = r[3];
+        data.bookTitle = r[4];
         return data;
       } catch (_) {}
     }

@@ -16,6 +16,7 @@ import 'package:path/path.dart';
 import '/models/book_data.dart';
 import '/models/epub_data.dart';
 import '/controllers/applog_controller.dart';
+import '/constants.dart';
 
 class PermitInvalidCertification extends HttpOverrides {
   @override
@@ -60,11 +61,7 @@ class EpubNotifier extends ChangeNotifier {
     if (epub.siteId == null) return;
     if (epub.fileList.length == 0) return;
 
-    String appdir = (await getApplicationDocumentsDirectory()).path;
-    if (!Platform.isIOS && !Platform.isAndroid) {
-      appdir += '/test';
-    }
-    String datadir = appdir + '/book';
+    String bookdir = APP_DIR + '/book';
 
     String text0 = '';
     text0 += '<h2>' + (epub.bookTitle ?? epub.bookId!) + '</h2>';
@@ -78,13 +75,13 @@ class EpubNotifier extends ChangeNotifier {
     f0.chars = text0.length;
     epub.fileList.insert(0, f0);
 
-    await Directory('${datadir}/${epub.bookId}').create(recursive: true);
-    await Directory('${datadir}/${epub.bookId}/text').create(recursive: true);
-    await Directory('${datadir}/${epub.bookId}/data').create(recursive: true);
+    await Directory('${bookdir}/${epub.bookId}').create(recursive: true);
+    await Directory('${bookdir}/${epub.bookId}/text').create(recursive: true);
+    await Directory('${bookdir}/${epub.bookId}/data').create(recursive: true);
 
     for (EpubFileData f in epub.fileList) {
       List<int> content = convert.utf8.encode(f.text!);
-      final file = File('${datadir}/${epub.bookId}/${f.fileName}');
+      final file = File('${bookdir}/${epub.bookId}/${f.fileName}');
       await file.writeAsBytes(content);
     }
 
@@ -123,16 +120,16 @@ class EpubNotifier extends ChangeNotifier {
     }
 
     String jsonText = json.encode(book.toJson());
-    final boolFile = File('${datadir}/${epub.bookId}/data/book.json');
+    final boolFile = File('${bookdir}/${epub.bookId}/data/book.json');
     await boolFile.writeAsString(jsonText, mode: FileMode.write, flush: true);
 
     String j = json.encode(index.toJson());
-    final indexFile = File('${datadir}/${epub.bookId}/data/index.json');
+    final indexFile = File('${bookdir}/${epub.bookId}/data/index.json');
     await indexFile.writeAsString(j, mode: FileMode.write, flush: true);
 
     PropData prop = PropData();
     var val = json.encode(prop.toJson());
-    final propFile = File('${datadir}/${epub.bookId}/data/prop.json');
+    final propFile = File('${bookdir}/${epub.bookId}/data/prop.json');
     await propFile.writeAsString(val, mode: FileMode.write, flush: true);
   }
 
@@ -194,6 +191,7 @@ class EpubNotifier extends ChangeNotifier {
       this.notifyListeners();
       return ret;
     }
+    needtoStopDownloading = false;
     requiredIndex = required;
 
     if (epub.dluri.toString().contains('www.aozora.gr.jp/cards/')) {
@@ -222,11 +220,12 @@ class EpubNotifier extends ChangeNotifier {
   /// text = text.replaceAll('</a>', '');
   String deleteTag(String text, String tag) {
     int s1 = 0;
-    for (int i = 0; i < 1000; i++) {
-      s1 = text.indexOf(tag);
+    for (int i = 0; i < 10000; i++) {
+      s1 = text.indexOf(tag, s1);
       int e1 = (s1 >= 0) ? text.indexOf(r'>', s1 + tag.length) + 1 : 0;
       if (s1 >= 0 && e1 > 0) {
         text = text.substring(0, s1) + text.substring(e1);
+        s1++;
       } else {
         break;
       }
@@ -239,7 +238,7 @@ class EpubNotifier extends ChangeNotifier {
   /// <h3>第三の手記</h3>
   String deleteClassAttr(String text, String tag) {
     int s1 = 0;
-    for (int i = 0; i < 1000; i++) {
+    for (int i = 0; i < 10000; i++) {
       s1 = text.indexOf(tag, s1);
       int e1 = (s1 >= 0) ? text.indexOf(r'>', s1 + tag.length) + 1 : 0;
       if (s1 >= 0 && e1 > 0) {
@@ -255,6 +254,7 @@ class EpubNotifier extends ChangeNotifier {
 
   setStatusNone() {
     epub.reset();
+    needtoStopDownloading = true;
     if (status != MyEpubStatus.none) {
       status = MyEpubStatus.none;
       this.notifyListeners();
@@ -274,12 +274,7 @@ class EpubNotifier extends ChangeNotifier {
 
   Future<int> getExistingIndex(String bookId) async {
     int existingIndex = 0;
-
-    String appdir = (await getApplicationDocumentsDirectory()).path;
-    if (!Platform.isIOS && !Platform.isAndroid) {
-      appdir = appdir + '/test';
-    }
-    String datadir = appdir + '/book';
+    String datadir = APP_DIR + '/book';
 
     try {
       Directory dir = Directory('${datadir}/${bookId}/text');
@@ -309,11 +304,7 @@ class EpubNotifier extends ChangeNotifier {
     if (epub.bookId == null) return data;
 
     try {
-      String appdir = (await getApplicationDocumentsDirectory()).path;
-      if (!Platform.isIOS && !Platform.isAndroid) {
-        appdir = appdir + '/test';
-      }
-      String datadir = appdir + '/book';
+      String datadir = APP_DIR + '/book';
       final file = File('${datadir}/${epub.bookId!}/data/index.json');
       if (file.existsSync()) {
         String? txt1 = await file.readAsString();
@@ -465,36 +456,12 @@ class EpubNotifier extends ChangeNotifier {
     List<String> listText1 = text.split('<h3');
     List<String> listText = [];
     if (listText1.length == 1) {
-      //listText.add(listText1[0]);
-
       List<String> listTemp = [];
       listTemp.add('dummy');
-
       String temp = listText1[0];
       temp = '>1</h3>' + temp;
       listTemp.add(temp);
-
       listText1 = listTemp;
-      /*
-      int s1;
-      for (int i = 0; i < 100; i++) {
-        if (temp.length < 100000) {
-          temp = '<h3>${listText.length}</h3>' + temp;
-          listText.add(temp);
-          break;
-        }
-        int s1 = temp.indexOf('<br />', 90000);
-        if (s1 > 0) {
-          String temp2 = temp.substring(0, s1 + 6);
-          temp2 = '<h3>${listText.length}</h3>' + temp2;
-          listText.add(temp2);
-          temp = temp.substring(s1 + 6);
-        } else {
-          temp = '<h3>${listText.length}</h3>' + temp;
-          listText.add(temp);
-          break;
-        }
-      }*/
     }
     if (listText1.length > 1) {
       for (int i = 0; i < listText1.length; i++) {
@@ -653,7 +620,7 @@ class EpubNotifier extends ChangeNotifier {
       if (needtoStopDownloading == true) break;
     }
 
-    if (epub.fileList.length >= 2) {
+    if (epub.fileList.length >= 2 && needtoStopDownloading == false) {
       await writeBook();
       status = MyEpubStatus.succeeded;
     } else {
@@ -781,8 +748,10 @@ class EpubNotifier extends ChangeNotifier {
         if (needtoStopDownloading == true) break;
       }
     }
-    await writeBook();
-    status = MyEpubStatus.succeeded;
+    if (needtoStopDownloading == false) {
+      await writeBook();
+      status = MyEpubStatus.succeeded;
+    }
     this.notifyListeners();
   }
 
@@ -812,8 +781,10 @@ class EpubNotifier extends ChangeNotifier {
         if (needtoStopDownloading == true) break;
       }
     }
-    await writeBook();
-    status = MyEpubStatus.succeeded;
+    if (needtoStopDownloading == false) {
+      await writeBook();
+      status = MyEpubStatus.succeeded;
+    }
     this.notifyListeners();
   }
 
@@ -844,17 +815,17 @@ class EpubNotifier extends ChangeNotifier {
       t1 = t1.replaceAll('&nbsp;', '');
 
       // delete <p>
-      text = deleteTag(text, '<p ');
-      text = text.replaceAll('</p>', '<br />');
+      t1 = deleteTag(t1, '<p ');
+      t1 = t1.replaceAll('</p>', '<br />');
 
       // delete <img
-      text = deleteTag(text, '<img');
+      t1 = deleteTag(t1, '<img');
 
       // delete <span
-      text = deleteTag(text, '<span');
-      text = text.replaceAll('</span>', '');
+      t1 = deleteTag(t1, '<span');
+      t1 = t1.replaceAll('</span>', '');
 
-      if (text != '') text += '<br />';
+      if (t1 != '') t1 += '<br />';
       text += t1;
     }
 
@@ -906,7 +877,7 @@ class DownloadController {
         body = res.body;
       }
     } catch (e) {
-      MyLog.err('download() ${e.toString()}');
+      MyLog.err('DownloadController.download() ${e.toString()}');
     }
     return body;
   }
@@ -921,21 +892,16 @@ class DownloadController {
         body = await CharsetConverter.decode("Shift_JIS", res.bodyBytes);
       }
     } catch (e) {
-      MyLog.err('downloadSjis() ${e.toString()}');
+      MyLog.err('DownloadController.downloadSjis() ${e.toString()}');
     }
     return body;
   }
 
   Future<String?> download8(String uri, EpubNotifier noti) async {
-    //if (webViewController8 == null) {}
     webBody = null;
     selectedUri = uri;
     noti.notifyListeners();
     try {
-      //await webViewController8!.loadUrl(
-      //  urlRequest: URLRequest(url: WebUri(uri)),
-      //);
-
       for (int wait = 0; wait < 100; wait++) {
         await Future.delayed(Duration(milliseconds: 100));
         if (this.webBody != null) {
@@ -944,7 +910,7 @@ class DownloadController {
         }
       }
     } catch (e) {
-      MyLog.err('download8() ${e.toString()}');
+      MyLog.err('DownloadController.download8() ${e.toString()}');
     }
     return webBody;
   }
@@ -955,7 +921,6 @@ class DownloadController {
     return InAppWebView(
       key: GlobalKey(),
       initialUrlRequest: URLRequest(url: WebUri(selectedUri!)),
-      //initialUrlRequest: URLRequest(url: WebUri('')),
       onWebViewCreated: (controller) async {
         webViewController8 = controller;
       },

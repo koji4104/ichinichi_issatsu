@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'dart:io';
+import 'package:flutter_slidable/flutter_slidable.dart';
 
 import 'package:ichinichi_issatsu/constants.dart';
 
@@ -199,6 +200,28 @@ Widget MyText(String text, {int? maxLength, int? maxLines, bool? noScale, bool? 
   );
 }
 
+Widget MyIconLabelButton({
+  required Icon icon,
+  String? label,
+  Color? color,
+  Function()? onPressed,
+}) {
+  return Column(children: [
+    IconButton(
+      icon: icon,
+      color: color,
+      onPressed: onPressed,
+      padding: EdgeInsets.all(0),
+    ),
+    if (label != null)
+      Text(
+        label,
+        style: TextStyle(color: color, fontSize: 9),
+        textAlign: TextAlign.center,
+      ),
+  ]);
+}
+
 /// MyTextButton
 /// - title
 /// - onPressed
@@ -341,4 +364,79 @@ Widget MyClipListTile({required String text, Function()? onPressed}) {
     padding: EdgeInsets.fromLTRB(20, 4, 20, 8),
     child: child,
   );
+}
+
+class MySlidableAction extends StatelessWidget {
+  const MySlidableAction({
+    super.key,
+    required this.backgroundColor,
+    this.foregroundColor,
+    required this.onPressed,
+    this.icon,
+    this.label,
+    this.borderRadius = BorderRadius.zero,
+    this.spacing = 1.0,
+    this.padding,
+  });
+
+  final int flex = 1;
+  final Color backgroundColor;
+  final Color? foregroundColor;
+  final SlidableActionCallback? onPressed;
+  final IconData? icon;
+  final double spacing;
+  final String? label;
+  final EdgeInsets? padding;
+  final BorderRadius borderRadius;
+
+  @override
+  Widget build(BuildContext context) {
+    final children = <Widget>[];
+
+    if (icon != null) {
+      children.add(
+        Icon(icon, size: 20),
+      );
+    }
+
+    if (label != null) {
+      if (children.isNotEmpty) {
+        children.add(
+          SizedBox(height: spacing),
+        );
+      }
+
+      children.add(
+        Text(
+          label!,
+          style: TextStyle(fontSize: 10),
+          textAlign: TextAlign.center,
+        ),
+      );
+    }
+
+    final child = children.length == 1
+        ? children.first
+        : Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ...children.map(
+                (child) => Flexible(
+                  child: child,
+                ),
+              )
+            ],
+          );
+
+    return CustomSlidableAction(
+      borderRadius: BorderRadius.zero,
+      padding: EdgeInsets.fromLTRB(0, 0, 0, 0),
+      onPressed: onPressed,
+      autoClose: false,
+      backgroundColor: backgroundColor,
+      foregroundColor: foregroundColor,
+      flex: flex,
+      child: child,
+    );
+  }
 }

@@ -11,6 +11,7 @@ import '/models/book_data.dart';
 import '/models/log_data.dart';
 import '/controllers/applog_controller.dart';
 import '/screens/applog_screen.dart';
+import '/constants.dart';
 
 final booklistProvider = ChangeNotifierProvider((ref) => BookListNotifier(ref));
 
@@ -20,25 +21,28 @@ class BookListNotifier extends ChangeNotifier {
   }
 
   BookData? selected;
-  late String datadir;
+  late String bookdir;
   List<BookData> bookList = [];
   List<PropData> propList = [];
   bool isReading = false;
 
   /// read books.json
   Future readBookList() async {
-    String appdir = (await getApplicationDocumentsDirectory()).path;
-    if (!Platform.isIOS && !Platform.isAndroid) {
-      appdir = appdir + '/test';
+    if (APP_DIR == '') {
+      APP_DIR = (await getApplicationDocumentsDirectory()).path;
+      if (!Platform.isIOS && !Platform.isAndroid) {
+        APP_DIR = APP_DIR + '/test';
+      }
     }
-    datadir = appdir + '/book';
-    await Directory('${datadir}').create(recursive: true);
+
+    bookdir = APP_DIR + '/book';
+    await Directory('${bookdir}').create(recursive: true);
 
     log('readBookList()');
     isReading = true;
     bookList.clear();
 
-    List<FileSystemEntity> entities = Directory(datadir).listSync();
+    List<FileSystemEntity> entities = Directory(bookdir).listSync();
     for (var e in entities) {
       if (FileSystemEntity.isDirectorySync(e.path) == true) {
         log('readBookList ${e.path}');
@@ -50,7 +54,7 @@ class BookListNotifier extends ChangeNotifier {
             Map<String, dynamic> j = json.decode(txt);
             BookData book = BookData();
             book = BookData.fromJson(j);
-            log('${book.title}');
+            //log('${book.title}');
 
             try {
               final indexFile = File('${e.path}/data/index.json');
@@ -85,7 +89,7 @@ class BookListNotifier extends ChangeNotifier {
   }
 
   Future saveFlag(int index, int flag) async {
-    String dir = datadir + '/${bookList[index].bookId}';
+    String dir = bookdir + '/${bookList[index].bookId}';
     if (Directory(dir).existsSync()) {
       final infoFile = File('${dir}/data/prop.json');
       if (infoFile.existsSync()) {
@@ -103,7 +107,7 @@ class BookListNotifier extends ChangeNotifier {
   }
 
   Future saveLastAccess(int index) async {
-    String dir = datadir + '/${bookList[index].bookId}';
+    String dir = bookdir + '/${bookList[index].bookId}';
     if (Directory(dir).existsSync()) {
       final infoFile = File('${dir}/book_info.json');
       if (infoFile.existsSync()) {

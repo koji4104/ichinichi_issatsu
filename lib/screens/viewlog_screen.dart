@@ -52,7 +52,8 @@ class ViewlogScreen extends BaseScreen {
             child: Column(children: [
               speed(),
               desc(),
-              SizedBox(height: 12),
+              SizedBox(height: 8),
+              header(),
               Expanded(child: getList()),
             ]),
           ),
@@ -72,7 +73,22 @@ class ViewlogScreen extends BaseScreen {
     return Row(
       children: [
         Expanded(child: SizedBox(width: 1)),
-        Text('${l10n('swipe_to_delete')}', textScaler: TextScaler.linear(myTextScale * 0.8)),
+        Text('${l10n('swipe_to_delete')}', textScaler: TextScaler.linear(myTextScale * 0.7)),
+      ],
+    );
+  }
+
+  Widget header() {
+    TextScaler sc = TextScaler.linear(myTextScale * 0.7);
+    TextAlign al = TextAlign.right;
+    return Row(
+      children: [
+        SizedBox(width: 20),
+        Expanded(flex: 1, child: Text('Date', textScaler: sc)),
+        Expanded(flex: 1, child: Text('min', textScaler: sc, textAlign: al)),
+        Expanded(flex: 1, child: Text('pages', textScaler: sc, textAlign: al)),
+        Expanded(flex: 1, child: Text('pages/h', textScaler: sc, textAlign: al)),
+        SizedBox(width: 20),
       ],
     );
   }
@@ -123,7 +139,7 @@ class ViewlogScreen extends BaseScreen {
                 onPressed: (_) {
                   deleteDialog().then((ret) {
                     if (ret) {
-                      log('delette');
+                      log('delete');
                       ref.watch(viewlogProvider).delete(index).then((ret) {
                         redraw();
                       });
@@ -148,87 +164,58 @@ class ViewlogScreen extends BaseScreen {
     required String title,
     Function()? onPressed,
   }) {
-    Widget btn = IconButton(
-      icon: Icon(Icons.delete, size: 18, color: myTheme.disabledColor),
-      onPressed: onPressed,
-    );
-
     int per_hour = 0;
     if (data.sec > 0) {
       per_hour = (data.chars * 3600 / data.sec / CHARS_PAGE).toInt();
-      if (per_hour > 999) per_hour = 999;
     }
 
     Widget wDate = Text(
       DateFormat("MM-dd HH:mm").format(data.date),
-      textScaler: TextScaler.linear(myTextScale - 0.1),
+      textScaler: TextScaler.linear(myTextScale * 0.9),
       textAlign: TextAlign.left,
     );
+
+    int imin = (data.sec / 60).toInt();
+    if (imin == 1) imin = 1;
     Widget wMin = Text(
-      '${(data.sec / 60).toInt().toString().padLeft(3, ' ')}',
-      textScaler: TextScaler.linear(myTextScale - 0.1),
+      '${imin}',
+      textScaler: TextScaler.linear(myTextScale * 0.9),
       textAlign: TextAlign.right,
-    );
-    Widget wMin1 = Text(
-      ' m',
-      textScaler: TextScaler.linear(myTextScale - 0.2),
-      textAlign: TextAlign.left,
-      //style: TextStyle(color: myTheme.disabledColor),
     );
 
     double npage = data.chars / CHARS_PAGE;
-    if (npage > 999) npage = 999;
     Widget wPage = Text(
-      '${npage.toInt().toString().padLeft(3, ' ')}',
-      textScaler: TextScaler.linear(myTextScale - 0.1),
+      '${npage.toInt()}',
+      textScaler: TextScaler.linear(myTextScale * 0.9),
       textAlign: TextAlign.right,
     );
-    Widget wPage1 = Text(
-      ' p',
-      textScaler: TextScaler.linear(myTextScale - 0.2),
-      textAlign: TextAlign.left,
-      //style: TextStyle(color: myTheme.disabledColor),
-    );
+
     Widget wSpeed = Text(
-      '${per_hour.toString().padLeft(3, ' ')}',
-      textScaler: TextScaler.linear(myTextScale - 0.1),
+      '${per_hour}',
+      textScaler: TextScaler.linear(myTextScale * 0.9),
       textAlign: TextAlign.right,
     );
-    Widget wSpeed1 = Text(
-      ' p/h',
-      textScaler: TextScaler.linear(myTextScale - 0.2),
-      textAlign: TextAlign.left,
-    );
+
     Widget wTitle = Text(
-      data.bookId,
+      data.bookTitle,
       maxLines: 1,
-      textScaler: TextScaler.linear(myTextScale - 0.2),
+      textScaler: TextScaler.linear(myTextScale * 0.8),
     );
 
     Widget child = Column(children: [
       Expanded(flex: 1, child: SizedBox(height: 1)),
       Row(children: [
-        wDate,
-        Expanded(flex: 2, child: SizedBox(width: 1)),
-        wMin,
-        wMin1,
-        Expanded(flex: 1, child: SizedBox(width: 1)),
-        wPage,
-        wPage1,
-        Expanded(flex: 1, child: SizedBox(width: 1)),
-        wSpeed,
-        wSpeed1,
-        SizedBox(width: 8),
-        //btn,
+        Expanded(flex: 1, child: wDate),
+        Expanded(flex: 1, child: wMin),
+        Expanded(flex: 1, child: wPage),
+        Expanded(flex: 1, child: wSpeed),
       ]),
-      Row(children: [
-        Expanded(child: wTitle),
-      ]),
+      Row(children: [Expanded(child: wTitle)]),
       Expanded(flex: 1, child: SizedBox(height: 1)),
     ]);
 
     return Container(
-      height: 30 + (30 * myTextScale),
+      height: 40 + (30 * myTextScale),
       decoration: BoxDecoration(
         color: myTheme.cardColor,
         border: Border(
@@ -236,7 +223,7 @@ class ViewlogScreen extends BaseScreen {
           bottom: BorderSide(color: myTheme.dividerColor, width: 0.3),
         ),
       ),
-      padding: EdgeInsets.fromLTRB(16, 0, 8, 0),
+      padding: EdgeInsets.fromLTRB(16, 0, 16, 0),
       child: child,
     );
   }

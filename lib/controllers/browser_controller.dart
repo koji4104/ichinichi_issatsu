@@ -1,16 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
-import 'package:path_provider/path_provider.dart';
 import 'dart:io';
 import 'dart:async';
 import 'dart:developer';
-import 'package:path/path.dart';
 import 'dart:convert';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 
 import '/models/book_data.dart';
-import '/models/log_data.dart';
 import '/controllers/applog_controller.dart';
+import '/constants.dart';
 
 List<String> initUriList = [
   'https://www.aozora.gr.jp/index.html',
@@ -30,10 +28,10 @@ List<String> initTitleList = [
 ];
 
 List<String> initUriList1 = [
-  'https://aws.amazon.com/jp/',
+  'https://www.google.co.jp/',
 ];
 List<String> initTitleList1 = [
-  'Amazon',
+  'Google',
 ];
 
 final browserProvider = ChangeNotifierProvider((ref) => BrowserNotifier(ref));
@@ -59,7 +57,8 @@ class BrowserNotifier extends ChangeNotifier {
 
   Future readInitFavo() async {
     initFavorite.list.clear();
-    if (Platform.isAndroid || Platform.isIOS || true) {
+
+    if (IS_TEST == false) {
       for (int i = 0; i < initUriList.length; i++) {
         FavoInfo fi = FavoInfo();
         fi.uri = initUriList[i];
@@ -80,12 +79,7 @@ class BrowserNotifier extends ChangeNotifier {
 
   Future readFavoJson() async {
     favorite.list.clear();
-
-    String appdir = (await getApplicationDocumentsDirectory()).path;
-    if (!Platform.isIOS && !Platform.isAndroid) {
-      appdir = appdir + '/test';
-    }
-    datadir = appdir + '/data';
+    datadir = APP_DIR + '/data';
     await Directory('${datadir}').create(recursive: true);
 
     try {
@@ -145,10 +139,8 @@ class BrowserNotifier extends ChangeNotifier {
           String jsonText = json.encode(favorite.toJson());
 
           final file = File('${datadir}/favo.json');
-          if (file.existsSync()) {
-            file.writeAsString(jsonText, mode: FileMode.write, flush: true);
-            this.notifyListeners();
-          }
+          file.writeAsString(jsonText, mode: FileMode.write, flush: true);
+          this.notifyListeners();
         }
       }
     }

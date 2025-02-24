@@ -1,4 +1,3 @@
-//import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:developer';
 import 'dart:io';
 import 'dart:convert';
@@ -212,11 +211,13 @@ class EnvNotifier extends ChangeNotifier {
   Future load() async {
     log('env load()');
     try {
-      String appdir = (await getApplicationDocumentsDirectory()).path;
-      if (!Platform.isIOS && !Platform.isAndroid) {
-        appdir = appdir + '/test';
+      if (APP_DIR == '') {
+        APP_DIR = (await getApplicationDocumentsDirectory()).path;
+        if (!Platform.isIOS && !Platform.isAndroid) {
+          APP_DIR = APP_DIR + '/test';
+        }
       }
-      String settingsdir = appdir + '/data';
+      String settingsdir = APP_DIR + '/data';
       await Directory('${settingsdir}').create(recursive: true);
       if (File('${settingsdir}/settings.json').existsSync()) {
         String? txt = await File('${settingsdir}/settings.json').readAsString();
@@ -239,12 +240,7 @@ class EnvNotifier extends ChangeNotifier {
     }
 
     var val = json.encode(env.toJson());
-
-    String appdir = (await getApplicationDocumentsDirectory()).path;
-    if (!Platform.isIOS && !Platform.isAndroid) {
-      appdir = appdir + '/test';
-    }
-    String settingsdir = appdir + '/data';
+    String settingsdir = APP_DIR + '/data';
     await Directory('${settingsdir}').create(recursive: true);
     File file = File('${settingsdir}/settings.json');
     await file.writeAsString(val, mode: FileMode.write, flush: true);
@@ -253,13 +249,7 @@ class EnvNotifier extends ChangeNotifier {
 
   Future save() async {
     var val = json.encode(env.toJson());
-
-    String appdir = (await getApplicationDocumentsDirectory()).path;
-    if (!Platform.isIOS && !Platform.isAndroid) {
-      appdir = appdir + '/test';
-    }
-    String settingsdir = appdir + '/data';
-
+    String settingsdir = APP_DIR + '/data';
     await Directory('${settingsdir}').create(recursive: true);
     File file = File('${settingsdir}/settings.json');
     await file.writeAsString(val, mode: FileMode.write, flush: true);

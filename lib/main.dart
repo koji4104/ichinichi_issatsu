@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
+
 import '/screens/menu_screen.dart';
 import 'commons/widgets.dart';
 import '/controllers/env_controller.dart';
@@ -16,6 +17,7 @@ class MyApp extends ConsumerWidget {
     ref.watch(envProvider);
     myTheme = ref.watch(envProvider).env.dark_mode.val == 0 ? myLightTheme : myDarkTheme;
     myTextScale = (ref.watch(envProvider).env.ui_text_scale.val / 100).toDouble();
+
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       title: 'onebook',

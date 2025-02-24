@@ -1,21 +1,10 @@
-import 'dart:convert';
-import 'dart:io';
-import 'dart:developer';
-
-import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_slidable/flutter_slidable.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
-import 'package:path_provider/path_provider.dart';
-import 'package:path/path.dart';
 
 import '/commons/base_screen.dart';
 import '/commons/widgets.dart';
-import '/controllers/epub_controller.dart';
-import '/models/book_data.dart';
 import '/screens/booklist_screen.dart';
 import '/screens/browser_screen.dart';
-import '/screens/viewer_screen.dart';
 import '/screens/settings_screen.dart';
 import '/constants.dart';
 
@@ -28,15 +17,7 @@ class MenuNotifier extends ChangeNotifier {
 
 class MenuScreen extends BaseScreen {
   @override
-  Future init() async {
-    if (APP_DIR == '') {
-      APP_DIR = (await getApplicationDocumentsDirectory()).path;
-      if (!Platform.isIOS && !Platform.isAndroid) {
-        APP_DIR = APP_DIR + '/test';
-      }
-      log('APP_DIR=${APP_DIR}');
-    }
-  }
+  Future init() async {}
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {

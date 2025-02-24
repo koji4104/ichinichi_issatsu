@@ -25,7 +25,6 @@ class Localized {
     'en': {
       'app_name': 'One book',
       'language_code': 'Language',
-      'settings_title': 'Settings',
       'font_size': 'Font size',
       'font_family': 'Font family',
       'sans_serif': 'Sans serif',
@@ -67,11 +66,19 @@ class Localized {
       'brows': 'Find',
       'option': 'Option',
       'up_to': 'up to',
+      // ICON
+      'toc': '目次',
+      'jump': 'TOC',
+      'copy': 'Copy',
+      'clip': 'Clip',
+      'label': 'Label',
+      'tag': 'Tag',
+      'favorite': 'Favorite',
+      'can_add_favorite': 'You can add it to your favorites.',
     },
     'ja': {
       'app_name': '一日一冊',
       'language_code': '言語',
-      'settings_title': '設定',
       'font_size': '文字サイズ',
       'font_family': 'フォント',
       'sans_serif': 'ゴシック',
@@ -94,7 +101,7 @@ class Localized {
       'reset_maxpage': '最後のページをリセット',
       'nowpage': '現在のページ',
       'maxpage': '最後のページ',
-      'flag_changes': 'フラグの変更',
+      'flag_changes': 'タグの変更',
       'ok': 'OK',
       'download': 'ダウンロード',
       'per_hour': '時速',
@@ -113,6 +120,15 @@ class Localized {
       'brows': '探す',
       'option': 'オプション',
       'up_to': 'まで',
+      // ICON
+      'toc': '目次',
+      'jump': '最後のページ',
+      'copy': 'コピー',
+      'clip': 'クリップ',
+      'label': 'ラベル',
+      'tag': 'タグ',
+      'favorite': 'お気に入り',
+      'can_add_favorite': 'お気に入りに追加することができます',
     },
   };
 
@@ -133,6 +149,51 @@ class Localized {
     if (s == null && text.contains('_desc') == false)
       s = text;
     else if (s == null && text.contains('_desc') == true) s = '';
+    return s != null ? s : text;
+  }
+
+  static Map<String, Map<String, String>> _manualValues = {
+    'en': {
+      'home': 'Home',
+      'search': 'Brow',
+      'settings': 'Settings',
+      'list': '',
+      'bookmark_border_outlined': '',
+      'edit_outlined': '',
+      'article_outlined': '',
+      'settings': '',
+      'circle_outlined': '',
+      'download': '',
+      'delete': '',
+    },
+    'ja': {
+      'home': 'ホーム',
+      'search': '探す',
+      'settings': '設定',
+      'list': '目次',
+      'bookmark_border_outlined': '',
+      'edit_outlined': '',
+      'article_outlined': '',
+      'settings': '',
+      'circle_outlined': '',
+      'download': '',
+      'delete': '',
+    },
+  };
+  static String manual(String text) {
+    String? s;
+    try {
+      if (myLanguageCode == 'ja')
+        s = _manualValues["ja"]?[text];
+      else if (myLanguageCode == 'en')
+        s = _manualValues["en"]?[text];
+      else if (myLanguageCode == '' && defaultLanguageCode == "ja")
+        s = _manualValues["ja"]?[text];
+      else
+        s = _manualValues["en"]?[text];
+    } on Exception catch (e) {
+      log('Localized.text() ${e.toString()}');
+    }
     return s != null ? s : text;
   }
 }

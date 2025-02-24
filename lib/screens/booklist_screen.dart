@@ -12,6 +12,7 @@ import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 
 import '/commons/base_screen.dart';
 import '/commons/widgets.dart';
+import '/controllers/applog_controller.dart';
 import '/controllers/epub_controller.dart';
 import '/controllers/booklist_controller.dart';
 import '/models/book_data.dart';
@@ -25,7 +26,6 @@ import '/controllers/epub_controller.dart';
 /// BookScreen
 class BookListScreen extends BaseScreen {
   bool isCheckBox = true;
-  String datadir = '';
   double _width = 400.0;
   double _height = 800.0;
 
@@ -33,18 +33,13 @@ class BookListScreen extends BaseScreen {
   InAppWebViewController? webViewController1;
 
   @override
-  Future init() async {
-    String appdir = (await getApplicationDocumentsDirectory()).path;
-    if (!Platform.isIOS && !Platform.isAndroid) {
-      appdir = appdir + '/test';
-    }
-    datadir = appdir + '/book';
-  }
+  Future init() async {}
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     super.build(context, ref);
     ref.watch(epubProvider);
+    ref.watch(booklistProvider);
 
     _width = MediaQuery.of(context).size.width;
     _height = MediaQuery.of(context).size.height;
@@ -115,6 +110,7 @@ class BookListScreen extends BaseScreen {
             data: bookList[index],
             onPressed: () {
               ref.watch(booklistProvider).saveLastAccess(index);
+              MyLog.info('Open ${bookList[index].title}');
               var screen = ViewerScreen(book: bookList[index]);
               NavigatorPush(screen);
             },
@@ -123,7 +119,7 @@ class BookListScreen extends BaseScreen {
             extentRatio: 0.20,
             motion: const StretchMotion(),
             children: [
-              SlidableAction(
+              MySlidableAction(
                 onPressed: (_) {
                   flagDialog().then((ret) {
                     if (ret >= 0) {
@@ -136,18 +132,18 @@ class BookListScreen extends BaseScreen {
                 foregroundColor: myTheme.textTheme.bodyMedium!.color!,
                 backgroundColor: myTheme.scaffoldBackgroundColor,
                 icon: Icons.circle_outlined,
-                label: null,
+                label: l10n('tag'),
                 spacing: 0,
                 padding: EdgeInsets.fromLTRB(0, 0, 0, 0),
               ),
             ],
           ),
           endActionPane: ActionPane(
-            extentRatio: 0.50,
+            extentRatio: 0.40,
             motion: const StretchMotion(),
             children: [
               if (isAddDownload)
-                SlidableAction(
+                MySlidableAction(
                   onPressed: (_) {
                     okDialog(msg: l10n('check_addition')).then((ret) {
                       if (ret) {
@@ -157,16 +153,17 @@ class BookListScreen extends BaseScreen {
                   },
                   backgroundColor: Colors.blueAccent,
                   icon: Icons.download,
-                  label: null,
+                  label: l10n('download'),
                   spacing: 0,
                   padding: EdgeInsets.fromLTRB(0, 0, 0, 0),
                 ),
-              SlidableAction(
+              MySlidableAction(
                 onPressed: (_) {
                   deleteDialog().then((ret) {
                     if (ret) {
-                      log('delette');
-                      String dir = datadir + '/${bookList[index].bookId}';
+                      MyLog.info('delete ${bookList[index].title}');
+                      String bookdir = APP_DIR + '/book';
+                      String dir = bookdir + '/${bookList[index].bookId}';
                       if (Directory(dir).existsSync()) {
                         Directory(dir).deleteSync(recursive: true);
                         ref.watch(booklistProvider).readBookList();
@@ -176,7 +173,7 @@ class BookListScreen extends BaseScreen {
                 },
                 backgroundColor: Colors.redAccent,
                 icon: Icons.delete,
-                label: null,
+                label: l10n('delete'),
                 spacing: 0,
                 padding: EdgeInsets.fromLTRB(0, 0, 0, 0),
               ),
@@ -244,9 +241,9 @@ class BookListScreen extends BaseScreen {
 
   Widget dropdownFlag() {
     List<DropdownMenuItem> list = [];
-    for (int i = 0; i < getIconList(ICON_BUTTON_SIZE).length; i++) {
+    for (int i = 0; i < getIconList(20).length; i++) {
       list.add(
-        DropdownMenuItem<int>(value: i, child: getIconList(ICON_BUTTON_SIZE)[i]),
+        DropdownMenuItem<int>(value: i, child: getIconList(20)[i]),
       );
     }
 

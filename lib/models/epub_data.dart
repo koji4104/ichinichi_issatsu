@@ -1,5 +1,4 @@
 import 'dart:convert' as convert;
-//import 'package:archive/archive.dart';
 
 class EpubFileData {
   EpubFileData({this.fileName, this.text}) {}

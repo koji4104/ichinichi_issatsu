@@ -107,6 +107,7 @@ class BaseScreen extends ConsumerWidget {
     return ret;
   }
 
+  /// Used with alertDialog()
   Widget alertButton({
     required String title,
     required void Function()? onPressed,
@@ -153,7 +154,7 @@ class BaseScreen extends ConsumerWidget {
 
   Widget MySettingsTile({required EnvData data}) {
     Widget e = Expanded(child: SizedBox(width: 1));
-    Widget child = Row(children: [MyText(l10n(data.name)), e, MyDropdown(data: data)]);
+    Widget child = Row(children: [MyText(l10n(data.name)), e, MySettingsDropdown(data: data)]);
 
     return Container(
       decoration: BoxDecoration(
@@ -169,7 +170,7 @@ class BaseScreen extends ConsumerWidget {
     );
   }
 
-  Widget MyDropdown({required EnvData data}) {
+  Widget MySettingsDropdown({required EnvData data}) {
     List<DropdownMenuItem> list = [];
     for (int i = 0; i < data.vals.length; i++) {
       DropdownMenuItem<int> w = DropdownMenuItem<int>(
@@ -184,7 +185,7 @@ class BaseScreen extends ConsumerWidget {
       onChanged: (value) {
         if (data.val != value) {
           ref.read(envProvider).saveVal(data, value).then((ret) {
-            if (ret) onDropdownChanged(data);
+            if (ret) onSettingsDropdownChanged(data);
           });
         }
       },
@@ -193,7 +194,8 @@ class BaseScreen extends ConsumerWidget {
     );
   }
 
-  onDropdownChanged(EnvData data) {
+  @override
+  onSettingsDropdownChanged(EnvData data) {
     ref.read(envProvider).notifyListeners();
   }
 
@@ -217,7 +219,6 @@ class BaseScreen extends ConsumerWidget {
   Widget closeButtonRow() {
     return Container(
       child: Column(children: [
-        //Container(color: myTheme.scaffoldBackgroundColor, height: 1),
         SizedBox(height: 2),
         Row(children: [
           SizedBox(width: 2),
@@ -262,6 +263,7 @@ class BaseScreen extends ConsumerWidget {
 
     if (ref.watch(epubProvider).status == MyEpubStatus.downloadable) {
       if (all > 0 && already == 0) {
+        // 初回ダウンロード
         if (all < DL_COUNT1 + DL_SPARE) {
           req1 = all;
           req2 = 0;
@@ -273,6 +275,7 @@ class BaseScreen extends ConsumerWidget {
           req2 = DL_COUNT2;
         }
       } else if (all > 0 && already > 0) {
+        // 追加ダウンロード
         if (all < already + DL_COUNT1 + DL_SPARE) {
           req1 = all;
           req2 = 0;
@@ -284,29 +287,31 @@ class BaseScreen extends ConsumerWidget {
           req2 = already + DL_COUNT2;
         }
       }
-
       if (all > 1 && already > 1) {
         label2 += '${already} / ${all} ${l10n('episode')}';
       } else if (all > 1) {
         label2 += '${all} ${l10n('episode')}';
       }
     } else if (ref.watch(epubProvider).status == MyEpubStatus.succeeded) {
+      // 成功
       label2 = '${l10n('download_complete')} ${done} / ${all}';
       isClose = true;
     } else if (ref.watch(epubProvider).status == MyEpubStatus.same) {
+      // 最新
       label2 = '${l10n('already_downloaded')} ${already} / ${all}';
       isClose = true;
     } else if (ref.watch(epubProvider).status == MyEpubStatus.failed) {
+      // 失敗
       label2 = '${l10n('download_failed')}';
       isClose = true;
     } else if (ref.watch(epubProvider).status == MyEpubStatus.downloading) {
+      // ダウンロード中
       label1 = 'Downloading';
       if (done > 0) {
         label1 += ' ${done} / ${all}';
       }
     }
 
-    Widget e = Expanded(flex: 1, child: SizedBox(width: 1));
     Widget h = SizedBox(height: 4);
     Widget btn = Column(children: []);
     double btnWidth = 240;
@@ -323,6 +328,7 @@ class BaseScreen extends ConsumerWidget {
         ),
       ]);
     } else if (req1 > 0) {
+      // 10 話 まで ダウンロード
       String btnTitle1 = '${req1} ${l10n('episode')} ${l10n('up_to')} ${l10n('download')}';
       if (req1 == 1) btnTitle1 = '${l10n('download')}';
       String btnTitle2 = '${req2} ${l10n('episode')} ${l10n('up_to')} ${l10n('download')}';

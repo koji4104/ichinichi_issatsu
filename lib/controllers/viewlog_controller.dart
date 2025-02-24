@@ -1,4 +1,3 @@
-//import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:developer';
 import 'package:intl/intl.dart';
 import 'dart:io';
@@ -31,11 +30,7 @@ class ViewlogNotifier extends ChangeNotifier {
   }
 
   Future save(int chars, BookData book) async {
-    String appdir = (await getApplicationDocumentsDirectory()).path;
-    if (!Platform.isIOS && !Platform.isAndroid) {
-      appdir = appdir + '/test';
-    }
-    String logdir = appdir + '/data';
+    String logdir = APP_DIR + '/data';
     await Directory('${logdir}').create(recursive: true);
     final String path = '${logdir}/${logfile}';
 
@@ -48,9 +43,8 @@ class ViewlogNotifier extends ChangeNotifier {
     int sec = DateTime.now().difference(startDate).inSeconds;
     int defChars = chars - startChars;
 
-    if (sec >= 30 && defChars >= 450) {
-      String title = book.title;
-      String tsv = '${date}\t${sec}\t${defChars}\t${title}\n';
+    if (sec >= 30 && defChars >= CHARS_PAGE) {
+      String tsv = '${date}\t${sec}\t${defChars}\t${book.bookId}\t${book.title}\n';
       await File(path).writeAsString(tsv, mode: FileMode.append, flush: true);
     }
   }
@@ -58,12 +52,7 @@ class ViewlogNotifier extends ChangeNotifier {
   Future read() async {
     list.clear();
 
-    String appdir = (await getApplicationDocumentsDirectory()).path;
-    if (!Platform.isIOS && !Platform.isAndroid) {
-      appdir = appdir + '/test';
-    }
-    String logdir = appdir + '/data';
-
+    String logdir = APP_DIR + '/data';
     await Directory('${logdir}').create(recursive: true);
     final String path = '${logdir}/${logfile}';
 
@@ -95,11 +84,7 @@ class ViewlogNotifier extends ChangeNotifier {
   }
 
   Future delete(int i) async {
-    String appdir = (await getApplicationDocumentsDirectory()).path;
-    if (!Platform.isIOS && !Platform.isAndroid) {
-      appdir = appdir + '/test';
-    }
-    String logdir = appdir + '/data';
+    String logdir = APP_DIR + '/data';
     await Directory('${logdir}').create(recursive: true);
 
     DateTime date = list[i].date;

@@ -1,23 +1,19 @@
 import 'dart:developer';
 import 'dart:io';
-import 'dart:convert';
 
 import 'package:flutter_slidable/flutter_slidable.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
-import 'package:ichinichi_issatsu/controllers/applog_controller.dart';
-import 'package:path_provider/path_provider.dart';
 import 'package:flutter/services.dart';
 
 import '/commons/base_screen.dart';
 import '/commons/widgets.dart';
 import '/models/book_data.dart';
-import '/models/epub_data.dart';
+import '/constants.dart';
 import '/controllers/viewer_controller.dart';
 import '/controllers/env_controller.dart';
-import '/screens/settings_screen.dart';
 import '/controllers/viewlog_controller.dart';
 import '/controllers/applog_controller.dart';
 
@@ -32,19 +28,6 @@ class ViewerScreen extends BaseScreen with WidgetsBindingObserver {
   ViewerScreen({required BookData this.book}) {}
 
   BookData book;
-
-  bool isLoading = false;
-
-  final GlobalKey settingsFlushbarKey = GlobalKey();
-  bool isSettingsBar = false;
-
-  final GlobalKey tocFlushbarKey = GlobalKey();
-  bool isTocFlushbar = false;
-  bool isTocFlushbarInit = false;
-  bool isTopBottomBar = false;
-
-  bool isAppBar = true;
-
   double _width = 1000.0;
   double _height = 1000.0;
 
@@ -57,6 +40,8 @@ class ViewerScreen extends BaseScreen with WidgetsBindingObserver {
     if (Platform.isAndroid || Platform.isIOS) {
       WidgetsBinding.instance.addObserver(this);
     }
+    ref.read(viewerProvider).bottomBarType = ViewerBottomBarType.none;
+    ref.read(viewerProvider).book = this.book;
     await reload();
     await startReadlog();
   }
@@ -158,7 +143,7 @@ class ViewerScreen extends BaseScreen with WidgetsBindingObserver {
               ),
             topBar(),
             bottomBar(),
-            bookmarkBar(),
+            maxpageBar(),
             tocBar(),
             clipTextBar(),
             settingsBar(),
@@ -202,7 +187,6 @@ class ViewerScreen extends BaseScreen with WidgetsBindingObserver {
   Future startReadlog() async {
     int nowChars = ref.watch(viewerProvider).nowChars;
     ref.watch(viewlogProvider).init(nowChars);
-    MyLog.info('Open ${book.title}');
   }
 
   Future endReadlog() async {
@@ -223,7 +207,8 @@ class ViewerScreen extends BaseScreen with WidgetsBindingObserver {
           }),
       if (isActionBar()) SizedBox(width: pad),
       if (isActionBar())
-        IconButton(
+        MyIconLabelButton(
+          label: l10n('toc'),
           icon: Icon(Icons.list),
           color: env.getFrontColor(),
           onPressed: () {
@@ -233,21 +218,23 @@ class ViewerScreen extends BaseScreen with WidgetsBindingObserver {
         ),
       Expanded(child: SizedBox(width: 1)),
       if (isActionBar())
-        IconButton(
+        MyIconLabelButton(
+          label: l10n('jump'),
           icon: Icon(Icons.bookmark_border_outlined),
           color: env.getFrontColor(),
           onPressed: () {
-            if (ref.watch(viewerProvider).bottomBarType == ViewerBottomBarType.bookmarkBar) {
+            if (ref.watch(viewerProvider).bottomBarType == ViewerBottomBarType.maxpageBar) {
               ref.watch(viewerProvider).bottomBarType = ViewerBottomBarType.none;
             } else {
-              ref.watch(viewerProvider).bottomBarType = ViewerBottomBarType.bookmarkBar;
+              ref.watch(viewerProvider).bottomBarType = ViewerBottomBarType.maxpageBar;
             }
             redraw();
           },
         ),
       if (isActionBar()) SizedBox(width: pad),
       if (isActionBar())
-        IconButton(
+        MyIconLabelButton(
+          label: l10n('copy'),
           icon: Icon(Icons.edit_outlined),
           color: env.getFrontColor(),
           onPressed: () {
@@ -261,7 +248,8 @@ class ViewerScreen extends BaseScreen with WidgetsBindingObserver {
         ),
       if (isActionBar()) SizedBox(width: pad),
       if (isActionBar())
-        IconButton(
+        MyIconLabelButton(
+          label: l10n('clip'),
           icon: Icon(Icons.article_outlined),
           color: env.getFrontColor(),
           onPressed: () {
@@ -271,7 +259,8 @@ class ViewerScreen extends BaseScreen with WidgetsBindingObserver {
         ),
       if (isActionBar()) SizedBox(width: pad),
       if (isActionBar())
-        IconButton(
+        MyIconLabelButton(
+          label: l10n('option'),
           icon: Icon(Icons.settings),
           color: env.getFrontColor(),
           onPressed: () {
@@ -299,22 +288,36 @@ class ViewerScreen extends BaseScreen with WidgetsBindingObserver {
       style: TextStyle(color: env.getFrontColor()),
     );
 
-    Widget topBar1 = Container(
-      color: env.getBackColor(),
-      child: Column(
-        children: [
-          Expanded(child: SizedBox(height: 1)),
-          if (isActionBar()) actionRow(),
-          Row(children: [
-            SizedBox(width: 4),
-            Expanded(child: wText),
-            SizedBox(width: 4),
-          ]),
-          SizedBox(height: 6),
-        ],
-      ),
-    );
-
+    Widget topBar1 = Container();
+    if (isActionBar()) {
+      // アクションバーのとき
+      topBar1 = Container(
+        color: env.getBackColor(),
+        child: Column(
+          children: [
+            Expanded(flex: 1, child: SizedBox(height: 1)),
+            actionRow(),
+            Expanded(flex: 1, child: SizedBox(height: 1)),
+          ],
+        ),
+      );
+    } else {
+      // タイトルのみのとき
+      topBar1 = Container(
+        color: env.getBackColor(),
+        child: Column(
+          children: [
+            Expanded(child: SizedBox(height: 1)),
+            Row(children: [
+              SizedBox(width: 4),
+              Expanded(child: wText),
+              SizedBox(width: 4),
+            ]),
+            SizedBox(height: 6),
+          ],
+        ),
+      );
+    }
     return AnimatedPositioned(
       duration: const Duration(milliseconds: 100),
       curve: Curves.linear,
@@ -327,6 +330,7 @@ class ViewerScreen extends BaseScreen with WidgetsBindingObserver {
     );
   }
 
+  // 下 進捗バー
   Widget bottomBar() {
     double barHeight = 30;
     double ffBottom = 0;
@@ -363,10 +367,11 @@ class ViewerScreen extends BaseScreen with WidgetsBindingObserver {
     );
   }
 
-  Widget bookmarkBar() {
+  // 最後のページバー
+  Widget maxpageBar() {
     double barHeight = 300;
     double ffBottom = -1.0 * barHeight;
-    if (ref.watch(viewerProvider).bottomBarType == ViewerBottomBarType.bookmarkBar) {
+    if (ref.watch(viewerProvider).bottomBarType == ViewerBottomBarType.maxpageBar) {
       ffBottom = 0;
     }
 
@@ -437,7 +442,7 @@ class ViewerScreen extends BaseScreen with WidgetsBindingObserver {
     );
   }
 
-  /// clipTextBar
+  /// コピーして保存バー
   Widget clipTextBar() {
     double barHeight = 200;
     double ffBottom = -1.0 * barHeight;
@@ -540,22 +545,25 @@ class ViewerScreen extends BaseScreen with WidgetsBindingObserver {
   }
 
   @override
-  onDropdownChanged(EnvData data) {
+  onSettingsDropdownChanged(EnvData data) {
     if (data.name == 'font_size' || data.name == 'writing_mode') {
       reload();
+    } else if (data.name == 'dark_mode') {
+      super.onSettingsDropdownChanged(data);
     } else {
       refresh();
     }
   }
 
   Future reload() async {
-    ref.read(viewerProvider).load(env, book, _width, _height);
+    ref.read(viewerProvider).load(env, _width, _height);
   }
 
   Future refresh() async {
     ref.read(viewerProvider).refresh();
   }
 
+  // 目次バー
   Widget tocBar() {
     double barHeight = book.index.list.length > 20 ? _height * 2 / 3 : _height / 2;
     double ffBottom = -1.0 * barHeight;
@@ -570,7 +578,7 @@ class ViewerScreen extends BaseScreen with WidgetsBindingObserver {
         sum += book.index.list[j].chars;
       }
       String txt = '${book.index.list[i].title}';
-      String pages = '${(sum / 450).toInt()}';
+      String pages = '${(sum / CHARS_PAGE).toInt()}';
 
       int nowIndex = ref.watch(viewerProvider).nowIndex;
 
@@ -581,6 +589,7 @@ class ViewerScreen extends BaseScreen with WidgetsBindingObserver {
           title2: MyText(pages),
           onPressed: () {
             ref.read(viewerProvider).jumpToIndex(i, 0);
+            startReadlog();
           },
         ),
       );
@@ -612,6 +621,7 @@ class ViewerScreen extends BaseScreen with WidgetsBindingObserver {
     );
   }
 
+  // クリップバー（保存した文章）
   Widget clipListBar() {
     double barHeight = _height * 2 / 3;
     double ffBottom = -1.0 * barHeight;
@@ -654,7 +664,7 @@ class ViewerScreen extends BaseScreen with WidgetsBindingObserver {
           },
         ),
         Expanded(child: SizedBox(width: 1)),
-        Text('${l10n('swipe_to_delete')}', textScaler: TextScaler.linear(myTextScale * 0.8)),
+        Text('${l10n('swipe_to_delete')}', textScaler: TextScaler.linear(myTextScale * 0.7)),
         SizedBox(width: 20),
       ],
     );

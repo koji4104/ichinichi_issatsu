@@ -131,7 +131,20 @@ class BrowserScreen extends BaseScreen {
     if (selectedUri != null) {
       return browser();
     }
-    return getUriList();
+    if (favorite.list.length > 0) {
+      return Column(
+        children: [
+          Row(children: [
+            Expanded(child: SizedBox(width: 1)),
+            Text('${l10n('swipe_to_delete')}', textScaler: TextScaler.linear(myTextScale * 0.7)),
+            SizedBox(width: 10),
+          ]),
+          Expanded(child: getUriList()),
+        ],
+      );
+    } else {
+      return getUriList();
+    }
   }
 
   Widget browser() {
@@ -259,18 +272,18 @@ class BrowserScreen extends BaseScreen {
     Widget wUri = Text(
       Uri.decodeFull(favo.uri),
       overflow: TextOverflow.ellipsis,
-      maxLines: 2,
-      textScaler: TextScaler.linear(scale - 0.2),
+      maxLines: 1,
+      textScaler: TextScaler.linear(scale * 0.8),
     );
 
-    double height = 50 + (28 * myTextScale);
+    double height = 50 + (30 * myTextScale);
     Widget child = Row(children: [
       w,
       Expanded(
         child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
           e,
           wTitle,
-          wUri,
+          Row(children: [Expanded(child: wUri)]),
           e,
         ]),
       ),

@@ -88,7 +88,7 @@ class Localized {
       'line_height': '行間',
       'light': 'ライト',
       'dark': 'ダーク',
-      'ui_text_scale': '文字サイズ',
+      'ui_text_scale': 'UI 文字サイズ',
       'dark_mode': '外観 カラー',
       'vertical-rl': '縦書き',
       'horizontal-tb': '横書き',
@@ -180,6 +180,7 @@ class Localized {
       'delete': '',
     },
   };
+
   static String manual(String text) {
     String? s;
     try {

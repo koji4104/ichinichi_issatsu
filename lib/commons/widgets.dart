@@ -13,8 +13,10 @@ const double DEF_APPBAR_HEIGHT = 40.0;
 const double DEF_VIEW_SCROLL_WIDTH = 40.0;
 const double DEF_VIEW_PADDING_W = 20.0;
 const double DEF_VIEW_PADDING_H = 50.0;
-const EdgeInsetsGeometry DEF_VIEW_PADDING_TB = EdgeInsets.fromLTRB(DEF_VIEW_PADDING_W, 40, DEF_VIEW_PADDING_W, 40);
-const EdgeInsetsGeometry DEF_VIEW_PADDING_RL = EdgeInsets.fromLTRB(0, DEF_VIEW_PADDING_H + 10, 0, DEF_VIEW_PADDING_H - 10);
+const EdgeInsetsGeometry DEF_VIEW_PADDING_TB =
+    EdgeInsets.fromLTRB(DEF_VIEW_PADDING_W, 40, DEF_VIEW_PADDING_W, 40);
+const EdgeInsetsGeometry DEF_VIEW_PADDING_RL =
+    EdgeInsets.fromLTRB(0, DEF_VIEW_PADDING_H + 20, 0, DEF_VIEW_PADDING_H - 0);
 
 const ICON_BUTTON_SIZE = 24.0;
 
@@ -46,15 +48,29 @@ Color COL_FLAG4 = Color(0xff00FFFF);
 Color COL_FLAG5 = Color(0xffFF00FF);
 Color COL_FLAG6 = Color(0xffFFFF00);
 
-List<Color?> COL_FLAG_LIST = [null, COL_FLAG1, COL_FLAG2, COL_FLAG3, COL_FLAG4, COL_FLAG5, COL_FLAG6];
+List<Color?> COL_FLAG_LIST = [
+  null,
+  COL_FLAG1,
+  COL_FLAG2,
+  COL_FLAG3,
+  COL_FLAG4,
+  COL_FLAG5,
+  COL_FLAG6
+];
 
-TextStyle TEXTSTYLE_DARK_SMALL = ThemeData.dark().textTheme.bodySmall!.copyWith(fontSize: 12.0, color: COL_DARK_TEXT);
-TextStyle TEXTSTYLE_DARK_MEDIUM = ThemeData.dark().textTheme.bodyMedium!.copyWith(fontSize: 14.0, color: COL_DARK_TEXT);
-TextStyle TEXTSTYLE_DARK_LARGE = ThemeData.dark().textTheme.bodyLarge!.copyWith(fontSize: 16.0, color: COL_DARK_TEXT);
+TextStyle TEXTSTYLE_DARK_SMALL =
+    ThemeData.dark().textTheme.bodySmall!.copyWith(fontSize: 12.0, color: COL_DARK_TEXT);
+TextStyle TEXTSTYLE_DARK_MEDIUM =
+    ThemeData.dark().textTheme.bodyMedium!.copyWith(fontSize: 14.0, color: COL_DARK_TEXT);
+TextStyle TEXTSTYLE_DARK_LARGE =
+    ThemeData.dark().textTheme.bodyLarge!.copyWith(fontSize: 16.0, color: COL_DARK_TEXT);
 
-TextStyle TEXTSTYLE_LIGHT_SMALL = ThemeData.light().textTheme.bodySmall!.copyWith(fontSize: 12.0, color: COL_LIGHT_TEXT);
-TextStyle TEXTSTYLE_LIGHT_MEDIUM = ThemeData.light().textTheme.bodyMedium!.copyWith(fontSize: 14.0, color: COL_LIGHT_TEXT);
-TextStyle TEXTSTYLE_LIGHT_LARGE = ThemeData.light().textTheme.bodyLarge!.copyWith(fontSize: 16.0, color: COL_LIGHT_TEXT);
+TextStyle TEXTSTYLE_LIGHT_SMALL =
+    ThemeData.light().textTheme.bodySmall!.copyWith(fontSize: 12.0, color: COL_LIGHT_TEXT);
+TextStyle TEXTSTYLE_LIGHT_MEDIUM =
+    ThemeData.light().textTheme.bodyMedium!.copyWith(fontSize: 14.0, color: COL_LIGHT_TEXT);
+TextStyle TEXTSTYLE_LIGHT_LARGE =
+    ThemeData.light().textTheme.bodyLarge!.copyWith(fontSize: 16.0, color: COL_LIGHT_TEXT);
 
 ThemeData myDarkTheme = ThemeData.dark().copyWith(
   pageTransitionsTheme: MyPageTransitionsTheme(),
@@ -67,6 +83,7 @@ ThemeData myDarkTheme = ThemeData.dark().copyWith(
   primaryColorDark: Color(0xFF333333),
   dividerColor: Color(0xFF808080),
   highlightColor: Color(0xFF3366CC),
+  iconTheme: IconThemeData(color: COL_DARK_TEXT),
   checkboxTheme: CheckboxThemeData(
     fillColor: WidgetStateProperty.all(Color(0xFF333333)),
     checkColor: WidgetStateProperty.all(Color(0xFFFFFFFF)),
@@ -120,6 +137,7 @@ ThemeData myLightTheme = ThemeData.light().copyWith(
   primaryColor: Color(0xFFffffff),
   dividerColor: Color(0xFFA0A0A0),
   highlightColor: Color(0xFFAADDFF),
+  iconTheme: IconThemeData(color: COL_LIGHT_TEXT),
   checkboxTheme: CheckboxThemeData(
     fillColor: WidgetStateProperty.all(Color(0xFF333333)),
     checkColor: WidgetStateProperty.all(Color(0xFFFFFFFF)),
@@ -153,7 +171,8 @@ ThemeData myLightTheme = ThemeData.light().copyWith(
   snackBarTheme: SnackBarThemeData(
     backgroundColor: Color(0xFFeeeeee),
     actionTextColor: COL_LIGHT_TEXT,
-    contentTextStyle: ThemeData.dark().textTheme.bodyMedium!.copyWith(fontSize: 14.0, color: COL_LIGHT_TEXT),
+    contentTextStyle:
+        ThemeData.dark().textTheme.bodyMedium!.copyWith(fontSize: 14.0, color: COL_LIGHT_TEXT),
   ),
   appBarTheme: AppBarTheme(
     iconTheme: IconThemeData(size: ICON_BUTTON_SIZE),
@@ -166,6 +185,7 @@ ThemeData myLightTheme = ThemeData.light().copyWith(
 // Swipe to cancel. From left to right.
 class MyPageTransitionsTheme extends PageTransitionsTheme {
   const MyPageTransitionsTheme();
+
   static const PageTransitionsBuilder builder = CupertinoPageTransitionsBuilder();
 
   @override
@@ -395,7 +415,7 @@ class MySlidableAction extends StatelessWidget {
 
     if (icon != null) {
       children.add(
-        Icon(icon, size: 20),
+        Icon(icon, size: 26, color: foregroundColor),
       );
     }
 

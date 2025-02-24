@@ -129,7 +129,7 @@ class BookListScreen extends BaseScreen {
                     }
                   });
                 },
-                foregroundColor: myTheme.textTheme.bodyMedium!.color!,
+                foregroundColor: Colors.white,
                 backgroundColor: myTheme.scaffoldBackgroundColor,
                 icon: Icons.circle_outlined,
                 label: l10n('tag'),
@@ -139,7 +139,7 @@ class BookListScreen extends BaseScreen {
             ],
           ),
           endActionPane: ActionPane(
-            extentRatio: 0.40,
+            extentRatio: 0.50,
             motion: const StretchMotion(),
             children: [
               if (isAddDownload)
@@ -151,7 +151,8 @@ class BookListScreen extends BaseScreen {
                       }
                     });
                   },
-                  backgroundColor: Colors.blueAccent,
+                  foregroundColor: Colors.blueAccent,
+                  backgroundColor: myTheme.scaffoldBackgroundColor,
                   icon: Icons.download,
                   label: l10n('download'),
                   spacing: 0,
@@ -171,7 +172,8 @@ class BookListScreen extends BaseScreen {
                     }
                   });
                 },
-                backgroundColor: Colors.redAccent,
+                foregroundColor: Colors.redAccent,
+                backgroundColor: myTheme.scaffoldBackgroundColor,
                 icon: Icons.delete,
                 label: l10n('delete'),
                 spacing: 0,
@@ -327,7 +329,7 @@ class BookListScreen extends BaseScreen {
     );
 
     Widget wAuthorRow = Row(children: [
-      wAuthor,
+      Expanded(child: wAuthor),
       SizedBox(width: 20),
       isKakuyomu ? wNumIndex : wPages,
     ]);

@@ -110,7 +110,8 @@ class ViewerScreen extends BaseScreen with WidgetsBindingObserver {
                 child: RawGestureDetector(
                   behavior: HitTestBehavior.translucent,
                   gestures: {
-                    TapGestureRecognizer: GestureRecognizerFactoryWithHandlers<TapGestureRecognizer>(
+                    TapGestureRecognizer:
+                        GestureRecognizerFactoryWithHandlers<TapGestureRecognizer>(
                       () => TapGestureRecognizer(),
                       (TapGestureRecognizer instance) {
                         instance
@@ -121,8 +122,10 @@ class ViewerScreen extends BaseScreen with WidgetsBindingObserver {
                             } else if (dx > _width - 120) {
                               //scrollLeft();
                             } else {
-                              if (ref.watch(viewerProvider).bottomBarType != ViewerBottomBarType.actionBar) {
-                                ref.watch(viewerProvider).bottomBarType = ViewerBottomBarType.actionBar;
+                              if (ref.watch(viewerProvider).bottomBarType !=
+                                  ViewerBottomBarType.actionBar) {
+                                ref.watch(viewerProvider).bottomBarType =
+                                    ViewerBottomBarType.actionBar;
                                 redraw();
                               } else {
                                 ref.watch(viewerProvider).bottomBarType = ViewerBottomBarType.none;

@@ -71,12 +71,12 @@ class BookListScreen extends BaseScreen {
   }
 
   Widget getList() {
-    List<BookData> bookList1 = ref.watch(booklistProvider).bookList;
-    if (bookList1.length <= 0) return Container();
+    List<BookData> bookListOrg = ref.watch(booklistProvider).bookList;
+    if (bookListOrg.length <= 0) return Container();
     if (ref.watch(booklistProvider).isReading) return Container();
 
     List<BookData> bookList = [];
-    for (BookData b in bookList1) {
+    for (BookData b in bookListOrg) {
       if (selectedFlag == 0) {
         bookList.add(b);
       } else {
@@ -116,9 +116,8 @@ class BookListScreen extends BaseScreen {
                 onPressed: (_) {
                   flagDialog().then((ret) {
                     if (ret >= 0) {
-                      ref.watch(booklistProvider).saveFlag(index, ret);
                       bookList[index].prop.flag = ret;
-                      redraw();
+                      ref.watch(booklistProvider).saveFlag(bookList[index].bookId, ret);
                     }
                   });
                 },

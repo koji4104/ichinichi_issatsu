@@ -207,13 +207,30 @@ class ViewerNotifier extends ChangeNotifier {
       if (Platform.isIOS) {
         int ni = nowIndex;
         if (listWebViewCtrl.length > ni && listWebViewCtrl[ni] != null && listText.length > ni) {
-          await listWebViewCtrl[ni]!.loadData(data: listText[ni]);
+          try {
+            await listWebViewCtrl[ni]!.loadData(data: listText[ni]);
+          } on Exception catch (e) {
+            log('warn ViewerNotifier.refresh()');
+          }
         }
-        if (ni > 0 && listWebViewCtrl.length > ni - 1 && listWebViewCtrl[ni - 1] != null && listText.length > ni - 1) {
-          await listWebViewCtrl[ni - 1]!.loadData(data: listText[ni - 1]);
+        if (ni > 0 &&
+            listWebViewCtrl.length > ni - 1 &&
+            listWebViewCtrl[ni - 1] != null &&
+            listText.length > ni - 1) {
+          try {
+            await listWebViewCtrl[ni - 1]!.loadData(data: listText[ni - 1]);
+          } on Exception catch (e) {
+            log('warn ViewerNotifier.refresh()');
+          }
         }
-        if (listWebViewCtrl.length > ni + 1 && listWebViewCtrl[ni + 1] != null && listText.length > ni + 1) {
-          await listWebViewCtrl[ni + 1]!.loadData(data: listText[ni + 1]);
+        if (listWebViewCtrl.length > ni + 1 &&
+            listWebViewCtrl[ni + 1] != null &&
+            listText.length > ni + 1) {
+          try {
+            await listWebViewCtrl[ni + 1]!.loadData(data: listText[ni + 1]);
+          } on Exception catch (e) {
+            log('warn ViewerNotifier.refresh()');
+          }
         }
       } else {
         log('refresh() loadData is ios only');
@@ -326,7 +343,8 @@ class ViewerNotifier extends ChangeNotifier {
       if (dx > JUMP_DIFF_PX) dx -= JUMP_DIFF_PX;
 
       log('jumpTo [${index}][${(ratio / 100).toInt()}%] cur=${curdx.toInt()} dx=${dx.toInt()} max=${maxdx.toInt()}');
-      await scrollController!.animateTo(dx, duration: Duration(milliseconds: 500), curve: Curves.linear);
+      await scrollController!
+          .animateTo(dx, duration: Duration(milliseconds: 500), curve: Curves.linear);
 
       isLoading = false;
       this.notifyListeners();
@@ -526,7 +544,9 @@ class ViewerNotifier extends ChangeNotifier {
     if (listText.length == 0) return Container();
 
     PlatformInAppWebViewController.debugLoggingSettings.enabled = false;
-    ScrollPhysics physics = bottomBarType == ViewerBottomBarType.clipTextBar ? NeverScrollableScrollPhysics() : ScrollPhysics();
+    ScrollPhysics physics = bottomBarType == ViewerBottomBarType.clipTextBar
+        ? NeverScrollableScrollPhysics()
+        : ScrollPhysics();
     try {
       return ListView.builder(
         scrollDirection: env.writing_mode.val == 0 ? Axis.vertical : Axis.horizontal,
@@ -584,15 +604,18 @@ class ViewerNotifier extends ChangeNotifier {
             try {
               dynamic vw = null;
               if (env.writing_mode.val == 0) {
-                vw = await controller.evaluateJavascript(source: '''(() => { return document.body.scrollHeight; })()''');
+                vw = await controller.evaluateJavascript(
+                    source: '''(() => { return document.body.scrollHeight; })()''');
               } else {
-                vw = await controller.evaluateJavascript(source: '''(() => { return document.body.scrollWidth; })()''');
+                vw = await controller.evaluateJavascript(
+                    source: '''(() => { return document.body.scrollWidth; })()''');
               }
               if (vw != null && vw != '') {
                 double dw = double.parse('${vw}');
                 if (dw > 0) {
                   if ((listWidth[index] - dw) < -50) {
-                    MyLog.warn('webWidth [${index}] ${listWidth[index].toInt()} -> ${dw.toInt()} LARGE');
+                    MyLog.warn(
+                        'webWidth [${index}] ${listWidth[index].toInt()} -> ${dw.toInt()} LARGE');
                   }
                 }
               }

@@ -128,10 +128,12 @@ class EpubNotifier extends ChangeNotifier {
     final indexFile = File('${bookdir}/${epub.bookId}/data/index.json');
     await indexFile.writeAsString(j, mode: FileMode.write, flush: true);
 
-    PropData prop = PropData();
-    var val = json.encode(prop.toJson());
     final propFile = File('${bookdir}/${epub.bookId}/data/prop.json');
-    await propFile.writeAsString(val, mode: FileMode.write, flush: true);
+    if (propFile.existsSync() == false) {
+      PropData prop = PropData();
+      var val = json.encode(prop.toJson());
+      await propFile.writeAsString(val, mode: FileMode.write, flush: true);
+    }
   }
 
   Future checkUri(String uri) async {

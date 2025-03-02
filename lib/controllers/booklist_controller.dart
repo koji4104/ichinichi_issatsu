@@ -85,8 +85,8 @@ class BookListNotifier extends ChangeNotifier {
     this.notifyListeners();
   }
 
-  Future saveFlag(int index, int flag) async {
-    String dir = bookdir + '/${bookList[index].bookId}';
+  Future saveFlag(String bookId, int flag) async {
+    String dir = bookdir + '/${bookId}';
     if (Directory(dir).existsSync()) {
       final infoFile = File('${dir}/data/prop.json');
       if (infoFile.existsSync()) {
@@ -97,7 +97,7 @@ class BookListNotifier extends ChangeNotifier {
 
         String jsonText = json.encode(prop.toJson());
         final file = File('${dir}/data/prop.json');
-        file.writeAsString(jsonText, mode: FileMode.write, flush: true);
+        await file.writeAsString(jsonText, mode: FileMode.write, flush: true);
         this.notifyListeners();
       }
     }
@@ -106,18 +106,18 @@ class BookListNotifier extends ChangeNotifier {
   Future saveLastAccess(int index) async {
     String dir = bookdir + '/${bookList[index].bookId}';
     if (Directory(dir).existsSync()) {
+      PropData prop = PropData();
       final infoFile = File('${dir}/book_info.json');
       if (infoFile.existsSync()) {
         String? txt1 = await infoFile.readAsString();
         Map<String, dynamic> j = json.decode(txt1);
         PropData prop = PropData.fromJson(j);
         prop.atime = DateTime.now();
-
-        String jsonText = json.encode(prop.toJson());
-        final file = File('${dir}/data/prop.json');
-        file.writeAsString(jsonText, mode: FileMode.write, flush: true);
-        this.notifyListeners();
       }
+      String jsonText = json.encode(prop.toJson());
+      final file = File('${dir}/data/prop.json');
+      file.writeAsString(jsonText, mode: FileMode.write, flush: true);
+      this.notifyListeners();
     }
   }
 

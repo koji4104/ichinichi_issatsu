@@ -11,11 +11,13 @@ const EdgeInsetsGeometry DEF_MENU_PADDING = EdgeInsets.fromLTRB(8, 16, 8, 0);
 const double DEF_APPBAR_HEIGHT = 40.0;
 const double DEF_VIEW_SCROLL_WIDTH = 40.0;
 const double DEF_VIEW_PADDING_W = 20.0;
-const double DEF_VIEW_PADDING_H = 50.0;
+const double DEF_VIEW_PADDING_H = 60.0;
+// 横書き
 const EdgeInsetsGeometry DEF_VIEW_PADDING_TB =
     EdgeInsets.fromLTRB(DEF_VIEW_PADDING_W, 40, DEF_VIEW_PADDING_W, 40);
+// 縦書き
 const EdgeInsetsGeometry DEF_VIEW_PADDING_RL =
-    EdgeInsets.fromLTRB(0, DEF_VIEW_PADDING_H + 20, 0, DEF_VIEW_PADDING_H - 0);
+    EdgeInsets.fromLTRB(0, DEF_VIEW_PADDING_H + 10, 0, DEF_VIEW_PADDING_H - 10.0);
 
 const ICON_BUTTON_SIZE = 24.0;
 

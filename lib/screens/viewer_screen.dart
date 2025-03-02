@@ -1,6 +1,5 @@
 import 'dart:developer';
 import 'dart:io';
-
 import 'package:flutter_slidable/flutter_slidable.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
@@ -15,7 +14,6 @@ import '/constants.dart';
 import '/controllers/viewer_controller.dart';
 import '/controllers/env_controller.dart';
 import '/controllers/viewlog_controller.dart';
-import '/controllers/applog_controller.dart';
 
 final stateProvider = ChangeNotifierProvider((ref) => stateNotifier(ref));
 
@@ -112,8 +110,7 @@ class ViewerScreen extends BaseScreen with WidgetsBindingObserver {
                 child: RawGestureDetector(
                   behavior: HitTestBehavior.translucent,
                   gestures: {
-                    TapGestureRecognizer:
-                        GestureRecognizerFactoryWithHandlers<TapGestureRecognizer>(
+                    TapGestureRecognizer: GestureRecognizerFactoryWithHandlers<TapGestureRecognizer>(
                       () => TapGestureRecognizer(),
                       (TapGestureRecognizer instance) {
                         instance
@@ -124,10 +121,8 @@ class ViewerScreen extends BaseScreen with WidgetsBindingObserver {
                             } else if (dx > _width - 120) {
                               //scrollLeft();
                             } else {
-                              if (ref.watch(viewerProvider).bottomBarType !=
-                                  ViewerBottomBarType.actionBar) {
-                                ref.watch(viewerProvider).bottomBarType =
-                                    ViewerBottomBarType.actionBar;
+                              if (ref.watch(viewerProvider).bottomBarType != ViewerBottomBarType.actionBar) {
+                                ref.watch(viewerProvider).bottomBarType = ViewerBottomBarType.actionBar;
                                 redraw();
                               } else {
                                 ref.watch(viewerProvider).bottomBarType = ViewerBottomBarType.none;
@@ -234,8 +229,8 @@ class ViewerScreen extends BaseScreen with WidgetsBindingObserver {
             redraw();
           },
         ),
-      if (isActionBar()) SizedBox(width: pad),
-      if (isActionBar())
+      if (isActionBar() && IS_TEST == true) SizedBox(width: pad),
+      if (isActionBar() && IS_TEST == true)
         MyIconLabelButton(
           label: l10n('copy'),
           icon: Icon(Icons.edit_outlined),
@@ -249,8 +244,8 @@ class ViewerScreen extends BaseScreen with WidgetsBindingObserver {
             redraw();
           },
         ),
-      if (isActionBar()) SizedBox(width: pad),
-      if (isActionBar())
+      if (isActionBar() && IS_TEST == true) SizedBox(width: pad),
+      if (isActionBar() && IS_TEST == true)
         MyIconLabelButton(
           label: l10n('clip'),
           icon: Icon(Icons.article_outlined),

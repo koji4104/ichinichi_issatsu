@@ -1,4 +1,3 @@
-import 'dart:convert';
 import 'dart:io';
 import 'dart:developer';
 
@@ -6,8 +5,6 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_slidable/flutter_slidable.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
-import 'package:path_provider/path_provider.dart';
-import 'package:path/path.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 
 import '/commons/base_screen.dart';
@@ -16,12 +13,8 @@ import '/controllers/applog_controller.dart';
 import '/controllers/epub_controller.dart';
 import '/controllers/booklist_controller.dart';
 import '/models/book_data.dart';
-import '/models/epub_data.dart';
-import '/screens/browser_screen.dart';
 import '/screens/viewer_screen.dart';
-import '/screens/settings_screen.dart';
 import '/constants.dart';
-import '/controllers/epub_controller.dart';
 
 /// BookScreen
 class BookListScreen extends BaseScreen {
@@ -152,7 +145,7 @@ class BookListScreen extends BaseScreen {
                     });
                   },
                   foregroundColor: Colors.white,
-                  backgroundColor: Colors.blueGrey,
+                  backgroundColor: Color(0xFF444488),
                   icon: Icons.download,
                   label: l10n('download'),
                   spacing: 0,
@@ -330,8 +323,11 @@ class BookListScreen extends BaseScreen {
 
     Widget wAuthorRow = Row(children: [
       Expanded(child: wAuthor),
-      SizedBox(width: 20),
+      SizedBox(width: 8),
       isKakuyomu ? wNumIndex : wPages,
+      SizedBox(width: 10),
+      wProg,
+      //SizedBox(width: 8),
     ]);
 
     Widget child = Row(children: [
@@ -348,9 +344,7 @@ class BookListScreen extends BaseScreen {
           children: [e, wTitle, wAuthorRow, e],
         ),
       ),
-      w,
-      Column(children: [e, wProg, e]),
-      w,
+      SizedBox(width: 10),
       icon,
     ]);
 

@@ -65,8 +65,9 @@ class EpubData {
     // <ruby><rb>獅子</rb><rp>（</rp><rt>しし</rt><rp>）</rp></ruby>
     // <ruby><rb>卍<rb><rp>（<rp><rt>まんじ<rt><rp>）<rp><ruby>
     // <ruby><rb>嵐の雷竜</rb><rp>（</rp><rt>ストーム・サンダードラゴン</rt><rp>）</rp></ruby>
-
+    //　<ruby><rb>第</rb><rp>（</rp><rt>だい</rt><rp>）</rp></ruby>
     str = deleteTagAndInner(str, '<rp>（', '）</rp>');
+    str = deleteTagAndInner(str, '<rp>（', '）<rp>');
 
     str = str.replaceAll('<ruby>', '');
     str = str.replaceAll('</ruby>', '');
@@ -79,17 +80,18 @@ class EpubData {
     return str;
   }
 
-  // <rp> </rp>
+  // tag1 <rp>（
+  // tag2 ）</rp>
   // <ruby><rb>獅子</rb><rp>（</rp><rt>しし</rt><rp>）</rp></ruby>
   // <ruby><rb>獅子</rb></ruby>
   static String deleteTagAndInner(String text, String tag1, String tag2) {
     // // 私/rp>わたくし/rp>は
     int s1 = 0;
-    for (int i = 0; i < 1000; i++) {
+    for (int i = 0; i < 10000; i++) {
       s1 = text.indexOf(tag1);
       int e1 = (s1 >= 0) ? text.indexOf(tag2, s1 + tag1.length) + 1 : 0;
       if (s1 >= 0 && e1 > 0 && e1 - s1 < 100) {
-        text = text.substring(0, s1) + text.substring(e1);
+        text = text.substring(0, s1) + text.substring(e1 + tag2.length - 1);
       } else {
         break;
       }

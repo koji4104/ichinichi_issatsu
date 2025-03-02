@@ -3,7 +3,6 @@ import 'package:intl/intl.dart';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
-import 'package:path_provider/path_provider.dart';
 
 import '/constants.dart';
 import '/models/log_data.dart';
@@ -42,6 +41,13 @@ class ViewlogNotifier extends ChangeNotifier {
     String date = new DateFormat("yyyy-MM-dd HH:mm:ss").format(DateTime.now());
     int sec = DateTime.now().difference(startDate).inSeconds;
     int defChars = chars - startChars;
+
+    if (IS_TEST_VIEWLOG == true) {
+      sec = DateTime.now().second * 60 + 1;
+      sec = (sec / ((sec % 3) + 1)).toInt();
+      defChars = (sec / 60).toInt() * 400 + DateTime.now().second;
+      log('IS_TEST save sec=${sec} defChars=${defChars}');
+    }
 
     if (sec >= 30 && defChars >= CHARS_PAGE) {
       String tsv = '${date}\t${sec}\t${defChars}\t${book.bookId}\t${book.title}\n';
@@ -140,7 +146,7 @@ class ViewlogNotifier extends ChangeNotifier {
     String txt = '';
     for (ViewlogData d in tempList) {
       String sdate = DateFormat("yyyy-MM-dd HH:mm:ss").format(d.date);
-      txt += '${sdate}\t${d.sec}\t${d.chars}\t${d.bookId}\n';
+      txt += '${sdate}\t${d.sec}\t${d.chars}\t${d.bookId}\t${d.bookTitle}\n';
     }
     return txt;
   }

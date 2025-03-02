@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
-import 'dart:io';
 import 'package:flutter_slidable/flutter_slidable.dart';
 
-import 'package:ichinichi_issatsu/constants.dart';
+import '/constants.dart';
 
 const double DEF_RADIUS = 3;
 BorderRadiusGeometry DEF_BORDER_RADIUS = BorderRadius.circular(3);
@@ -355,7 +354,7 @@ Widget MyTocTile({
       color: myTheme.cardColor,
       border: Border(bottom: BorderSide(color: myTheme.dividerColor, width: 0.5)),
     ),
-    padding: EdgeInsets.fromLTRB(16, 2, 4, 2),
+    padding: EdgeInsets.fromLTRB(16, 1, 4, 1),
     child: TextButton(child: txt, onPressed: onPressed),
   );
 }

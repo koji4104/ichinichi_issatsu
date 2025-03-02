@@ -6,7 +6,6 @@ import '/commons/widgets.dart';
 import '/screens/booklist_screen.dart';
 import '/screens/browser_screen.dart';
 import '/screens/settings_screen.dart';
-import '/constants.dart';
 
 final menuProvider = ChangeNotifierProvider((ref) => MenuNotifier(ref));
 

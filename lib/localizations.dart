@@ -66,6 +66,7 @@ class Localized {
       'brows': 'Find',
       'option': 'Option',
       'up_to': 'up to',
+      'can_add_favorite': 'You can add it to your favorites.',
       // ICON
       'toc': '目次',
       'jump': 'TOC',
@@ -74,11 +75,13 @@ class Localized {
       'label': 'Label',
       'tag': 'Tag',
       'favorite': 'Favorite',
-      'can_add_favorite': 'You can add it to your favorites.',
+      'white': 'White',
+      'gray': 'Gray',
+      'black': 'Black',
     },
     'ja': {
       'app_name': '一日一冊',
-      'language_code': '言語',
+      'language_code': 'アプリ 言語',
       'font_size': '文字サイズ',
       'font_family': 'フォント',
       'sans_serif': 'ゴシック',
@@ -88,8 +91,8 @@ class Localized {
       'line_height': '行間',
       'light': 'ライト',
       'dark': 'ダーク',
-      'ui_text_scale': 'UI 文字サイズ',
-      'dark_mode': '外観 カラー',
+      'ui_text_scale': 'アプリ 文字サイズ',
+      'dark_mode': 'アプリ カラー',
       'vertical-rl': '縦書き',
       'horizontal-tb': '横書き',
       'save': '保存',
@@ -120,6 +123,7 @@ class Localized {
       'brows': '探す',
       'option': 'オプション',
       'up_to': 'まで',
+      'can_add_favorite': 'お気に入りに追加することができます',
       // ICON
       'toc': '目次',
       'jump': '最後のページ',
@@ -128,7 +132,9 @@ class Localized {
       'label': 'ラベル',
       'tag': 'タグ',
       'favorite': 'お気に入り',
-      'can_add_favorite': 'お気に入りに追加することができます',
+      'white': '白',
+      'gray': 'グレー',
+      'black': '黒',
     },
   };
 

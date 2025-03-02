@@ -1,11 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
-import 'package:ichinichi_issatsu/constants.dart';
+import '/constants.dart';
 import 'dart:developer';
 
 import 'package:intl/intl.dart';
-import 'dart:io';
-import 'package:path_provider/path_provider.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:flutter_slidable/flutter_slidable.dart';
 import 'package:flutter/gestures.dart';
@@ -13,7 +11,6 @@ import 'package:flutter/gestures.dart';
 import '/commons/base_screen.dart';
 import '/controllers/viewlog_controller.dart';
 import '/controllers/booklist_controller.dart';
-import '/screens/applog_screen.dart';
 import '/models/log_data.dart';
 import '/models/book_data.dart';
 import '/commons/widgets.dart';

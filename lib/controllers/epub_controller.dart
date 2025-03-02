@@ -10,7 +10,6 @@ import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 import 'package:beautiful_soup_dart/beautiful_soup.dart';
 import 'package:charset_converter/charset_converter.dart';
 import 'package:http/http.dart' as http;
-import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart';
 
 import '/models/book_data.dart';
@@ -85,6 +84,7 @@ class EpubNotifier extends ChangeNotifier {
       await file.writeAsBytes(content);
     }
 
+    // タイトルページ
     BookData book = BookData();
     book.title = epub.bookTitle ?? epub.bookId!;
     book.bookId = epub.bookId!;
@@ -97,6 +97,7 @@ class EpubNotifier extends ChangeNotifier {
     book.title = EpubData.deleteInvalidStrInJson(book.title);
     book.author = EpubData.deleteInvalidStrInJson(book.author);
 
+    // 目次
     IndexData index = await getBookIndexJson();
     for (EpubFileData f in epub.fileList) {
       if (f.chapNo >= 0) {
@@ -239,10 +240,11 @@ class EpubNotifier extends ChangeNotifier {
   String deleteClassAttr(String text, String tag) {
     int s1 = 0;
     for (int i = 0; i < 10000; i++) {
-      s1 = text.indexOf(tag, s1);
-      int e1 = (s1 >= 0) ? text.indexOf(r'>', s1 + tag.length) + 1 : 0;
+      s1 = text.indexOf(tag + ' ', s1); // '<h3 '
+      int e1 = (s1 >= 0) ? text.indexOf(r'>', s1 + tag.length) : 0;
       if (s1 >= 0 && e1 > 0) {
-        text = text.substring(0, s1) + tag + r'>' + text.substring(e1);
+        text = text.substring(0, s1) + tag + text.substring(e1);
+        s1++;
       } else {
         break;
       }
@@ -250,7 +252,10 @@ class EpubNotifier extends ChangeNotifier {
     return text;
   }
 
-  Map<String, String> headers = {'user-agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 15_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148'};
+  Map<String, String> headers = {
+    'user-agent':
+        'Mozilla/5.0 (iPhone; CPU iPhone OS 15_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148'
+  };
 
   setStatusNone() {
     epub.reset();
@@ -262,14 +267,34 @@ class EpubNotifier extends ChangeNotifier {
   }
 
   int calcChars(String text) {
-    text = text.replaceAll('\n', '');
-    text = text.replaceAll('<h3>', '');
-    text = text.replaceAll('</h3>', '');
+    String str = text;
+    str = str.replaceAll('\n', '');
+    str = str.replaceAll('<h3>', '');
+    str = str.replaceAll('</h3>', '');
 
     // delete ruby
-    text = EpubData.deleteRuby(text);
+    str = EpubData.deleteRuby(str);
 
-    return text.length;
+    return str.length;
+  }
+
+  int calcCharsSimple(String text) {
+    String str = text;
+    str = str.replaceAll('<rp>（', '');
+    str = str.replaceAll('）<rp>', '');
+    str = str.replaceAll('）</rp>', '');
+
+    str = str.replaceAll('\n', '');
+    str = str.replaceAll('<ruby>', '');
+    str = str.replaceAll('</ruby>', '');
+    str = str.replaceAll('<rb>', '');
+    str = str.replaceAll('</rb>', '');
+    str = str.replaceAll('<rp>', '');
+    str = str.replaceAll('</rp>', '');
+    str = str.replaceAll('<rt>', '');
+    str = str.replaceAll('</rt>', '');
+
+    return str.length;
   }
 
   Future<int> getExistingIndex(String bookId) async {
@@ -418,7 +443,19 @@ class EpubNotifier extends ChangeNotifier {
 
     Bs4Element? el = bs.find('div', class_: 'main_text');
     String text = el!.innerHtml;
+
+    text = text.replaceAll('\n', '<br />\n');
     text = text.replaceAll('<br>', '<br />');
+    text = text.replaceAll('<br /><br />\n', '<br />\n');
+
+    for (int i = 0; i < 3; i++) {
+      if (text.indexOf('<br />') == 0) {
+        text = text.replaceFirst('<br />', '');
+      }
+      if (text.indexOf('\n') == 0) {
+        text = text.replaceFirst('\n', '');
+      }
+    }
 
     // delete div
     text = deleteTag(text, '<div');
@@ -434,6 +471,10 @@ class EpubNotifier extends ChangeNotifier {
     // delete <span
     text = deleteTag(text, '<span');
     text = text.replaceAll('</span>', '');
+
+    // </div> を消してから
+    text = text.replaceAll('</h3><br />', '</h3>');
+    text = text.replaceAll('</h3>\n<br />\n<br />\n<br />', '</h3>\n<br />\n<br />');
 
     // delete class <h3
     text = deleteClassAttr(text, '<h3');
@@ -468,8 +509,9 @@ class EpubNotifier extends ChangeNotifier {
         String t1 = listText1[i];
         if (i > 0) {
           t1 = '<h3' + t1;
+          t1 = t1.replaceAll('</h3><br />', '</h3>');
           if (i < listText1.length - 1) {
-            if (t1.length < 100) {
+            if (t1.length < 180) {
               String t2 = listText1[i + 1];
               t2 = '<h3' + t2;
               t2 = t2.replaceAll('<h3', '<h4');
@@ -484,12 +526,22 @@ class EpubNotifier extends ChangeNotifier {
         // 30000/25000 = 33
         // 15000/10000 = 79
         for (int i = 0; i < 100; i++) {
-          if (t1.length < 15000) {
+          int count1 = 15000;
+          int count2 = 10000;
+          if (t1.split('<ruby>').length > 100) {
+            count1 = 20000;
+            count2 = 15000;
+          }
+
+          if (t1.length < count1) {
+            if (i >= 1) {
+              t1 = '<h3>${listText.length}</h3>' + t1;
+            }
             listText.add(t1);
             break;
           }
-          int s1 = t1.indexOf('<br />', 10000);
-          if (s1 > 0) {
+          int s1 = t1.indexOf('<br />', count2);
+          if (s1 > 0 && t1.length - s1 > 1000) {
             String t2 = t1.substring(0, s1 + 6);
             if (i >= 1) {
               t2 = '<h3>${listText.length}</h3>' + t2;
@@ -561,7 +613,8 @@ class EpubNotifier extends ChangeNotifier {
             for (var MapEntry(:key, :value) in map.entries) {
               if (value['__typename'] != null && value['id'] != null) {
                 if (value['__typename'] == 'Episode') {
-                  epub.uriList.add('https://kakuyomu.jp/works/${epub.siteId}/episodes/${value['id']}');
+                  epub.uriList
+                      .add('https://kakuyomu.jp/works/${epub.siteId}/episodes/${value['id']}');
                 } else if (value['__typename'] == 'Work') {
                   if (value['id'] == epub.siteId) {
                     epub.bookTitle = value['title'];
@@ -620,7 +673,7 @@ class EpubNotifier extends ChangeNotifier {
       if (needtoStopDownloading == true) break;
     }
 
-    if (epub.fileList.length >= 2 && needtoStopDownloading == false) {
+    if (epub.fileList.length >= 1 && needtoStopDownloading == false) {
       await writeBook();
       status = MyEpubStatus.succeeded;
     } else {
@@ -763,7 +816,7 @@ class EpubNotifier extends ChangeNotifier {
 
     if (epub.uriList.length > 0) {
       for (int i = existingIndex; i < epub.uriList.length; i++) {
-        await Future.delayed(Duration(milliseconds: 100));
+        await Future.delayed(Duration(milliseconds: 200));
 
         // https://ncode.syosetu.com/n6964jl/1/
         String? body = await downloadCtrl.download8(epub.uriList[i], this); // waiting
@@ -869,7 +922,10 @@ class DownloadController {
 
   Future<String?> download(String uri) async {
     HttpOverrides.global = PermitInvalidCertification();
-    Map<String, String> headers = {'user-agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 15_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148'};
+    Map<String, String> headers = {
+      'user-agent':
+          'Mozilla/5.0 (iPhone; CPU iPhone OS 15_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148'
+    };
     String? body = null;
     try {
       http.Response res = await http.get(Uri.parse(uri), headers: headers);
@@ -884,7 +940,10 @@ class DownloadController {
 
   Future<String?> downloadSjis(String uri) async {
     HttpOverrides.global = PermitInvalidCertification();
-    Map<String, String> headers = {'user-agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 15_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148'};
+    Map<String, String> headers = {
+      'user-agent':
+          'Mozilla/5.0 (iPhone; CPU iPhone OS 15_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148'
+    };
     String? body = null;
     try {
       http.Response res = await http.get(Uri.parse(uri), headers: headers);
@@ -903,7 +962,7 @@ class DownloadController {
     noti.notifyListeners();
     try {
       for (int wait = 0; wait < 100; wait++) {
-        await Future.delayed(Duration(milliseconds: 100));
+        await Future.delayed(Duration(milliseconds: 200));
         if (this.webBody != null) {
           log('download finish wait=${wait}');
           break;

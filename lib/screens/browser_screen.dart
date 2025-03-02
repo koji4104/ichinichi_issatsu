@@ -1,10 +1,7 @@
 import 'dart:developer';
-import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
-import 'package:path_provider/path_provider.dart';
-import 'dart:convert';
 import 'package:flutter_slidable/flutter_slidable.dart';
 import 'package:flutter/gestures.dart';
 
@@ -13,7 +10,6 @@ import '/commons/base_screen.dart';
 import '/commons/widgets.dart';
 import '/controllers/epub_controller.dart';
 import '/controllers/browser_controller.dart';
-import '/screens/booklist_screen.dart';
 import '/controllers/booklist_controller.dart';
 
 final browserScreenProvider = ChangeNotifierProvider((ref) => ChangeNotifier());

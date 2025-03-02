@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
-import '/localizations.dart';
-import '/commons/widgets.dart';
 import 'dart:io';
 import 'dart:developer';
 
+import '/localizations.dart';
+import '/commons/widgets.dart';
 import '/controllers/env_controller.dart';
 import '/controllers/epub_controller.dart';
 
@@ -134,7 +134,8 @@ class BaseScreen extends ConsumerWidget {
       child: TextButton(
         style: TextButton.styleFrom(
           backgroundColor: bgcol,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(DEF_RADIUS))),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(DEF_RADIUS))),
           side: bdcol != null ? BorderSide(color: bdcol) : null,
         ),
         child: Text(
@@ -248,7 +249,7 @@ class BaseScreen extends ConsumerWidget {
     }
 
     int DL_COUNT1 = 10;
-    int DL_COUNT2 = 50;
+    int DL_COUNT2 = 100;
     int DL_SPARE = 10;
 
     bool isClose = false;

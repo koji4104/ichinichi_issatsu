@@ -1,4 +1,6 @@
 bool IS_TEST = false;
+bool IS_TEST_SITE = false;
+bool IS_TEST_VIEWLOG = false;
 bool IS_SAMPLE = false;
 
 const String DIR_SETTINGS = 'settings';

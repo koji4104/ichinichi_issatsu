@@ -1,13 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
+import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 import 'dart:io';
 import 'dart:async';
 import 'dart:developer';
 import 'dart:convert';
-import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 
 import '/models/book_data.dart';
-import '/controllers/applog_controller.dart';
 import '/constants.dart';
 
 List<String> initUriList = [
@@ -16,7 +15,6 @@ List<String> initUriList = [
   'https://yomou.syosetu.com',
   'https://syosetu.com/site/group/',
   'https://kakuyomu.jp',
-  //'https://noc.syosetu.com/top/top/',
 ];
 List<String> initTitleList = [
   'aozora_top',
@@ -24,7 +22,6 @@ List<String> initTitleList = [
   'https://yomou.syosetu.com',
   'https://syosetu.com/site/group/',
   'https://kakuyomu.jp',
-  //'https://noc.syosetu.com/top/top/',
 ];
 
 List<String> initUriList1 = [
@@ -58,7 +55,7 @@ class BrowserNotifier extends ChangeNotifier {
   Future readInitFavo() async {
     initFavorite.list.clear();
 
-    if (IS_TEST == false) {
+    if (IS_TEST_SITE == false) {
       for (int i = 0; i < initUriList.length; i++) {
         FavoInfo fi = FavoInfo();
         fi.uri = initUriList[i];

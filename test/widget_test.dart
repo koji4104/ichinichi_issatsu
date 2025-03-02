@@ -7,22 +7,39 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:hooks_riverpod/hooks_riverpod.dart';
+
+import 'package:ichinichiissatsu/controllers/epub_controller.dart';
+
+// flutter test test/widget_test.dart
+
+ProviderContainer createContainer({
+  ProviderContainer? parent,
+  List<Override> overrides = const [],
+  List<ProviderObserver>? observers,
+}) {
+  final container = ProviderContainer(
+    parent: parent,
+    overrides: overrides,
+    observers: observers,
+  );
+  addTearDown(container.dispose);
+  return container;
+}
 
 void main() {
-  testWidgets('Counter increments smoke test', (WidgetTester tester) async {
-    // Build our app and trigger a frame.
-    //await tester.pumpWidget(const MyApp());
+  testWidgets('test', (WidgetTester tester) async {
+    // mock provider
+    final ref = createContainer(
+      overrides: [ChangeNotifierProvider((ref) => EpubNotifier(ref))],
+    );
 
-    // Verify that our counter starts at 0.
-    expect(find.text('0'), findsOneWidget);
-    expect(find.text('1'), findsNothing);
-
-    // Tap the '+' icon and trigger a frame.
-    await tester.tap(find.byIcon(Icons.add));
-    await tester.pump();
-
-    // Verify that our counter has incremented.
-    expect(find.text('0'), findsNothing);
-    expect(find.text('1'), findsOneWidget);
+    String test = ref.read(epubProvider).deleteClassAttr('<h3 class="BBB">AAA</h3>', '<h3');
+    print('${test}');
+    expect(
+      ref.read(epubProvider).doneIndex,
+      equals(0),
+    );
   });
 }

@@ -128,7 +128,11 @@ class ViewerNotifier extends ChangeNotifier {
           double dh = env.line_height.val / 100.0;
           double calcWidth = lines.toDouble() * (fsize * dh);
           calcWidth += scrollWidth;
-          if (calcWidth < 200) calcWidth = 200;
+          if (calcWidth < 400) calcWidth = 400;
+          if (Platform.isIOS == false && Platform.isAndroid == false && calcWidth > 10000) {
+            //log('calcWidth=${calcWidth.toInt()} text.length=${text.length}');
+            calcWidth = 10000;
+          }
           // chars
 
           listWidth.add(calcWidth);
@@ -295,7 +299,7 @@ class ViewerNotifier extends ChangeNotifier {
     try {
       for (int k = 0; k < 5; k++) {
         if (scrollController!.hasClients == false) {
-          log('scrollController.hasClients == false k = ${k}');
+          log('scrollController.hasClients==false k=${k}');
           this.notifyListeners();
           await Future.delayed(Duration(milliseconds: 100));
         }
@@ -530,7 +534,7 @@ class ViewerNotifier extends ChangeNotifier {
         shrinkWrap: true,
         controller: scrollController,
         itemCount: listText.length,
-        cacheExtent: 5000,
+        cacheExtent: 10000,
         physics: physics,
         hitTestBehavior: HitTestBehavior.opaque,
         itemBuilder: (context, int index) {
@@ -559,6 +563,7 @@ class ViewerNotifier extends ChangeNotifier {
     if ((nowIndex - index).abs() > 2) {
       return Container();
     }
+    //log('inviewer [${index}]');
     try {
       return InAppWebView(
         key: listKey[index],
@@ -571,8 +576,9 @@ class ViewerNotifier extends ChangeNotifier {
         },
         onLoadStart: (controller, url) async {},
         onLoadStop: (controller, url) async {
+          if (controller == null) log('error onLoadStop controller==null');
           if (IS_TEST == false) {
-            this.notifyListeners();
+            if (nowIndex == index) this.notifyListeners();
             return;
           } else {
             try {

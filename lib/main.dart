@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
 import '/screens/menu_screen.dart';
-import 'commons/widgets.dart';
+import '/commons/widgets.dart';
 import '/controllers/env_controller.dart';
 
 void main() {

@@ -8,9 +8,6 @@ import 'package:path/path.dart';
 import 'dart:convert';
 
 import '/models/book_data.dart';
-import '/models/log_data.dart';
-import '/controllers/applog_controller.dart';
-import '/screens/applog_screen.dart';
 import '/constants.dart';
 
 final booklistProvider = ChangeNotifierProvider((ref) => BookListNotifier(ref));

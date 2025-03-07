@@ -382,6 +382,7 @@ class EpubNotifier extends ChangeNotifier {
     if (epub.uriList.length == 0) return;
     if (epub.bookId == null) return;
 
+    MyLog.info('Download ${epub.bookTitle}');
     status = MyEpubStatus.downloading;
     doneIndex = 0;
     this.notifyListeners();
@@ -400,7 +401,12 @@ class EpubNotifier extends ChangeNotifier {
       MyLog.warn('download() failed ${epub.uriList[0]}');
     }
 
-    if (status != MyEpubStatus.succeeded) status = MyEpubStatus.failed;
+    if (status == MyEpubStatus.succeeded) {
+      MyLog.info('Download succeeded');
+    } else {
+      status = MyEpubStatus.failed;
+      MyLog.warn('Download failed');
+    }
     this.notifyListeners();
   }
 
@@ -652,6 +658,8 @@ class EpubNotifier extends ChangeNotifier {
   }
 
   Future<void> downloadKakuyomu() async {
+    MyLog.info('Download ${epub.bookTitle}');
+
     status = MyEpubStatus.downloading;
     doneIndex = 0;
     needtoStopDownloading = false;
@@ -678,8 +686,10 @@ class EpubNotifier extends ChangeNotifier {
     if (epub.fileList.length >= 1 && needtoStopDownloading == false) {
       await writeBook();
       status = MyEpubStatus.succeeded;
+      MyLog.info('Download succeeded');
     } else {
       status = MyEpubStatus.failed;
+      MyLog.warn('Download failed');
     }
     this.notifyListeners();
   }
@@ -779,6 +789,8 @@ class EpubNotifier extends ChangeNotifier {
   }
 
   Future<void> downloadNarou() async {
+    MyLog.info('Download ${epub.bookTitle}');
+
     status = MyEpubStatus.downloading;
     doneIndex = 0;
     needtoStopDownloading = false;
@@ -803,14 +815,21 @@ class EpubNotifier extends ChangeNotifier {
         if (needtoStopDownloading == true) break;
       }
     }
-    if (needtoStopDownloading == false) {
+
+    if (epub.fileList.length >= 1 && needtoStopDownloading == false) {
       await writeBook();
       status = MyEpubStatus.succeeded;
+      MyLog.info('Download succeeded');
+    } else {
+      MyLog.warn('Download failed');
     }
+
     this.notifyListeners();
   }
 
   Future<void> downloadNarou8() async {
+    MyLog.info('Download ${epub.bookTitle}');
+
     status = MyEpubStatus.downloading;
     doneIndex = 0;
     needtoStopDownloading = false;
@@ -836,10 +855,14 @@ class EpubNotifier extends ChangeNotifier {
         if (needtoStopDownloading == true) break;
       }
     }
-    if (needtoStopDownloading == false) {
+    if (epub.fileList.length >= 1 && needtoStopDownloading == false) {
       await writeBook();
       status = MyEpubStatus.succeeded;
+      MyLog.info('Download succeeded');
+    } else {
+      MyLog.warn('Download failed');
     }
+
     this.notifyListeners();
   }
 

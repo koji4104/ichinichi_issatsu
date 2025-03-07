@@ -108,30 +108,8 @@ class BookListScreen extends BaseScreen {
               NavigatorPush(screen);
             },
           ),
-          startActionPane: ActionPane(
-            extentRatio: 0.20,
-            motion: const StretchMotion(),
-            children: [
-              MySlidableAction(
-                onPressed: (_) {
-                  flagDialog().then((ret) {
-                    if (ret >= 0) {
-                      bookList[index].prop.flag = ret;
-                      ref.watch(booklistProvider).saveFlag(bookList[index].bookId, ret);
-                    }
-                  });
-                },
-                foregroundColor: Colors.white,
-                backgroundColor: Color(0xFF444444),
-                icon: Icons.circle_outlined,
-                label: l10n('tag'),
-                spacing: 0,
-                padding: EdgeInsets.fromLTRB(0, 0, 0, 0),
-              ),
-            ],
-          ),
           endActionPane: ActionPane(
-            extentRatio: 0.50,
+            extentRatio: 0.60,
             motion: const StretchMotion(),
             children: [
               if (isAddDownload)
@@ -152,12 +130,28 @@ class BookListScreen extends BaseScreen {
                 ),
               MySlidableAction(
                 onPressed: (_) {
+                  flagDialog().then((ret) {
+                    if (ret >= 0) {
+                      bookList[index].prop.flag = ret;
+                      ref.watch(booklistProvider).saveFlag(bookList[index].bookId, ret);
+                    }
+                  });
+                },
+                foregroundColor: Colors.white,
+                backgroundColor: Color(0xFF558866),
+                icon: Icons.circle_outlined,
+                label: l10n('tag'),
+                spacing: 0,
+                padding: EdgeInsets.fromLTRB(0, 0, 0, 0),
+              ),
+              MySlidableAction(
+                onPressed: (_) {
                   deleteDialog().then((ret) {
                     if (ret) {
-                      MyLog.info('delete ${bookList[index].title}');
                       String bookdir = APP_DIR + '/book';
                       String dir = bookdir + '/${bookList[index].bookId}';
                       if (Directory(dir).existsSync()) {
+                        MyLog.info('Delete ${bookList[index].title}');
                         Directory(dir).deleteSync(recursive: true);
                         ref.watch(booklistProvider).readBookList();
                       }

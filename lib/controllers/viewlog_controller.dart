@@ -52,6 +52,7 @@ class ViewlogNotifier extends ChangeNotifier {
     if (sec >= 30 && defChars >= CHARS_PAGE) {
       String tsv = '${date}\t${sec}\t${defChars}\t${book.bookId}\t${book.title}\n';
       await File(path).writeAsString(tsv, mode: FileMode.append, flush: true);
+      this.notifyListeners();
     }
   }
 

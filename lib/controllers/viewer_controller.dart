@@ -64,9 +64,9 @@ class ViewerNotifier extends ChangeNotifier {
 
   double scrollWidth = DEF_VIEW_SCROLL_WIDTH;
   double width = 1000.0;
-  double _widthPad = Platform.isIOS ? DEF_VIEW_LINE_WIDTH : DEF_VIEW_LINE_WIDTH + 0;
+  double _widthPad = DEF_VIEW_LINE_WIDTH;
   double height = 1000.0;
-  double _heightPad = Platform.isIOS ? DEF_VIEW_LINE_HEIGHT : DEF_VIEW_LINE_HEIGHT + 0;
+  double _heightPad = DEF_VIEW_LINE_HEIGHT;
 
   Future load(Environment env, double w, double h) async {
     log('load()');
@@ -117,6 +117,8 @@ class ViewerNotifier extends ChangeNotifier {
           body = body.replaceAll('<h2>', '');
           body = body.replaceAll('</h2>', '<br />');
 
+          int rubyCount = body.split('<ruby>').length;
+
           // delete ruby
           body = EpubData.deleteRuby(body);
           List<String> list1 = body.split('<br />');
@@ -125,6 +127,8 @@ class ViewerNotifier extends ChangeNotifier {
             int d = (s.length / chars).toInt() + 1;
             lines += d;
           }
+          lines += (rubyCount / 40).toInt();
+
           double dh = env.line_height.val / 100.0;
           double calcWidth = lines.toDouble() * (fsize * dh);
           calcWidth += scrollWidth;
@@ -517,6 +521,15 @@ class ViewerNotifier extends ChangeNotifier {
     c += '  ${writing_mode};\n';
     c += '  word-break: break-all;\n';
     c += '  line-height: ${env.line_height.val}%;\n';
+
+    if (env.writing_mode.val == 0) {
+      c += '  padding-left: 0em;\n';
+    } else {
+      c += '  padding-top: 0em;\n';
+      c += '  padding-bottom: 1em;\n';
+      c += '  margin: 10;\n';
+    }
+
     c += '}\n';
     c += 'p {\n';
     c += '  margin: 0;\n';

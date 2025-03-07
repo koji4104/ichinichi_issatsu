@@ -9,6 +9,7 @@ import 'dart:convert';
 
 import '/models/book_data.dart';
 import '/constants.dart';
+import '/controllers/applog_controller.dart';
 
 final booklistProvider = ChangeNotifierProvider((ref) => BookListNotifier(ref));
 
@@ -86,38 +87,44 @@ class BookListNotifier extends ChangeNotifier {
   }
 
   Future saveFlag(String bookId, int flag) async {
-    String dir = bookdir + '/${bookId}';
-    if (Directory(dir).existsSync()) {
-      final infoFile = File('${dir}/data/prop.json');
-      if (infoFile.existsSync()) {
-        String? txt1 = await infoFile.readAsString();
-        Map<String, dynamic> j = json.decode(txt1);
-        PropData prop = PropData.fromJson(j);
-        prop.flag = flag;
-
-        String jsonText = json.encode(prop.toJson());
+    try {
+      String dir = bookdir + '/${bookId}';
+      if (Directory(dir).existsSync()) {
+        PropData prop = PropData();
         final file = File('${dir}/data/prop.json');
+        if (file.existsSync()) {
+          String? txt1 = await file.readAsString();
+          Map<String, dynamic> j = json.decode(txt1);
+          prop = PropData.fromJson(j);
+          prop.flag = flag;
+        }
+        String jsonText = json.encode(prop.toJson());
         await file.writeAsString(jsonText, mode: FileMode.write, flush: true);
         this.notifyListeners();
       }
+    } on Exception catch (e) {
+      MyLog.err('saveFlag() ${e.toString()}');
     }
   }
 
   Future saveLastAccess(int index) async {
-    String dir = bookdir + '/${bookList[index].bookId}';
-    if (Directory(dir).existsSync()) {
-      PropData prop = PropData();
-      final infoFile = File('${dir}/book_info.json');
-      if (infoFile.existsSync()) {
-        String? txt1 = await infoFile.readAsString();
-        Map<String, dynamic> j = json.decode(txt1);
-        PropData prop = PropData.fromJson(j);
-        prop.atime = DateTime.now();
+    try {
+      String dir = bookdir + '/${bookList[index].bookId}';
+      if (Directory(dir).existsSync()) {
+        PropData prop = PropData();
+        final file = File('${dir}/data/prop.json');
+        if (file.existsSync()) {
+          String? txt1 = await file.readAsString();
+          Map<String, dynamic> j = json.decode(txt1);
+          prop = PropData.fromJson(j);
+          prop.atime = DateTime.now();
+        }
+        String jsonText = json.encode(prop.toJson());
+        file.writeAsString(jsonText, mode: FileMode.write, flush: true);
+        this.notifyListeners();
       }
-      String jsonText = json.encode(prop.toJson());
-      final file = File('${dir}/data/prop.json');
-      file.writeAsString(jsonText, mode: FileMode.write, flush: true);
-      this.notifyListeners();
+    } on Exception catch (e) {
+      MyLog.err('saveLastAccess() ${e.toString()}');
     }
   }
 

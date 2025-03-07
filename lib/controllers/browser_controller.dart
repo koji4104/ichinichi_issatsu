@@ -19,9 +19,9 @@ List<String> initUriList = [
 List<String> initTitleList = [
   'aozora_top',
   'aozora_ranking',
-  'https://yomou.syosetu.com',
-  'https://syosetu.com/site/group/',
-  'https://kakuyomu.jp',
+  '',
+  '',
+  '',
 ];
 
 List<String> initUriList1 = [

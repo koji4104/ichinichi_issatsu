@@ -12,6 +12,7 @@ const double DEF_APPBAR_HEIGHT = 40.0;
 const double DEF_VIEW_SCROLL_WIDTH = 40.0;
 const double DEF_VIEW_PADDING_W = 20.0;
 const double DEF_VIEW_PADDING_H = 60.0;
+
 // 横書き
 const EdgeInsetsGeometry DEF_VIEW_PADDING_TB =
     EdgeInsets.fromLTRB(DEF_VIEW_PADDING_W, 40, DEF_VIEW_PADDING_W, 40);
@@ -22,7 +23,7 @@ const EdgeInsetsGeometry DEF_VIEW_PADDING_RL =
 const ICON_BUTTON_SIZE = 24.0;
 
 const double DEF_VIEW_LINE_WIDTH = DEF_VIEW_PADDING_W + DEF_VIEW_PADDING_W + 10;
-const double DEF_VIEW_LINE_HEIGHT = DEF_VIEW_PADDING_H + DEF_VIEW_PADDING_H + 90;
+const double DEF_VIEW_LINE_HEIGHT = DEF_VIEW_PADDING_H + DEF_VIEW_PADDING_H + 100;
 
 // ON OFF button
 Color btnOn = Colors.white;
@@ -415,22 +416,21 @@ class MySlidableAction extends StatelessWidget {
     final children = <Widget>[];
 
     if (icon != null) {
+      children.add(SizedBox(height: 4));
       children.add(
-        Icon(icon, size: 26, color: foregroundColor),
+        Icon(icon, size: 20, color: foregroundColor),
       );
     }
 
     if (label != null) {
       if (children.isNotEmpty) {
-        children.add(
-          SizedBox(height: spacing),
-        );
+        children.add(SizedBox(height: 4));
       }
 
       children.add(
         Text(
           label!,
-          style: TextStyle(fontSize: 10),
+          style: TextStyle(fontSize: 9),
           textAlign: TextAlign.center,
         ),
       );

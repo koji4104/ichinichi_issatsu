@@ -78,6 +78,8 @@ class Localized {
       'white': 'White',
       'gray': 'Gray',
       'black': 'Black',
+      'ja': 'Japanese',
+      'en': 'English',
     },
     'ja': {
       'app_name': '一日一冊',
@@ -135,6 +137,8 @@ class Localized {
       'white': '白',
       'gray': 'グレー',
       'black': '黒',
+      'ja': '日本語',
+      'en': '英語',
     },
   };
 

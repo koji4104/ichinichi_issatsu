@@ -63,7 +63,22 @@ class SettingsScreen extends BaseScreen {
         },
       ),
     );
-    list.add(SizedBox(height: 10));
+
+    list.add(SizedBox(height: 6));
+    list.add(
+      MyListTile(
+        title1: MyText('Logs'),
+        onPressed: () {
+          Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (context) => ApplogScreen(),
+            ),
+          );
+        },
+      ),
+    );
+
+    list.add(SizedBox(height: 6));
     list.add(
       MyListTile(
         title1: MyText('Licenses'),
@@ -85,19 +100,6 @@ class SettingsScreen extends BaseScreen {
       ),
     );
 
-    list.add(SizedBox(height: 10));
-    list.add(
-      MyListTile(
-        title1: MyText('Logs'),
-        onPressed: () {
-          Navigator.of(context).push(
-            MaterialPageRoute(
-              builder: (context) => ApplogScreen(),
-            ),
-          );
-        },
-      ),
-    );
     list.add(SizedBox(height: 10));
     return Column(children: list);
   }

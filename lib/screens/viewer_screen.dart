@@ -333,7 +333,7 @@ class ViewerScreen extends BaseScreen with WidgetsBindingObserver {
 
   // 下 進捗バー
   Widget bottomBar() {
-    double barHeight = 30;
+    double barHeight = 25;
     double ffBottom = 0;
 
     String progress = ref.watch(viewerProvider).getProgress();
@@ -580,7 +580,6 @@ class ViewerScreen extends BaseScreen with WidgetsBindingObserver {
       }
       String txt = '${book.index.list[i].title}';
       String pages = '${(sum / CHARS_PAGE).toInt()}';
-
       int nowIndex = ref.watch(viewerProvider).nowIndex;
 
       list.add(

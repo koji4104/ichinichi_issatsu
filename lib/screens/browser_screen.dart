@@ -227,7 +227,7 @@ class BrowserScreen extends BaseScreen {
             motion: const StretchMotion(),
             children: [
               if (favoList[index].type == 1)
-                SlidableAction(
+                MySlidableAction(
                   onPressed: (_) {
                     deleteDialog().then((ret) {
                       if (ret) {
@@ -236,9 +236,10 @@ class BrowserScreen extends BaseScreen {
                       }
                     });
                   },
+                  foregroundColor: Colors.white,
                   backgroundColor: Colors.redAccent,
                   icon: Icons.delete,
-                  label: null,
+                  label: l10n('delete'),
                   spacing: 0,
                   padding: EdgeInsets.fromLTRB(0, 0, 0, 0),
                 ),

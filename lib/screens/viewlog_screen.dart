@@ -132,7 +132,7 @@ class ViewlogScreen extends BaseScreen {
             extentRatio: 0.25,
             motion: const StretchMotion(),
             children: [
-              SlidableAction(
+              MySlidableAction(
                 onPressed: (_) {
                   deleteDialog().then((ret) {
                     if (ret) {
@@ -143,9 +143,10 @@ class ViewlogScreen extends BaseScreen {
                     }
                   });
                 },
+                foregroundColor: Colors.white,
                 backgroundColor: Colors.redAccent,
                 icon: Icons.delete,
-                label: null,
+                label: l10n('delete'),
                 spacing: 0,
                 padding: EdgeInsets.fromLTRB(0, 0, 0, 0),
               ),
@@ -161,11 +162,6 @@ class ViewlogScreen extends BaseScreen {
     required String title,
     Function()? onPressed,
   }) {
-    int per_hour = 0;
-    if (data.sec > 0) {
-      per_hour = (data.chars * 3600 / data.sec / CHARS_PAGE).toInt();
-    }
-
     Widget wDate = Text(
       DateFormat("MM-dd HH:mm").format(data.date),
       textScaler: TextScaler.linear(myTextScale * 0.9),
@@ -187,6 +183,11 @@ class ViewlogScreen extends BaseScreen {
       textAlign: TextAlign.right,
     );
 
+    int per_hour = 0;
+    if (data.sec > 0) {
+      per_hour = (data.chars * 3600 / data.sec / CHARS_PAGE).toInt();
+      if (per_hour > 999) per_hour = 999;
+    }
     Widget wSpeed = Text(
       '${per_hour}',
       textScaler: TextScaler.linear(myTextScale * 0.9),
@@ -202,7 +203,7 @@ class ViewlogScreen extends BaseScreen {
     Widget child = Column(children: [
       Expanded(flex: 1, child: SizedBox(height: 1)),
       Row(children: [
-        Expanded(flex: 1, child: wDate),
+        Expanded(flex: 2, child: wDate),
         Expanded(flex: 1, child: wMin),
         Expanded(flex: 1, child: wPage),
         Expanded(flex: 1, child: wSpeed),

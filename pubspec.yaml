@@ -17,7 +17,7 @@ dependencies:
 
   charset_converter: ^2.3.0
   flutter_slidable: ^3.1.2
-  package_info_plus: ^8.2.0 # License
+  package_info_plus: ^8.3.0 # License
   flutter_inappwebview: ^6.1.5
 
   beautiful_soup_dart:

@@ -22,7 +22,7 @@ class MyLog {
   }
 
   static debug(String msg) async {
-    //await MyLog.write('debug', 'app', msg);
+    if (IS_DEBUG_LOG == true) await MyLog.write('debug', 'app', msg);
   }
 
   static write(String level, String event, String msg) async {
@@ -81,7 +81,8 @@ class MyLog {
       for (String line in txt.split('\n')) {
         List r = line.split('\t');
         if (r.length >= 5) {
-          MyLogData d = MyLogData(date: r[0], user: r[1], level: r[2], event: r[3], msg: r[4]);
+          MyLogData d = MyLogData(
+              date: r[0], user: r[1], level: r[2], event: r[3], msg: r[4]);
           list.add(d);
         }
       }

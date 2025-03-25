@@ -65,7 +65,7 @@ class EpubData {
     // <ruby><rb>獅子</rb><rp>（</rp><rt>しし</rt><rp>）</rp></ruby>
     // <ruby><rb>卍<rb><rp>（<rp><rt>まんじ<rt><rp>）<rp><ruby>
     // <ruby><rb>嵐の雷竜</rb><rp>（</rp><rt>ストーム・サンダードラゴン</rt><rp>）</rp></ruby>
-    //　<ruby><rb>第</rb><rp>（</rp><rt>だい</rt><rp>）</rp></ruby>
+    // <ruby><rb>第</rb><rp>（</rp><rt>だい</rt><rp>）</rp></ruby>
     str = deleteTagAndInner(str, '<rp>（', '）</rp>');
     str = deleteTagAndInner(str, '<rp>（', '）<rp>');
 

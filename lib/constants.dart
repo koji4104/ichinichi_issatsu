@@ -2,6 +2,9 @@ bool IS_TEST = false;
 bool IS_TEST_SITE = false;
 bool IS_TEST_VIEWLOG = false;
 bool IS_SAMPLE = false;
+bool IS_CLIP = false;
+bool IS_VIEW_WIDTH = true;
+bool IS_DEBUG_LOG = true;
 
 const String DIR_SETTINGS = 'settings';
 

@@ -56,6 +56,7 @@ class ViewerNotifier extends ChangeNotifier {
     return bottomBarType != ViewerBottomBarType.none;
   }
 
+  List<int> listState = [];
   List<String> listText = [];
   List<double> listWidth = [];
   List<InAppWebViewController?> listWebViewCtrl = [];
@@ -106,11 +107,12 @@ class ViewerNotifier extends ChangeNotifier {
           EpubData e = new EpubData();
           String text1 = e.head1 + text + e.head2;
           text1 = text1.replaceAll('<style>', '<style>${getStyle(env)}');
+          text1 += '<br />';
 
           // chars
           int fsize = env.font_size.val;
           double w = (env.writing_mode.val == 0) ? (width - _widthPad) : (height - _heightPad);
-          int chars = (w / fsize).toInt();
+          int chars = ((w / fsize) - 0.0).toInt();
           body = body.replaceAll('\n', '');
           body = body.replaceAll('<h3>', '');
           body = body.replaceAll('</h3>', '<br />');
@@ -127,7 +129,8 @@ class ViewerNotifier extends ChangeNotifier {
             int d = (s.length / chars).toInt() + 1;
             lines += d;
           }
-          lines += (rubyCount / 40).toInt();
+          lines += 1;
+          lines += (rubyCount / (40 + fsize)).toInt();
 
           double dh = env.line_height.val / 100.0;
           double calcWidth = lines.toDouble() * (fsize * dh);
@@ -143,6 +146,7 @@ class ViewerNotifier extends ChangeNotifier {
           listWebViewCtrl.add(null);
           listKey.add(GlobalKey());
           listText.add(text1);
+          listState.add(0);
 
           if (Platform.isIOS) {
             ContextMenu contextMenu = ContextMenu(
@@ -344,7 +348,7 @@ class ViewerNotifier extends ChangeNotifier {
         if (i < index) dx += listWidth[i];
       }
       dx += listWidth[index] * ratio / 10000;
-      if (dx > JUMP_DIFF_PX) dx -= JUMP_DIFF_PX;
+      //if (dx > JUMP_DIFF_PX) dx -= JUMP_DIFF_PX;
 
       log('jumpTo [${index}][${(ratio / 100).toInt()}%] cur=${curdx.toInt()} dx=${dx.toInt()} max=${maxdx.toInt()}');
       await scrollController!
@@ -610,10 +614,11 @@ class ViewerNotifier extends ChangeNotifier {
         onLoadStart: (controller, url) async {},
         onLoadStop: (controller, url) async {
           if (controller == null) log('error onLoadStop controller==null');
-          if (IS_TEST == false) {
+          if (IS_VIEW_WIDTH == false) {
             if (nowIndex == index) this.notifyListeners();
             return;
-          } else {
+          } else if (index > 0) {
+            //log('onLoadStop [${index}]');
             try {
               dynamic vw = null;
               if (env.writing_mode.val == 0) {
@@ -625,10 +630,13 @@ class ViewerNotifier extends ChangeNotifier {
               }
               if (vw != null && vw != '') {
                 double dw = double.parse('${vw}');
-                if (dw > 0) {
-                  if ((listWidth[index] - dw) < -50) {
-                    MyLog.warn(
-                        'webWidth [${index}] ${listWidth[index].toInt()} -> ${dw.toInt()} LARGE');
+                if (dw > 400) {
+                  if ((listWidth[index] - dw).abs() > 10) {
+                    if ((listWidth[index] - dw).abs() > 100) {
+                      MyLog.debug(
+                          'webWidth [${index}] ${env.font_size.val}px ${listWidth[index].toInt()} -> ${dw.toInt()}');
+                    }
+                    listWidth[index] = dw;
                   }
                 }
               }
@@ -644,7 +652,7 @@ class ViewerNotifier extends ChangeNotifier {
 
   InAppWebViewSettings initialSettings = InAppWebViewSettings(
     useOnLoadResource: false,
-    javaScriptEnabled: false,
+    javaScriptEnabled: true,
     enableViewportScale: false,
     mediaPlaybackRequiresUserGesture: false,
     transparentBackground: true,

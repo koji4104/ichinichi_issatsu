@@ -23,7 +23,6 @@ enum ViewerBottomBarType {
   maxpageBar,
 }
 
-const double JUMP_DIFF_PX = 80.0;
 final viewerProvider = ChangeNotifierProvider((ref) => ViewerNotifier(ref));
 
 class ViewerNotifier extends ChangeNotifier {
@@ -56,7 +55,6 @@ class ViewerNotifier extends ChangeNotifier {
     return bottomBarType != ViewerBottomBarType.none;
   }
 
-  List<int> listState = [];
   List<String> listText = [];
   List<double> listWidth = [];
   List<InAppWebViewController?> listWebViewCtrl = [];
@@ -146,7 +144,6 @@ class ViewerNotifier extends ChangeNotifier {
           listWebViewCtrl.add(null);
           listKey.add(GlobalKey());
           listText.add(text1);
-          listState.add(0);
 
           if (Platform.isIOS) {
             ContextMenu contextMenu = ContextMenu(
@@ -348,7 +345,6 @@ class ViewerNotifier extends ChangeNotifier {
         if (i < index) dx += listWidth[i];
       }
       dx += listWidth[index] * ratio / 10000;
-      //if (dx > JUMP_DIFF_PX) dx -= JUMP_DIFF_PX;
 
       log('jumpTo [${index}][${(ratio / 100).toInt()}%] cur=${curdx.toInt()} dx=${dx.toInt()} max=${maxdx.toInt()}');
       await scrollController!
@@ -443,8 +439,6 @@ class ViewerNotifier extends ChangeNotifier {
 
       lastTime = DateTime.now();
       lastPixel = px;
-
-      px += JUMP_DIFF_PX;
 
       for (int i = 0; i < listWidth.length; i++) {
         if (px < listWidth[i]) {
@@ -614,35 +608,41 @@ class ViewerNotifier extends ChangeNotifier {
         onLoadStart: (controller, url) async {},
         onLoadStop: (controller, url) async {
           if (controller == null) log('error onLoadStop controller==null');
-          if (IS_VIEW_WIDTH == false) {
+          if (IS_UNUSE_VIEW_WIDTH == true) {
             if (nowIndex == index) this.notifyListeners();
             return;
-          } else if (index > 0) {
-            //log('onLoadStop [${index}]');
-            try {
-              dynamic vw = null;
-              if (env.writing_mode.val == 0) {
-                vw = await controller.evaluateJavascript(
-                    source: '''(() => { return document.body.scrollHeight; })()''');
-              } else {
-                vw = await controller.evaluateJavascript(
-                    source: '''(() => { return document.body.scrollWidth; })()''');
-              }
-              if (vw != null && vw != '') {
-                double dw = double.parse('${vw}');
-                if (dw > 400) {
-                  if ((listWidth[index] - dw).abs() > 10) {
-                    if ((listWidth[index] - dw).abs() > 100) {
-                      MyLog.debug(
-                          'webWidth [${index}] ${env.font_size.val}px ${listWidth[index].toInt()} -> ${dw.toInt()}');
-                    }
-                    listWidth[index] = dw;
-                  }
-                }
-              }
-              this.notifyListeners();
-            } catch (_) {}
           }
+          if (index == 0) {
+            this.notifyListeners();
+            return;
+          }
+          //log('onLoadStop [${index}]');
+          try {
+            dynamic vw = null;
+            if (env.writing_mode.val == 0) {
+              vw = await controller.evaluateJavascript(
+                  source: '''(() => { return document.body.scrollHeight; })()''');
+            } else {
+              vw = await controller.evaluateJavascript(
+                  source: '''(() => { return document.body.scrollWidth; })()''');
+            }
+            if (vw != null && vw != '') {
+              double dw = double.parse('${vw}');
+              if (dw > 400 && (dw - listWidth[index]).abs() > 10) {
+                if ((dw - listWidth[index]) > 100) {
+                  // 隙間が多い不具合
+                  dw = listWidth[index] + 100;
+                }
+                int d = dw.toInt();
+                int l = listWidth[index].toInt();
+                if ((d - l).abs() >= 100) {
+                  MyLog.debug('webWidth [${index}] ${env.font_size.val}px ${l} ${d - l}');
+                }
+                listWidth[index] = dw;
+              }
+            }
+            this.notifyListeners();
+          } catch (_) {}
         },
       );
     } catch (_) {

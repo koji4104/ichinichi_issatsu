@@ -3,7 +3,7 @@ bool IS_TEST_SITE = false;
 bool IS_TEST_VIEWLOG = false;
 bool IS_SAMPLE = false;
 bool IS_CLIP = false;
-bool IS_VIEW_WIDTH = true;
+bool IS_UNUSE_VIEW_WIDTH = false; // true = Ver1.0 onLoadStop で幅の取得しない方法
 bool IS_DEBUG_LOG = true;
 
 const String DIR_SETTINGS = 'settings';

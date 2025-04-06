@@ -105,7 +105,7 @@ class ViewerNotifier extends ChangeNotifier {
           EpubData e = new EpubData();
           String text1 = e.head1 + text + e.head2;
           text1 = text1.replaceAll('<style>', '<style>${getStyle(env)}');
-          text1 += '<br />';
+          text1 += '<br /><br />';
 
           // chars
           int fsize = env.font_size.val;

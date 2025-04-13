@@ -1,7 +1,7 @@
 name: ichinichiissatsu
 description: book reader.
 
-version: 1.1.0+1
+version: 1.2.0+1
 
 environment:
   sdk: '>=3.5.0 <4.0.0'
@@ -19,6 +19,7 @@ dependencies:
   flutter_slidable: ^3.1.2
   package_info_plus: ^8.3.0 # License
   flutter_inappwebview: ^6.1.5
+  flutter_tts: ^4.2.2
 
   beautiful_soup_dart:
     path: beautiful_soup_dart

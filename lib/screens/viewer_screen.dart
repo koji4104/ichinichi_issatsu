@@ -149,6 +149,7 @@ class ViewerScreen extends BaseScreen with WidgetsBindingObserver {
             clipTextBar(),
             settingsBar(),
             clipListBar(),
+            speakBar(),
           ]),
         ),
       ),
@@ -196,7 +197,7 @@ class ViewerScreen extends BaseScreen with WidgetsBindingObserver {
   }
 
   Widget actionRow() {
-    double pad = 12.0;
+    double pad = 10.0;
     return Row(children: [
       SizedBox(width: 4),
       IconButton(
@@ -218,6 +219,21 @@ class ViewerScreen extends BaseScreen with WidgetsBindingObserver {
           },
         ),
       Expanded(child: SizedBox(width: 1)),
+      if (isActionBar())
+        MyIconLabelButton(
+          label: l10n('Volume'),
+          icon: Icon(Icons.volume_up_outlined),
+          color: env.getFrontColor(),
+          onPressed: () {
+            if (ref.watch(viewerProvider).bottomBarType == ViewerBottomBarType.speakBar) {
+              ref.watch(viewerProvider).bottomBarType = ViewerBottomBarType.none;
+            } else {
+              ref.watch(viewerProvider).bottomBarType = ViewerBottomBarType.speakBar;
+            }
+            redraw();
+          },
+        ),
+      if (isActionBar() && IS_CLIP == true) SizedBox(width: pad),
       if (isActionBar())
         MyIconLabelButton(
           label: l10n('jump'),
@@ -335,7 +351,6 @@ class ViewerScreen extends BaseScreen with WidgetsBindingObserver {
   Widget bottomBar() {
     double barHeight = 25;
     double ffBottom = 0;
-
     String progress = ref.watch(viewerProvider).getProgress();
     Widget wText = Text(
       progress,
@@ -347,11 +362,11 @@ class ViewerScreen extends BaseScreen with WidgetsBindingObserver {
 
     Widget bar = Container(
       color: env.getBackColor(),
-      child: Column(
+      child: Row(
         children: [
-          SizedBox(height: 6),
+          Expanded(child: SizedBox(width: 1)),
           wText,
-          Expanded(child: SizedBox(height: 1)),
+          Expanded(child: SizedBox(width: 1)),
         ],
       ),
     );
@@ -728,6 +743,55 @@ class ViewerScreen extends BaseScreen with WidgetsBindingObserver {
         ),
       );
     }
+
+    return AnimatedPositioned(
+      duration: const Duration(milliseconds: 400),
+      curve: Curves.linear,
+      left: 0,
+      top: null,
+      right: 0,
+      bottom: ffBottom,
+      height: barHeight,
+      child: bar,
+    );
+  }
+
+  // 読み上げバー
+  Widget speakBar() {
+    double barHeight = _height * 1 / 3;
+    double ffBottom = -1.0 * barHeight;
+    if (ref.watch(viewerProvider).bottomBarType == ViewerBottomBarType.speakBar) {
+      ffBottom = 0;
+    }
+
+    Widget bar = Container(
+      color: env.getBackColor(),
+      child: Row(
+        children: [
+          Expanded(child: SizedBox(width: 1)),
+          IconButton(
+            iconSize: 32,
+            //label: l10n('Volume'),
+            icon: Icon(Icons.play_circle_outline),
+            color: env.getFrontColor(),
+            onPressed: () {
+              ref.watch(viewerProvider).startSpeaking();
+            },
+          ),
+          SizedBox(width: 32),
+          IconButton(
+            iconSize: 32,
+            //label: l10n('Volume'),
+            icon: Icon(Icons.stop_circle_outlined),
+            color: env.getFrontColor(),
+            onPressed: () {
+              ref.watch(viewerProvider).stopSpeaking();
+            },
+          ),
+          Expanded(child: SizedBox(width: 1)),
+        ],
+      ),
+    );
 
     return AnimatedPositioned(
       duration: const Duration(milliseconds: 400),

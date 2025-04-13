@@ -5,6 +5,7 @@ import 'dart:async';
 import 'dart:developer';
 import 'dart:convert';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
+import 'package:flutter_tts/flutter_tts.dart';
 
 import '/models/book_data.dart';
 import '/models/epub_data.dart';
@@ -21,6 +22,7 @@ enum ViewerBottomBarType {
   clipTextBar,
   clipListBar,
   maxpageBar,
+  speakBar,
 }
 
 final viewerProvider = ChangeNotifierProvider((ref) => ViewerNotifier(ref));
@@ -56,6 +58,7 @@ class ViewerNotifier extends ChangeNotifier {
   }
 
   List<String> listText = [];
+  List<List<String>> listLine = [[]];
   List<double> listWidth = [];
   List<InAppWebViewController?> listWebViewCtrl = [];
   List<GlobalKey> listKey = [];
@@ -80,6 +83,7 @@ class ViewerNotifier extends ChangeNotifier {
     listWebViewCtrl.clear();
     listKey.clear();
     listContextMenu.clear();
+    listLine.clear();
 
     try {
       scrollController = new ScrollController();
@@ -93,19 +97,20 @@ class ViewerNotifier extends ChangeNotifier {
       for (int i = 0; i < 10000; i++) {
         String path1 = '${bookdir}/${book!.bookId}/text/ch${(i).toString().padLeft(4, '0')}.txt';
         if (File(path1).existsSync()) {
-          String text = await File(path1).readAsStringSync();
-          String body = text;
+          String text1 = await File(path1).readAsStringSync();
+          String body = text1;
+          String speech = text1;
 
           if (env.writing_mode.val == 1) {
             VerticalRotated.map.forEach((String key, String value) {
-              text = text.replaceAll(key, value);
+              text1 = text1.replaceAll(key, value);
             });
           }
 
           EpubData e = new EpubData();
-          String text1 = e.head1 + text + e.head2;
+          text1 = e.head1 + text1 + e.head2;
           text1 = text1.replaceAll('<style>', '<style>${getStyle(env)}');
-          text1 += '<br /><br />';
+          text1 += '<br />';
 
           // chars
           int fsize = env.font_size.val;
@@ -119,26 +124,44 @@ class ViewerNotifier extends ChangeNotifier {
 
           int rubyCount = body.split('<ruby>').length;
 
+          //log('rubyCount ${i} ${rubyCount}');
+
           // delete ruby
           body = EpubData.deleteRuby(body);
           List<String> list1 = body.split('<br />');
-          int lines = 0;
+          int lineCount = 0;
           for (String s in list1) {
             int d = (s.length / chars).toInt() + 1;
-            lines += d;
+            lineCount += d;
           }
-          lines += 1;
-          lines += (rubyCount / (40 + fsize)).toInt();
+          lineCount += 1;
+          lineCount += (rubyCount / (40 + fsize)).toInt();
 
           double dh = env.line_height.val / 100.0;
-          double calcWidth = lines.toDouble() * (fsize * dh);
+          double calcWidth = lineCount.toDouble() * (fsize * dh);
           calcWidth += scrollWidth;
           if (calcWidth < 400) calcWidth = 400;
-          if (Platform.isIOS == false && Platform.isAndroid == false && calcWidth > 10000) {
-            //log('calcWidth=${calcWidth.toInt()} text.length=${text.length}');
-            calcWidth = 10000;
+          if (Platform.isIOS == false && Platform.isAndroid == false) {
+            if (calcWidth > 3000) calcWidth = 3000;
+            book!.prop.nowIndex = 1;
+            book!.prop.nowRatio = 0;
           }
           // chars
+
+          // speech
+          List<String> lines = [];
+          speech = speech.replaceAll('\n', '');
+          speech = speech.replaceAll('<h3>', '');
+          speech = speech.replaceAll('</h3>', '<br />');
+          speech = speech.replaceAll('<h2>', '');
+          speech = speech.replaceAll('</h2>', '<br />');
+          speech = EpubData.extractRuby(speech);
+          List<String> list2 = speech.split('<br />');
+          for (String s in list2) {
+            if (s.length > 1) lines.add(s);
+          }
+          listLine.add(lines);
+          // speech
 
           listWidth.add(calcWidth);
           listWebViewCtrl.add(null);
@@ -589,6 +612,8 @@ class ViewerNotifier extends ChangeNotifier {
     }
   }
 
+  DateTime lastView = DateTime.now();
+
   Widget inviewer(int index, String text, Environment env) {
     PlatformInAppWebViewController.debugLoggingSettings.enabled = false;
     if ((nowIndex - index).abs() > 2) {
@@ -641,6 +666,14 @@ class ViewerNotifier extends ChangeNotifier {
                 listWidth[index] = dw;
               }
             }
+
+            DateTime old = lastView.add(Duration(milliseconds: 100));
+            //log('[${index}] compareTo = ${DateTime.now().compareTo(old)}');
+            if (DateTime.now().compareTo(old) > 0) {
+              log('[${index}] compareTo = ${DateTime.now().compareTo(old)}');
+              await Future.delayed(Duration(milliseconds: 100));
+            }
+            lastView = DateTime.now();
             this.notifyListeners();
           } catch (_) {}
         },
@@ -746,6 +779,95 @@ class ViewerNotifier extends ChangeNotifier {
       }
     } catch (_) {}
     return;
+  }
+
+  // TextToSpeech
+  FlutterTts flutterTts = FlutterTts();
+  bool initialized = false;
+  bool isSpeaking = false;
+  int speakIndex = 0;
+  int speakLine = 0;
+
+  Future startSpeaking() async {
+    if (initialized == false) {
+      initialized = true;
+
+      // 言語を設定する
+      await flutterTts.setLanguage("ja-JP");
+
+      // 特定の言語が利用可能かどうかを確認する
+      //await flutterTts.isLanguageAvailable("en-US");
+
+      // OSのボイス名一覧
+      List voices = await flutterTts.getVoices;
+      for (var item in voices) {
+        var map = item as Map<Object?, Object?>;
+        // 日本語のみ
+        if (map["locale"].toString().toLowerCase().contains("ja")) {
+          log('voices ${map["name"].toString()}');
+        }
+      }
+
+      // iOS, macOS only
+      //await flutterTts.setVoice({"identifier": "com.apple.voice.compact.en-AU.Karen"});
+
+      flutterTts.setCompletionHandler(() async {
+        speakLine++;
+        speak();
+      });
+    }
+
+    // 速さ
+    await flutterTts.setSpeechRate(0.5);
+
+    // 音量
+    await flutterTts.setVolume(1.0);
+
+    // ピッチ
+    await flutterTts.setPitch(1.0);
+
+    // ボイス
+    //com.apple.eloquence.ja-JP.Eddy
+    //com.apple.eloquence.ja-JP.Flo
+    //com.apple.voice.compact.ja-JP.Kyoko", "com.apple.voice.enhanced.ja-JP.Kyoko",
+    //com.apple.eloquence.ja-JP.Rocko
+    //com.apple.eloquence.ja-JP.Shelley
+    //await flutterTts.setVoice({"identifier": "com.apple.eloquence.ja-JP.Eddy"});
+
+    //[log] voices O-ren
+    //[log] voices Kyoko
+    //[log] voices Hattori
+    await flutterTts.setVoice({"name": "O-ren", "locale": "ja-JP"});
+
+    speakIndex = nowIndex;
+    if (speakIndex > listLine.length - 1) speakIndex = listLine.length - 1;
+    speakLine = (listLine[speakIndex].length * nowRatio / 10000).toInt();
+
+    isSpeaking = true;
+    speak();
+  }
+
+  Future speak() async {
+    if (isSpeaking) {
+      if (speakLine >= listLine[speakIndex].length) {
+        speakIndex++;
+        speakLine = 0;
+      }
+      if (speakIndex >= listLine.length) {
+        isSpeaking = false;
+      }
+      if (isSpeaking) {
+        await Future.delayed(Duration(milliseconds: 1000));
+        String text = listLine[speakIndex][speakLine];
+        await flutterTts.speak(text);
+        log('${text}');
+      }
+    }
+  }
+
+  Future stopSpeaking() async {
+    isSpeaking = false;
+    flutterTts.stop();
   }
 }
 

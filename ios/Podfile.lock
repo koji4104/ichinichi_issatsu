@@ -9,6 +9,8 @@ PODS:
   - flutter_inappwebview_ios/Core (0.0.1):
     - Flutter
     - OrderedSet (~> 6.0.3)
+  - flutter_tts (0.0.1):
+    - Flutter
   - OrderedSet (6.0.3)
   - package_info_plus (0.4.5):
     - Flutter
@@ -20,6 +22,7 @@ DEPENDENCIES:
   - charset_converter (from `.symlinks/plugins/charset_converter/ios`)
   - Flutter (from `Flutter`)
   - flutter_inappwebview_ios (from `.symlinks/plugins/flutter_inappwebview_ios/ios`)
+  - flutter_tts (from `.symlinks/plugins/flutter_tts/ios`)
   - package_info_plus (from `.symlinks/plugins/package_info_plus/ios`)
   - path_provider_foundation (from `.symlinks/plugins/path_provider_foundation/darwin`)
 
@@ -34,6 +37,8 @@ EXTERNAL SOURCES:
     :path: Flutter
   flutter_inappwebview_ios:
     :path: ".symlinks/plugins/flutter_inappwebview_ios/ios"
+  flutter_tts:
+    :path: ".symlinks/plugins/flutter_tts/ios"
   package_info_plus:
     :path: ".symlinks/plugins/package_info_plus/ios"
   path_provider_foundation:
@@ -43,6 +48,7 @@ SPEC CHECKSUMS:
   charset_converter: 215c7b04932ec2b9ba43be96a9bc34afed3e5322
   Flutter: e0871f40cf51350855a761d2e70bf5af5b9b5de7
   flutter_inappwebview_ios: 6f63631e2c62a7c350263b13fa5427aedefe81d4
+  flutter_tts: 0f492aab6accf87059b72354fcb4ba934304771d
   OrderedSet: e539b66b644ff081c73a262d24ad552a69be3a94
   package_info_plus: c0502532a26c7662a62a356cebe2692ec5fe4ec4
   path_provider_foundation: 2b6b4c569c0fb62ec74538f866245ac84301af46

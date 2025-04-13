@@ -20,7 +20,8 @@ import '/constants.dart';
 class PermitInvalidCertification extends HttpOverrides {
   @override
   HttpClient createHttpClient(SecurityContext? context) {
-    return super.createHttpClient(context)..badCertificateCallback = (cert, host, port) => true;
+    return super.createHttpClient(context)
+      ..badCertificateCallback = (cert, host, port) => true;
   }
 }
 
@@ -174,7 +175,8 @@ class EpubNotifier extends ChangeNotifier {
 
     if (epub.bookId != null && epub.uriList.isNotEmpty) {
       existingIndex = await getExistingIndex(epub.bookId!);
-      if (existingIndex > epub.uriList.length) existingIndex = epub.uriList.length;
+      if (existingIndex > epub.uriList.length)
+        existingIndex = epub.uriList.length;
       if (existingIndex == epub.uriList.length)
         status = MyEpubStatus.same;
       else
@@ -480,9 +482,14 @@ class EpubNotifier extends ChangeNotifier {
     text = deleteTag(text, '<span');
     text = text.replaceAll('</span>', '');
 
+    // delete <em
+    text = deleteTag(text, '<em');
+    text = text.replaceAll('</em>', '');
+
     // </div> を消してから
     text = text.replaceAll('</h3><br />', '</h3>');
-    text = text.replaceAll('</h3>\n<br />\n<br />\n<br />', '</h3>\n<br />\n<br />');
+    text = text.replaceAll(
+        '</h3>\n<br />\n<br />\n<br />', '</h3>\n<br />\n<br />');
 
     // delete class <h3
     text = deleteClassAttr(text, '<h3');
@@ -621,14 +628,16 @@ class EpubNotifier extends ChangeNotifier {
             for (var MapEntry(:key, :value) in map.entries) {
               if (value['__typename'] != null && value['id'] != null) {
                 if (value['__typename'] == 'Episode') {
-                  epub.uriList
-                      .add('https://kakuyomu.jp/works/${epub.siteId}/episodes/${value['id']}');
+                  epub.uriList.add(
+                      'https://kakuyomu.jp/works/${epub.siteId}/episodes/${value['id']}');
                 } else if (value['__typename'] == 'Work') {
                   if (value['id'] == epub.siteId) {
                     epub.bookTitle = value['title'];
                     var aut = value['author'];
                     var ref = aut['__ref'] ?? '';
-                    userId = ref.toString().substring(ref.toString().indexOf('UserAccount:') + 12);
+                    userId = ref
+                        .toString()
+                        .substring(ref.toString().indexOf('UserAccount:') + 12);
                   }
                 }
               }
@@ -707,7 +716,8 @@ class EpubNotifier extends ChangeNotifier {
       if (eAuthor != null) epub.bookAuthor = eAuthor.innerHtml;
     }
 
-    Bs4Element? ec = bs.find('div', class_: 'widget-episodeBody js-episode-body');
+    Bs4Element? ec =
+        bs.find('div', class_: 'widget-episodeBody js-episode-body');
     if (ec != null) {
       String text = ec.innerHtml;
       text = text.replaceAll('<br>', '<br />');
@@ -840,7 +850,8 @@ class EpubNotifier extends ChangeNotifier {
         await Future.delayed(Duration(milliseconds: 200));
 
         // https://ncode.syosetu.com/n6964jl/1/
-        String? body = await downloadCtrl.download8(epub.uriList[i], this); // waiting
+        String? body =
+            await downloadCtrl.download8(epub.uriList[i], this); // waiting
         if (body != null) {
           await createNarouText(body, i + 1);
         } else {
@@ -876,7 +887,8 @@ class EpubNotifier extends ChangeNotifier {
       if (el != null) f.title = el.innerHtml;
     }
     if (f.title == null) {
-      Bs4Element? el = bs.find('h1', class_: 'p-novel__title p-novel__title--rensai');
+      Bs4Element? el =
+          bs.find('h1', class_: 'p-novel__title p-novel__title--rensai');
       if (el != null) f.title = el.innerHtml;
     }
     if (f.title == null) {
@@ -886,7 +898,8 @@ class EpubNotifier extends ChangeNotifier {
 
     String text = '';
     //<div class="js-novel-text p-novel__text">
-    List<Bs4Element> els = bs.findAll('div', class_: 'js-novel-text p-novel__text');
+    List<Bs4Element> els =
+        bs.findAll('div', class_: 'js-novel-text p-novel__text');
     for (Bs4Element el in els) {
       String t1 = el.innerHtml;
       t1 = t1.replaceAll('<br>', '<br />');

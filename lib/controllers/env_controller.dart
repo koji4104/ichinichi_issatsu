@@ -15,7 +15,11 @@ class EnvData {
   List<String> keys = [];
   String name = '';
 
-  EnvData({required int this.val, required List<int> this.vals, required List<String> this.keys, required String this.name}) {
+  EnvData(
+      {required int this.val,
+      required List<int> this.vals,
+      required List<String> this.keys,
+      required String this.name}) {
     round(val);
   }
 
@@ -152,6 +156,30 @@ class Environment {
     vals: [100, 110, 120, 130, 140, 150],
     keys: ['100 %', '110 %', '120 %', '130 %', '140 %', '150 %'],
     name: 'ui_text_scale',
+  );
+
+  // Speak-Speed
+  EnvData speak_speed = EnvData(
+    val: 100,
+    vals: [80, 90, 100, 110, 120],
+    keys: ['80', '90', '100', '110', '120'],
+    name: 'speak_speed',
+  );
+
+  // Voice
+  EnvData speak_voice = EnvData(
+    val: 1,
+    vals: [1, 2, 3],
+    keys: ['O-ren', 'Kyoko', 'Hattori'],
+    name: 'speak_voice',
+  );
+
+  // Volume
+  EnvData speak_volume = EnvData(
+    val: 1,
+    vals: [80, 90, 100],
+    keys: ['80', '90', '100'],
+    name: 'speak_volume',
   );
 
   Map<String, dynamic> toJson() => {

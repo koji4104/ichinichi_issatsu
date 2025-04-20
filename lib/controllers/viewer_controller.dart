@@ -51,6 +51,8 @@ class ViewerNotifier extends ChangeNotifier {
   int allPixel = 100;
   int nowChars = 0;
 
+  double pixelMargin = 50;
+
   ViewerBottomBarType bottomBarType = ViewerBottomBarType.none;
 
   bool isActionBar() {
@@ -95,7 +97,8 @@ class ViewerNotifier extends ChangeNotifier {
       String bookdir = APP_DIR + '/book';
 
       for (int i = 0; i < 10000; i++) {
-        String path1 = '${bookdir}/${book!.bookId}/text/ch${(i).toString().padLeft(4, '0')}.txt';
+        String path1 =
+            '${bookdir}/${book!.bookId}/text/ch${(i).toString().padLeft(4, '0')}.txt';
         if (File(path1).existsSync()) {
           String text1 = await File(path1).readAsStringSync();
           String body = text1;
@@ -114,7 +117,9 @@ class ViewerNotifier extends ChangeNotifier {
 
           // chars
           int fsize = env.font_size.val;
-          double w = (env.writing_mode.val == 0) ? (width - _widthPad) : (height - _heightPad);
+          double w = (env.writing_mode.val == 0)
+              ? (width - _widthPad)
+              : (height - _heightPad);
           int chars = ((w / fsize) - 0.0).toInt();
           body = body.replaceAll('\n', '');
           body = body.replaceAll('<h3>', '');
@@ -156,6 +161,7 @@ class ViewerNotifier extends ChangeNotifier {
           speech = speech.replaceAll('<h2>', '');
           speech = speech.replaceAll('</h2>', '<br />');
           speech = EpubData.extractRuby(speech);
+          speech = speech.replaceAll('。', '。<br />');
           List<String> list2 = speech.split('<br />');
           for (String s in list2) {
             if (s.length > 1) lines.add(s);
@@ -170,7 +176,8 @@ class ViewerNotifier extends ChangeNotifier {
 
           if (Platform.isIOS) {
             ContextMenu contextMenu = ContextMenu(
-                settings: ContextMenuSettings(hideDefaultSystemContextMenuItems: true),
+                settings: ContextMenuSettings(
+                    hideDefaultSystemContextMenuItems: true),
                 menuItems: [],
                 onCreateContextMenu: (hitTestResult) async {
                   print("onCreateContextMenu");
@@ -179,7 +186,8 @@ class ViewerNotifier extends ChangeNotifier {
                 onHideContextMenu: () {
                   print("onHideContextMenu");
                 },
-                onContextMenuActionItemClicked: (contextMenuItemClicked) async {});
+                onContextMenuActionItemClicked:
+                    (contextMenuItemClicked) async {});
             listContextMenu.add(contextMenu);
           } else {
             listContextMenu.add(null);
@@ -211,7 +219,8 @@ class ViewerNotifier extends ChangeNotifier {
       String bookdir = APP_DIR + '/book';
 
       for (int i = 0; i < 10000; i++) {
-        String path1 = '${bookdir}/${book!.bookId}/text/ch${(i).toString().padLeft(4, '0')}.txt';
+        String path1 =
+            '${bookdir}/${book!.bookId}/text/ch${(i).toString().padLeft(4, '0')}.txt';
         if (File(path1).existsSync()) {
           String text = await File(path1).readAsStringSync();
 
@@ -234,7 +243,9 @@ class ViewerNotifier extends ChangeNotifier {
 
       if (Platform.isIOS) {
         int ni = nowIndex;
-        if (listWebViewCtrl.length > ni && listWebViewCtrl[ni] != null && listText.length > ni) {
+        if (listWebViewCtrl.length > ni &&
+            listWebViewCtrl[ni] != null &&
+            listText.length > ni) {
           try {
             await listWebViewCtrl[ni]!.loadData(data: listText[ni]);
           } on Exception catch (e) {
@@ -274,7 +285,8 @@ class ViewerNotifier extends ChangeNotifier {
     if (scrollController!.hasClients == false) return;
     var px = scrollController!.position.pixels + 400.0;
     if (px < 0) px = 0;
-    scrollController!.animateTo(px, duration: Duration(milliseconds: 600), curve: Curves.linear);
+    scrollController!.animateTo(px,
+        duration: Duration(milliseconds: 600), curve: Curves.linear);
   }
 
   scrollLeft() {
@@ -283,7 +295,8 @@ class ViewerNotifier extends ChangeNotifier {
     var px = scrollController!.position.pixels - 400.0;
     final maxpx = scrollController!.position.maxScrollExtent;
     if (px > maxpx) px = maxpx;
-    scrollController!.animateTo(px, duration: Duration(milliseconds: 600), curve: Curves.linear);
+    scrollController!.animateTo(px,
+        duration: Duration(milliseconds: 600), curve: Curves.linear);
   }
 
   Future<String?> getSelectedText() async {
@@ -332,7 +345,8 @@ class ViewerNotifier extends ChangeNotifier {
         int i = nowIndex;
         await listWebViewCtrl[i]!.clearFocus();
         if (i - 1 >= 0) await listWebViewCtrl[i - 1]!.clearFocus();
-        if (i + 1 < listWebViewCtrl.length) await listWebViewCtrl[i + 1]!.clearFocus();
+        if (i + 1 < listWebViewCtrl.length)
+          await listWebViewCtrl[i + 1]!.clearFocus();
       }
     } catch (_) {
       log('err clearFocus() [${nowIndex}]');
@@ -354,9 +368,8 @@ class ViewerNotifier extends ChangeNotifier {
         return;
       }
       if (listWidth.length == 0) return;
-
       if (index > listWidth.length - 1) index = listWidth.length - 1;
-      isLoading = true;
+      if ((nowIndex - index).abs() >= 2) isLoading = true;
       nowIndex = index;
       this.notifyListeners();
 
@@ -368,10 +381,10 @@ class ViewerNotifier extends ChangeNotifier {
         if (i < index) dx += listWidth[i];
       }
       dx += listWidth[index] * ratio / 10000;
-
+      if (dx > pixelMargin) dx -= pixelMargin;
       log('jumpTo [${index}][${(ratio / 100).toInt()}%] cur=${curdx.toInt()} dx=${dx.toInt()} max=${maxdx.toInt()}');
-      await scrollController!
-          .animateTo(dx, duration: Duration(milliseconds: 500), curve: Curves.linear);
+      await scrollController!.animateTo(dx,
+          duration: Duration(milliseconds: 500), curve: Curves.linear);
 
       isLoading = false;
       this.notifyListeners();
@@ -451,13 +464,11 @@ class ViewerNotifier extends ChangeNotifier {
     if (isLoading == true) return;
     try {
       double px = scrollController!.position.pixels;
+      if (px > pixelMargin) px -= pixelMargin;
+
       final past = lastTime.add(Duration(seconds: 1));
       if (DateTime.now().compareTo(past) < 1 || (lastPixel - px).abs() < 200) {
         return;
-      }
-
-      if (isActionBar() && bottomBarType != ViewerBottomBarType.tocBar) {
-        bottomBarType = ViewerBottomBarType.none;
       }
 
       lastTime = DateTime.now();
@@ -583,7 +594,8 @@ class ViewerNotifier extends ChangeNotifier {
         : ScrollPhysics();
     try {
       return ListView.builder(
-        scrollDirection: env.writing_mode.val == 0 ? Axis.vertical : Axis.horizontal,
+        scrollDirection:
+            env.writing_mode.val == 0 ? Axis.vertical : Axis.horizontal,
         reverse: env.writing_mode.val == 0 ? false : true,
         shrinkWrap: true,
         controller: scrollController,
@@ -612,11 +624,9 @@ class ViewerNotifier extends ChangeNotifier {
     }
   }
 
-  DateTime lastView = DateTime.now();
-
   Widget inviewer(int index, String text, Environment env) {
     PlatformInAppWebViewController.debugLoggingSettings.enabled = false;
-    if ((nowIndex - index).abs() > 2) {
+    if ((nowIndex - index).abs() > 1) {
       return Container();
     }
     //log('inviewer [${index}]');
@@ -628,7 +638,8 @@ class ViewerNotifier extends ChangeNotifier {
         findInteractionController: null,
         contextMenu: listContextMenu[index],
         onWebViewCreated: (controller) async {
-          if (listWebViewCtrl.length > index) listWebViewCtrl[index] = controller;
+          if (listWebViewCtrl.length > index)
+            listWebViewCtrl[index] = controller;
         },
         onLoadStart: (controller, url) async {},
         onLoadStop: (controller, url) async {
@@ -646,34 +657,29 @@ class ViewerNotifier extends ChangeNotifier {
             dynamic vw = null;
             if (env.writing_mode.val == 0) {
               vw = await controller.evaluateJavascript(
-                  source: '''(() => { return document.body.scrollHeight; })()''');
+                  source:
+                      '''(() => { return document.body.scrollHeight; })()''');
             } else {
               vw = await controller.evaluateJavascript(
-                  source: '''(() => { return document.body.scrollWidth; })()''');
+                  source:
+                      '''(() => { return document.body.scrollWidth; })()''');
             }
             if (vw != null && vw != '') {
               double dw = double.parse('${vw}');
               if (dw > 400 && (dw - listWidth[index]).abs() > 10) {
-                if ((dw - listWidth[index]) > 100) {
+                if ((dw - listWidth[index]) > 300) {
                   // 隙間が多い不具合
-                  dw = listWidth[index] + 100;
+                  dw = listWidth[index] + 300;
                 }
                 int d = dw.toInt();
                 int l = listWidth[index].toInt();
-                if ((d - l).abs() >= 100) {
-                  MyLog.debug('webWidth [${index}] ${env.font_size.val}px ${l} ${d - l}');
+                if ((d - l).abs() >= 200) {
+                  MyLog.debug(
+                      'webWidth [${index}] ${env.font_size.val}px ${l} ${d - l}');
                 }
                 listWidth[index] = dw;
               }
             }
-
-            DateTime old = lastView.add(Duration(milliseconds: 100));
-            //log('[${index}] compareTo = ${DateTime.now().compareTo(old)}');
-            if (DateTime.now().compareTo(old) > 0) {
-              log('[${index}] compareTo = ${DateTime.now().compareTo(old)}');
-              await Future.delayed(Duration(milliseconds: 100));
-            }
-            lastView = DateTime.now();
             this.notifyListeners();
           } catch (_) {}
         },
@@ -818,32 +824,57 @@ class ViewerNotifier extends ChangeNotifier {
     }
 
     // 速さ
-    await flutterTts.setSpeechRate(0.5);
+    double sp = 0.5;
+    switch (env.speak_speed.val) {
+      case 80:
+        sp = 0.40;
+      case 90:
+        sp = 0.45;
+      case 100:
+        sp = 0.50;
+      case 110:
+        sp = 0.55;
+      case 120:
+        sp = 0.60;
+    }
+    await flutterTts.setSpeechRate(sp);
 
     // 音量
-    await flutterTts.setVolume(1.0);
+    double vl = 1.0;
+    switch (env.speak_speed.val) {
+      case 80:
+        vl = 0.8;
+      case 90:
+        vl = 0.9;
+      case 100:
+        vl = 1.0;
+    }
+    await flutterTts.setVolume(vl);
 
     // ピッチ
     await flutterTts.setPitch(1.0);
 
     // ボイス
-    //com.apple.eloquence.ja-JP.Eddy
-    //com.apple.eloquence.ja-JP.Flo
-    //com.apple.voice.compact.ja-JP.Kyoko", "com.apple.voice.enhanced.ja-JP.Kyoko",
-    //com.apple.eloquence.ja-JP.Rocko
-    //com.apple.eloquence.ja-JP.Shelley
-    //await flutterTts.setVoice({"identifier": "com.apple.eloquence.ja-JP.Eddy"});
-
     //[log] voices O-ren
     //[log] voices Kyoko
     //[log] voices Hattori
-    await flutterTts.setVoice({"name": "O-ren", "locale": "ja-JP"});
+    String v = 'O-ren';
+    switch (env.speak_voice.val) {
+      case 1:
+        v = 'O-ren';
+      case 2:
+        v = 'Kyoko';
+      case 3:
+        v = 'Hattori';
+    }
+    await flutterTts.setVoice({"name": v, "locale": "ja-JP"});
 
     speakIndex = nowIndex;
     if (speakIndex > listLine.length - 1) speakIndex = listLine.length - 1;
     speakLine = (listLine[speakIndex].length * nowRatio / 10000).toInt();
 
     isSpeaking = true;
+    this.notifyListeners();
     speak();
   }
 
@@ -860,13 +891,19 @@ class ViewerNotifier extends ChangeNotifier {
         await Future.delayed(Duration(milliseconds: 1000));
         String text = listLine[speakIndex][speakLine];
         await flutterTts.speak(text);
-        log('${text}');
+        log('[${speakLine}] ${text}');
+      }
+      if (speakLine % 3 == 0) {
+        int ratio = (speakLine * 10000 / listLine[speakIndex].length).toInt();
+        log('ratio ${ratio}');
+        jumpToIndex(speakIndex, ratio);
       }
     }
   }
 
   Future stopSpeaking() async {
     isSpeaking = false;
+    this.notifyListeners();
     flutterTts.stop();
   }
 }

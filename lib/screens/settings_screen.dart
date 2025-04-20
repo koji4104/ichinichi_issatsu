@@ -40,17 +40,22 @@ class SettingsScreen extends BaseScreen {
     list.add(MySettingsTile(data: env.writing_mode));
     list.add(MySettingsTile(data: env.font_family));
 
-    list.add(SizedBox(height: 20));
+    list.add(SizedBox(height: 16));
     list.add(MySettingsTile(data: env.dark_mode));
     list.add(MySettingsTile(data: env.language_code));
     list.add(MySettingsTile(data: env.ui_text_scale));
+
+    list.add(SizedBox(height: 16));
+    list.add(MySettingsTile(data: env.speak_voice));
+    list.add(MySettingsTile(data: env.speak_speed));
+    list.add(MySettingsTile(data: env.speak_volume));
 
     String sph = l10n('per_hour');
     String spage = l10n('page');
 
     int speed = ref.watch(viewlogProvider).per_hour;
 
-    list.add(SizedBox(height: 20));
+    list.add(SizedBox(height: 16));
     list.add(
       MyListTile(
         title1: MyText('${sph} ${speed} ${spage}'),
@@ -91,7 +96,10 @@ class SettingsScreen extends BaseScreen {
                 applicationVersion: info.version,
                 applicationIcon: Container(
                   padding: EdgeInsets.all(8),
-                  child: Image(image: AssetImage('lib/assets/appicon.png'), width: 64, height: 64),
+                  child: Image(
+                      image: AssetImage('lib/assets/appicon.png'),
+                      width: 64,
+                      height: 64),
                 ),
               );
             }),

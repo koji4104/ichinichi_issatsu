@@ -47,6 +47,7 @@ class ViewerScreen extends BaseScreen with WidgetsBindingObserver {
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
+    ref.watch(viewerProvider).stopSpeaking();
   }
 
   @override
@@ -60,9 +61,11 @@ class ViewerScreen extends BaseScreen with WidgetsBindingObserver {
       } else if (state == AppLifecycleState.paused) {
         log('paused');
         endReadlog();
+        ref.watch(viewerProvider).stopSpeaking();
       } else if (state == AppLifecycleState.detached) {
         log('detached');
         endReadlog();
+        ref.watch(viewerProvider).stopSpeaking();
       }
     }
   }
@@ -197,7 +200,10 @@ class ViewerScreen extends BaseScreen with WidgetsBindingObserver {
   }
 
   Widget actionRow() {
-    double pad = 10.0;
+    double pad = 1.0;
+    if (Platform.isIOS == false && Platform.isAndroid == false) {
+      pad = 16.0;
+    }
     return Row(children: [
       SizedBox(width: 4),
       IconButton(
@@ -289,6 +295,7 @@ class ViewerScreen extends BaseScreen with WidgetsBindingObserver {
     ]);
   }
 
+  // トップバー
   Widget topBar() {
     double barHeight = 70;
     double ffTop = -30;
@@ -347,10 +354,15 @@ class ViewerScreen extends BaseScreen with WidgetsBindingObserver {
     );
   }
 
-  // 下 進捗バー
+  // ボトムバー
   Widget bottomBar() {
-    double barHeight = 25;
-    double ffBottom = 0;
+    double barHeight = 40;
+    double ffBottom = -10;
+    bool isSpeaking = ref.watch(viewerProvider).isSpeaking;
+    if (isActionBar() || isSpeaking) {
+      ffBottom = 0;
+    }
+
     String progress = ref.watch(viewerProvider).getProgress();
     Widget wText = Text(
       progress,
@@ -360,11 +372,33 @@ class ViewerScreen extends BaseScreen with WidgetsBindingObserver {
       style: TextStyle(color: env.getFrontColor()),
     );
 
+    Widget btnStart = IconButton(
+      iconSize: 30,
+      icon: Icon(Icons.volume_up_outlined),
+      color: env.getFrontColor(),
+      onPressed: () {
+        ref.watch(viewerProvider).startSpeaking();
+      },
+    );
+
+    Widget btnStop = IconButton(
+      color: Colors.redAccent,
+      iconSize: 30,
+      icon: Icon(Icons.stop_circle_outlined),
+      //color: env.getFrontColor(),
+      onPressed: () {
+        ref.watch(viewerProvider).stopSpeaking();
+      },
+    );
+
     Widget bar = Container(
       color: env.getBackColor(),
       child: Row(
         children: [
           Expanded(child: SizedBox(width: 1)),
+          if (isActionBar() && !isSpeaking) btnStart,
+          if (isSpeaking) btnStop,
+          if (isActionBar() || isSpeaking) SizedBox(width: 40),
           wText,
           Expanded(child: SizedBox(width: 1)),
         ],
@@ -529,7 +563,7 @@ class ViewerScreen extends BaseScreen with WidgetsBindingObserver {
 
   /// settingsBar
   Widget settingsBar() {
-    double barHeight = 350;
+    double barHeight = 400;
     double ffBottom = -1.0 * barHeight;
     if (ref.watch(viewerProvider).bottomBarType == ViewerBottomBarType.settingsBar) {
       ffBottom = 0;
@@ -542,6 +576,10 @@ class ViewerScreen extends BaseScreen with WidgetsBindingObserver {
     list.add(MySettingsTile(data: env.writing_mode));
     list.add(MySettingsTile(data: env.font_family));
     list.add(MySettingsTile(data: env.dark_mode));
+    list.add(SizedBox(height: 10));
+    list.add(MySettingsTile(data: env.speak_voice));
+    list.add(MySettingsTile(data: env.speak_speed));
+    list.add(MySettingsTile(data: env.speak_volume));
 
     Widget bar = Container(
       color: myTheme.cardColor,
@@ -666,12 +704,12 @@ class ViewerScreen extends BaseScreen with WidgetsBindingObserver {
       clipText += d.list[i].text + '\n';
     }
 
-    Widget w = Row(
+    Widget w1 = Row(
       children: [
-        SizedBox(width: 30),
+        Expanded(child: SizedBox(width: 1)),
         MyTextButton(
           title: l10n('copy_to_clipboard'),
-          width: 170,
+          width: 190,
           scaleRatio: 0.9,
           onPressed: () async {
             final data = ClipboardData(text: clipText);
@@ -679,11 +717,15 @@ class ViewerScreen extends BaseScreen with WidgetsBindingObserver {
           },
         ),
         Expanded(child: SizedBox(width: 1)),
+      ],
+    );
+    Widget w2 = Row(
+      children: [
+        Expanded(child: SizedBox(width: 1)),
         Text('${l10n('swipe_to_delete')}', textScaler: TextScaler.linear(myTextScale * 0.7)),
         SizedBox(width: 20),
       ],
     );
-
     Widget bar = Container(
       color: myTheme.cardColor,
       child: Column(children: [
@@ -702,7 +744,8 @@ class ViewerScreen extends BaseScreen with WidgetsBindingObserver {
         child: Column(
           children: [
             closeButtonRow(),
-            w,
+            w1,
+            w2,
             Expanded(
               child: ListView.builder(
                 itemCount: list.length,

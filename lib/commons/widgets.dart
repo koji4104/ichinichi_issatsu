@@ -17,13 +17,14 @@ const double DEF_VIEW_PADDING_H = 60.0;
 const EdgeInsetsGeometry DEF_VIEW_PADDING_TB =
     EdgeInsets.fromLTRB(DEF_VIEW_PADDING_W, 40, DEF_VIEW_PADDING_W, 40);
 // 縦書き
-const EdgeInsetsGeometry DEF_VIEW_PADDING_RL =
-    EdgeInsets.fromLTRB(0, DEF_VIEW_PADDING_H + 10, 0, DEF_VIEW_PADDING_H - 10.0);
+const EdgeInsetsGeometry DEF_VIEW_PADDING_RL = EdgeInsets.fromLTRB(
+    0, DEF_VIEW_PADDING_H + 10, 0, DEF_VIEW_PADDING_H - 10.0);
 
 const ICON_BUTTON_SIZE = 24.0;
 
 const double DEF_VIEW_LINE_WIDTH = DEF_VIEW_PADDING_W + DEF_VIEW_PADDING_W + 10;
-const double DEF_VIEW_LINE_HEIGHT = DEF_VIEW_PADDING_H + DEF_VIEW_PADDING_H + 100;
+const double DEF_VIEW_LINE_HEIGHT =
+    DEF_VIEW_PADDING_H + DEF_VIEW_PADDING_H + 100;
 
 // ON OFF button
 Color btnOn = Colors.white;
@@ -60,19 +61,31 @@ List<Color?> COL_FLAG_LIST = [
   COL_FLAG6
 ];
 
-TextStyle TEXTSTYLE_DARK_SMALL =
-    ThemeData.dark().textTheme.bodySmall!.copyWith(fontSize: 12.0, color: COL_DARK_TEXT);
-TextStyle TEXTSTYLE_DARK_MEDIUM =
-    ThemeData.dark().textTheme.bodyMedium!.copyWith(fontSize: 14.0, color: COL_DARK_TEXT);
-TextStyle TEXTSTYLE_DARK_LARGE =
-    ThemeData.dark().textTheme.bodyLarge!.copyWith(fontSize: 16.0, color: COL_DARK_TEXT);
+TextStyle TEXTSTYLE_DARK_SMALL = ThemeData.dark()
+    .textTheme
+    .bodySmall!
+    .copyWith(fontSize: 12.0, color: COL_DARK_TEXT);
+TextStyle TEXTSTYLE_DARK_MEDIUM = ThemeData.dark()
+    .textTheme
+    .bodyMedium!
+    .copyWith(fontSize: 14.0, color: COL_DARK_TEXT);
+TextStyle TEXTSTYLE_DARK_LARGE = ThemeData.dark()
+    .textTheme
+    .bodyLarge!
+    .copyWith(fontSize: 16.0, color: COL_DARK_TEXT);
 
-TextStyle TEXTSTYLE_LIGHT_SMALL =
-    ThemeData.light().textTheme.bodySmall!.copyWith(fontSize: 12.0, color: COL_LIGHT_TEXT);
-TextStyle TEXTSTYLE_LIGHT_MEDIUM =
-    ThemeData.light().textTheme.bodyMedium!.copyWith(fontSize: 14.0, color: COL_LIGHT_TEXT);
-TextStyle TEXTSTYLE_LIGHT_LARGE =
-    ThemeData.light().textTheme.bodyLarge!.copyWith(fontSize: 16.0, color: COL_LIGHT_TEXT);
+TextStyle TEXTSTYLE_LIGHT_SMALL = ThemeData.light()
+    .textTheme
+    .bodySmall!
+    .copyWith(fontSize: 12.0, color: COL_LIGHT_TEXT);
+TextStyle TEXTSTYLE_LIGHT_MEDIUM = ThemeData.light()
+    .textTheme
+    .bodyMedium!
+    .copyWith(fontSize: 14.0, color: COL_LIGHT_TEXT);
+TextStyle TEXTSTYLE_LIGHT_LARGE = ThemeData.light()
+    .textTheme
+    .bodyLarge!
+    .copyWith(fontSize: 16.0, color: COL_LIGHT_TEXT);
 
 ThemeData myDarkTheme = ThemeData.dark().copyWith(
   pageTransitionsTheme: MyPageTransitionsTheme(),
@@ -173,8 +186,10 @@ ThemeData myLightTheme = ThemeData.light().copyWith(
   snackBarTheme: SnackBarThemeData(
     backgroundColor: Color(0xFFeeeeee),
     actionTextColor: COL_LIGHT_TEXT,
-    contentTextStyle:
-        ThemeData.dark().textTheme.bodyMedium!.copyWith(fontSize: 14.0, color: COL_LIGHT_TEXT),
+    contentTextStyle: ThemeData.dark()
+        .textTheme
+        .bodyMedium!
+        .copyWith(fontSize: 14.0, color: COL_LIGHT_TEXT),
   ),
   appBarTheme: AppBarTheme(
     iconTheme: IconThemeData(size: ICON_BUTTON_SIZE),
@@ -188,7 +203,8 @@ ThemeData myLightTheme = ThemeData.light().copyWith(
 class MyPageTransitionsTheme extends PageTransitionsTheme {
   const MyPageTransitionsTheme();
 
-  static const PageTransitionsBuilder builder = CupertinoPageTransitionsBuilder();
+  static const PageTransitionsBuilder builder =
+      CupertinoPageTransitionsBuilder();
 
   @override
   Widget buildTransitions<T>(
@@ -198,11 +214,13 @@ class MyPageTransitionsTheme extends PageTransitionsTheme {
     Animation<double> secondaryAnimation,
     Widget child,
   ) {
-    return builder.buildTransitions<T>(route, context, animation, secondaryAnimation, child);
+    return builder.buildTransitions<T>(
+        route, context, animation, secondaryAnimation, child);
   }
 }
 
-Widget MyText(String text, {int? maxLength, int? maxLines, bool? noScale, bool? center}) {
+Widget MyText(String text,
+    {int? maxLength, int? maxLines, bool? noScale, bool? center}) {
   double scale = myTextScale;
   if (noScale != null && scale > 1.3) {
     scale = 1.3;
@@ -263,6 +281,62 @@ Widget MyTextButton({
   bool? delete,
   bool? noScale,
   double? scaleRatio,
+  Icon? icon,
+}) {
+  double fsize = myTheme.textTheme.bodyMedium!.fontSize!;
+  Color? fgcol = myTheme.textTheme.bodyMedium!.color!;
+  Color? bgcol = null;
+  Color? bdcol = myTheme.dividerColor;
+
+  if (commit != null) {
+    fgcol = Color(0xFFFFFFFF);
+    bgcol = Colors.blueAccent;
+    bdcol = bgcol;
+  } else if (delete != null) {
+    fgcol = Color(0xFFFFFFFF);
+    bgcol = Colors.redAccent;
+    bdcol = bgcol;
+  }
+  double scale = myTextScale;
+  if (noScale != null) {
+    if (scale > 1.3) scale = 1.3;
+  }
+  if (scaleRatio != null) {
+    scale *= scaleRatio;
+  }
+
+  return Container(
+    width: width != null ? width : 300,
+    child: TextButton(
+      style: TextButton.styleFrom(
+        backgroundColor: bgcol,
+        shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.all(Radius.circular(DEF_RADIUS))),
+        side: bdcol != null ? BorderSide(color: bdcol) : null,
+      ),
+      child: Container(
+        padding: EdgeInsets.symmetric(vertical: 6, horizontal: 0),
+        child: Row(children: [
+          if (icon != null) icon,
+          if (icon != null) SizedBox(width: 4),
+          Text(title,
+              style: TextStyle(color: fgcol, fontSize: fsize),
+              textAlign: TextAlign.center),
+        ]),
+      ),
+      onPressed: onPressed,
+    ),
+  );
+}
+/*
+Widget MyTextButton({
+  required String title,
+  required void Function()? onPressed,
+  double? width,
+  bool? commit,
+  bool? delete,
+  bool? noScale,
+  double? scaleRatio,
 }) {
   double fsize = myTheme.textTheme.bodyMedium!.fontSize!;
   Color? fgcol = myTheme.textTheme.bodyMedium!.color!;
@@ -304,6 +378,7 @@ Widget MyTextButton({
     ),
   );
 }
+*/
 
 /// MyListTile
 /// - title1
@@ -320,7 +395,8 @@ Widget MyListTile({
   Widget e = Expanded(child: SizedBox(width: 8));
   if (multiline != null) e = SizedBox(width: 8);
   Widget w = SizedBox(width: 10);
-  Icon icon = Icon(Icons.arrow_forward_ios, size: 14.0, color: myTheme.textTheme.bodyMedium!.color);
+  Icon icon = Icon(Icons.arrow_forward_ios,
+      size: 14.0, color: myTheme.textTheme.bodyMedium!.color);
 
   Widget txt;
   if (textonly != null) {
@@ -347,7 +423,8 @@ Widget MyTocTile({
 }) {
   Widget e = Expanded(child: SizedBox(width: 1));
   Widget w = SizedBox(width: 16);
-  Icon icon = Icon(Icons.arrow_forward_ios, size: 14.0, color: myTheme.textTheme.bodyMedium!.color);
+  Icon icon = Icon(Icons.arrow_forward_ios,
+      size: 14.0, color: myTheme.textTheme.bodyMedium!.color);
   Icon icon1 = Icon(Icons.circle, size: 10.0, color: Colors.blueAccent);
 
   Widget txt = Row(children: [
@@ -362,7 +439,8 @@ Widget MyTocTile({
   return Container(
     decoration: BoxDecoration(
       color: myTheme.cardColor,
-      border: Border(bottom: BorderSide(color: myTheme.dividerColor, width: 0.5)),
+      border:
+          Border(bottom: BorderSide(color: myTheme.dividerColor, width: 0.5)),
     ),
     padding: EdgeInsets.fromLTRB(16, 1, 4, 1),
     child: TextButton(child: txt, onPressed: onPressed),
@@ -371,7 +449,8 @@ Widget MyTocTile({
 
 Widget MyClipListTile({required String text, Function()? onPressed}) {
   Widget btn = IconButton(
-    icon: Icon(Icons.delete, size: 24, color: myTheme.textTheme.bodyMedium!.color),
+    icon: Icon(Icons.delete,
+        size: 24, color: myTheme.textTheme.bodyMedium!.color),
     onPressed: onPressed,
   );
 
@@ -425,7 +504,7 @@ class MySlidableAction extends StatelessWidget {
     if (icon != null) {
       children.add(SizedBox(height: 4));
       children.add(
-        Icon(icon, size: 20, color: foregroundColor),
+        Icon(icon, size: 24, color: foregroundColor),
       );
     }
 

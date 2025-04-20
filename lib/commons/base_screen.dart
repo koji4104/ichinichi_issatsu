@@ -12,7 +12,8 @@ import '/controllers/epub_controller.dart';
 class BaseScreen extends ConsumerWidget {
   late BuildContext context;
   late WidgetRef ref;
-  ChangeNotifierProvider baseProvider = ChangeNotifierProvider((ref) => ChangeNotifier());
+  ChangeNotifierProvider baseProvider =
+      ChangeNotifierProvider((ref) => ChangeNotifier());
 
   late Environment env;
   bool bInit = false;
@@ -134,7 +135,8 @@ class BaseScreen extends ConsumerWidget {
       child: TextButton(
         style: TextButton.styleFrom(
           backgroundColor: bgcol,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(DEF_RADIUS))),
+          shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.all(Radius.circular(DEF_RADIUS))),
           side: bdcol != null ? BorderSide(color: bdcol) : null,
         ),
         child: Text(
@@ -149,12 +151,17 @@ class BaseScreen extends ConsumerWidget {
   }
 
   redraw() {
-    if (ref.read(baseProvider) != null) ref.read(baseProvider)!.notifyListeners();
+    if (ref.read(baseProvider) != null)
+      ref.read(baseProvider)!.notifyListeners();
   }
 
   Widget MySettingsTile({required EnvData data}) {
     Widget e = Expanded(child: SizedBox(width: 1));
-    Widget child = Row(children: [MyText(l10n(data.name)), e, MySettingsDropdown(data: data)]);
+    Widget child = Row(children: [
+      MyText(l10n(data.name)),
+      e,
+      MySettingsDropdown(data: data),
+    ]);
 
     return Container(
       decoration: BoxDecoration(
@@ -164,7 +171,7 @@ class BaseScreen extends ConsumerWidget {
           bottom: BorderSide(color: myTheme.dividerColor, width: 0.3),
         ),
       ),
-      height: 30 + (16 * myTextScale),
+      height: 20 + (16 * myTextScale),
       padding: EdgeInsets.fromLTRB(20, 0, 20, 0),
       child: child,
     );
@@ -259,7 +266,8 @@ class BaseScreen extends ConsumerWidget {
     int all = ref.watch(epubProvider).epub.uriList.length;
     int req1 = 0;
     int req2 = 0;
-    label1 = '${ref.watch(epubProvider).epub.bookTitle ?? ref.watch(epubProvider).epub.bookId}';
+    label1 =
+        '${ref.watch(epubProvider).epub.bookTitle ?? ref.watch(epubProvider).epub.bookId}';
 
     if (ref.watch(epubProvider).status == MyEpubStatus.downloadable) {
       if (all > 0 && already == 0) {
@@ -329,9 +337,11 @@ class BaseScreen extends ConsumerWidget {
       ]);
     } else if (req1 > 0) {
       // 10 話 まで ダウンロード
-      String btnTitle1 = '${req1} ${l10n('episode')} ${l10n('up_to')} ${l10n('download')}';
+      String btnTitle1 =
+          '${req1} ${l10n('episode')} ${l10n('up_to')} ${l10n('download')}';
       if (req1 == 1) btnTitle1 = '${l10n('download')}';
-      String btnTitle2 = '${req2} ${l10n('episode')} ${l10n('up_to')} ${l10n('download')}';
+      String btnTitle2 =
+          '${req2} ${l10n('episode')} ${l10n('up_to')} ${l10n('download')}';
 
       btn = Column(children: [
         MyTextButton(

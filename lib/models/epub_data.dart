@@ -1,4 +1,5 @@
 import 'dart:convert' as convert;
+import 'dart:developer';
 
 class EpubFileData {
   EpubFileData({this.fileName, this.text}) {}
@@ -109,5 +110,43 @@ class EpubData {
     str = deleteTagAndInner(str, '<ruby>', '<rt>');
     str = deleteTagAndInner(str, '</rt>', '</ruby>');
     return str;
+  }
+
+  // ひとつだけ返す
+  static String getInner(String text, String tag1, String tag2) {
+    // <rb> /rb>
+    // 獅子　← <ruby><rb>獅子</rb><rp>（</rp><rt>しし</rt><rp>）</rp></ruby>
+    String ret = '';
+    int s1 = text.indexOf(tag1);
+    int e1 = (s1 >= 0) ? text.indexOf(tag2, s1 + tag1.length) + 1 : 0;
+    if (s1 >= 0 && e1 > 0 && e1 - s1 < 100) {
+      ret = text.substring(s1 + tag1.length, e1 - 1);
+    }
+    return ret;
+  }
+
+  static String getRuby(String text1, Map<String, String> m) {
+    //Map<String, String> m = {};
+    String tag1 = '<ruby>';
+    String tag2 = '</ruby>';
+    String text = text1;
+    int s1 = 0;
+    for (int i = 0; i < 20000; i++) {
+      s1 = text.indexOf(tag1);
+      int e1 = (s1 >= 0) ? text.indexOf(tag2, s1 + tag1.length) + 1 : 0;
+      if (s1 >= 0 && e1 > 0 && e1 - s1 < 100) {
+        String r = text.substring(s1, e1);
+        String b = getInner(r, '<rb>', '</rb>');
+        String t = getInner(r, '<rt>', '</rt>');
+        if (b.length >= 2 && t.length >= 2 && m.containsKey(b) == false) {
+          m.addAll({b: t});
+        }
+        //log('${b} ${t}');
+        text = text.substring(0, s1) + t + text.substring(e1 + tag2.length - 1);
+      } else {
+        break;
+      }
+    }
+    return text;
   }
 }

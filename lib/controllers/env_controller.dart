@@ -170,13 +170,13 @@ class Environment {
   EnvData speak_voice = EnvData(
     val: 1,
     vals: [1, 2, 3],
-    keys: ['O-ren', 'Kyoko', 'Hattori'],
+    keys: ['O-Ren', 'Kyoko', 'Hattori'],
     name: 'speak_voice',
   );
 
   // Volume
   EnvData speak_volume = EnvData(
-    val: 1,
+    val: 100,
     vals: [80, 90, 100],
     keys: ['80', '90', '100'],
     name: 'speak_volume',

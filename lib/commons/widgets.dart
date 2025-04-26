@@ -317,68 +317,20 @@ Widget MyTextButton({
       child: Container(
         padding: EdgeInsets.symmetric(vertical: 6, horizontal: 0),
         child: Row(children: [
+          Expanded(child: SizedBox(width: 1)),
           if (icon != null) icon,
           if (icon != null) SizedBox(width: 4),
           Text(title,
               style: TextStyle(color: fgcol, fontSize: fsize),
+              textScaler: TextScaler.linear(scale),
               textAlign: TextAlign.center),
+          Expanded(child: SizedBox(width: 1)),
         ]),
       ),
       onPressed: onPressed,
     ),
   );
 }
-/*
-Widget MyTextButton({
-  required String title,
-  required void Function()? onPressed,
-  double? width,
-  bool? commit,
-  bool? delete,
-  bool? noScale,
-  double? scaleRatio,
-}) {
-  double fsize = myTheme.textTheme.bodyMedium!.fontSize!;
-  Color? fgcol = myTheme.textTheme.bodyMedium!.color!;
-  Color? bgcol = null;
-  Color? bdcol = myTheme.dividerColor;
-
-  if (commit != null) {
-    fgcol = Color(0xFFFFFFFF);
-    bgcol = Colors.blueAccent;
-    bdcol = bgcol;
-  } else if (delete != null) {
-    fgcol = Color(0xFFFFFFFF);
-    bgcol = Colors.redAccent;
-    bdcol = bgcol;
-  }
-  double scale = myTextScale;
-  if (noScale != null) {
-    if (scale > 1.3) scale = 1.3;
-  }
-  if (scaleRatio != null) {
-    scale *= scaleRatio;
-  }
-
-  return Container(
-    width: width != null ? width : 300,
-    child: TextButton(
-      style: TextButton.styleFrom(
-        backgroundColor: bgcol,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(DEF_RADIUS))),
-        side: bdcol != null ? BorderSide(color: bdcol) : null,
-      ),
-      child: Text(
-        title,
-        style: TextStyle(color: fgcol, fontSize: fsize),
-        textAlign: TextAlign.center,
-        textScaler: TextScaler.linear(scale),
-      ),
-      onPressed: onPressed,
-    ),
-  );
-}
-*/
 
 /// MyListTile
 /// - title1
@@ -454,6 +406,8 @@ Widget MyClipListTile({required String text, Function()? onPressed}) {
     onPressed: onPressed,
   );
 
+  double pad = 6;
+  if (text.length < 16) pad = 10;
   Widget wText = Text(
     text,
     maxLines: 10,
@@ -469,7 +423,7 @@ Widget MyClipListTile({required String text, Function()? onPressed}) {
       color: myTheme.cardColor,
       border: Border(bottom: BorderSide(color: myTheme.dividerColor, width: 1)),
     ),
-    padding: EdgeInsets.fromLTRB(20, 4, 20, 8),
+    padding: EdgeInsets.fromLTRB(20, pad, 20, pad),
     child: child,
   );
 }

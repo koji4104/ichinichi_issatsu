@@ -6,6 +6,7 @@ import 'dart:developer';
 import 'dart:convert';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 import 'package:flutter_tts/flutter_tts.dart';
+import 'dart:core';
 
 import '/models/book_data.dart';
 import '/models/epub_data.dart';
@@ -14,7 +15,7 @@ import '/controllers/applog_controller.dart';
 import '/constants.dart';
 import '/controllers/env_controller.dart';
 
-enum ViewerBottomBarType {
+enum ViewerBarType {
   none,
   tocBar,
   actionBar,
@@ -22,7 +23,7 @@ enum ViewerBottomBarType {
   clipTextBar,
   clipListBar,
   maxpageBar,
-  speakBar,
+  speakSettingsBar,
 }
 
 final viewerProvider = ChangeNotifierProvider((ref) => ViewerNotifier(ref));
@@ -53,10 +54,10 @@ class ViewerNotifier extends ChangeNotifier {
 
   double pixelMargin = 50;
 
-  ViewerBottomBarType bottomBarType = ViewerBottomBarType.none;
+  ViewerBarType barType = ViewerBarType.none;
 
   bool isActionBar() {
-    return bottomBarType != ViewerBottomBarType.none;
+    return barType != ViewerBarType.none;
   }
 
   List<String> listText = [];
@@ -86,6 +87,7 @@ class ViewerNotifier extends ChangeNotifier {
     listKey.clear();
     listContextMenu.clear();
     listLine.clear();
+    Map<String, String> m = {};
 
     try {
       scrollController = new ScrollController();
@@ -97,8 +99,7 @@ class ViewerNotifier extends ChangeNotifier {
       String bookdir = APP_DIR + '/book';
 
       for (int i = 0; i < 10000; i++) {
-        String path1 =
-            '${bookdir}/${book!.bookId}/text/ch${(i).toString().padLeft(4, '0')}.txt';
+        String path1 = '${bookdir}/${book!.bookId}/text/ch${(i).toString().padLeft(4, '0')}.txt';
         if (File(path1).existsSync()) {
           String text1 = await File(path1).readAsStringSync();
           String body = text1;
@@ -117,9 +118,7 @@ class ViewerNotifier extends ChangeNotifier {
 
           // chars
           int fsize = env.font_size.val;
-          double w = (env.writing_mode.val == 0)
-              ? (width - _widthPad)
-              : (height - _heightPad);
+          double w = (env.writing_mode.val == 0) ? (width - _widthPad) : (height - _heightPad);
           int chars = ((w / fsize) - 0.0).toInt();
           body = body.replaceAll('\n', '');
           body = body.replaceAll('<h3>', '');
@@ -154,19 +153,33 @@ class ViewerNotifier extends ChangeNotifier {
           // chars
 
           // speech
+          Stopwatch sw = Stopwatch();
+          sw.start();
+
           List<String> lines = [];
           speech = speech.replaceAll('\n', '');
           speech = speech.replaceAll('<h3>', '');
           speech = speech.replaceAll('</h3>', '<br />');
           speech = speech.replaceAll('<h2>', '');
           speech = speech.replaceAll('</h2>', '<br />');
-          speech = EpubData.extractRuby(speech);
+
+          speech = EpubData.getRuby(speech, m);
+          //speech = EpubData.extractRuby(speech);
+          m.forEach((String key, String value) {
+            speech = speech.replaceAll(key, value);
+          });
+
           speech = speech.replaceAll('。', '。<br />');
+          speech = speech.replaceAll('「', '<br />「<br />');
+          speech = speech.replaceAll('」', '<br />」<br />');
           List<String> list2 = speech.split('<br />');
           for (String s in list2) {
-            if (s.length > 1) lines.add(s);
+            if (s.length >= 1) lines.add(s);
           }
           listLine.add(lines);
+
+          sw.stop();
+          log('ruby ${sw.elapsedMilliseconds.toString()} [ms]');
           // speech
 
           listWidth.add(calcWidth);
@@ -176,8 +189,7 @@ class ViewerNotifier extends ChangeNotifier {
 
           if (Platform.isIOS) {
             ContextMenu contextMenu = ContextMenu(
-                settings: ContextMenuSettings(
-                    hideDefaultSystemContextMenuItems: true),
+                settings: ContextMenuSettings(hideDefaultSystemContextMenuItems: true),
                 menuItems: [],
                 onCreateContextMenu: (hitTestResult) async {
                   print("onCreateContextMenu");
@@ -186,8 +198,7 @@ class ViewerNotifier extends ChangeNotifier {
                 onHideContextMenu: () {
                   print("onHideContextMenu");
                 },
-                onContextMenuActionItemClicked:
-                    (contextMenuItemClicked) async {});
+                onContextMenuActionItemClicked: (contextMenuItemClicked) async {});
             listContextMenu.add(contextMenu);
           } else {
             listContextMenu.add(null);
@@ -219,8 +230,7 @@ class ViewerNotifier extends ChangeNotifier {
       String bookdir = APP_DIR + '/book';
 
       for (int i = 0; i < 10000; i++) {
-        String path1 =
-            '${bookdir}/${book!.bookId}/text/ch${(i).toString().padLeft(4, '0')}.txt';
+        String path1 = '${bookdir}/${book!.bookId}/text/ch${(i).toString().padLeft(4, '0')}.txt';
         if (File(path1).existsSync()) {
           String text = await File(path1).readAsStringSync();
 
@@ -243,9 +253,7 @@ class ViewerNotifier extends ChangeNotifier {
 
       if (Platform.isIOS) {
         int ni = nowIndex;
-        if (listWebViewCtrl.length > ni &&
-            listWebViewCtrl[ni] != null &&
-            listText.length > ni) {
+        if (listWebViewCtrl.length > ni && listWebViewCtrl[ni] != null && listText.length > ni) {
           try {
             await listWebViewCtrl[ni]!.loadData(data: listText[ni]);
           } on Exception catch (e) {
@@ -285,8 +293,7 @@ class ViewerNotifier extends ChangeNotifier {
     if (scrollController!.hasClients == false) return;
     var px = scrollController!.position.pixels + 400.0;
     if (px < 0) px = 0;
-    scrollController!.animateTo(px,
-        duration: Duration(milliseconds: 600), curve: Curves.linear);
+    scrollController!.animateTo(px, duration: Duration(milliseconds: 600), curve: Curves.linear);
   }
 
   scrollLeft() {
@@ -295,8 +302,7 @@ class ViewerNotifier extends ChangeNotifier {
     var px = scrollController!.position.pixels - 400.0;
     final maxpx = scrollController!.position.maxScrollExtent;
     if (px > maxpx) px = maxpx;
-    scrollController!.animateTo(px,
-        duration: Duration(milliseconds: 600), curve: Curves.linear);
+    scrollController!.animateTo(px, duration: Duration(milliseconds: 600), curve: Curves.linear);
   }
 
   Future<String?> getSelectedText() async {
@@ -345,8 +351,7 @@ class ViewerNotifier extends ChangeNotifier {
         int i = nowIndex;
         await listWebViewCtrl[i]!.clearFocus();
         if (i - 1 >= 0) await listWebViewCtrl[i - 1]!.clearFocus();
-        if (i + 1 < listWebViewCtrl.length)
-          await listWebViewCtrl[i + 1]!.clearFocus();
+        if (i + 1 < listWebViewCtrl.length) await listWebViewCtrl[i + 1]!.clearFocus();
       }
     } catch (_) {
       log('err clearFocus() [${nowIndex}]');
@@ -383,8 +388,8 @@ class ViewerNotifier extends ChangeNotifier {
       dx += listWidth[index] * ratio / 10000;
       if (dx > pixelMargin) dx -= pixelMargin;
       log('jumpTo [${index}][${(ratio / 100).toInt()}%] cur=${curdx.toInt()} dx=${dx.toInt()} max=${maxdx.toInt()}');
-      await scrollController!.animateTo(dx,
-          duration: Duration(milliseconds: 500), curve: Curves.linear);
+      await scrollController!
+          .animateTo(dx, duration: Duration(milliseconds: 500), curve: Curves.linear);
 
       isLoading = false;
       this.notifyListeners();
@@ -589,13 +594,11 @@ class ViewerNotifier extends ChangeNotifier {
     if (listText.length == 0) return Container();
 
     PlatformInAppWebViewController.debugLoggingSettings.enabled = false;
-    ScrollPhysics physics = bottomBarType == ViewerBottomBarType.clipTextBar
-        ? NeverScrollableScrollPhysics()
-        : ScrollPhysics();
+    ScrollPhysics physics =
+        barType == ViewerBarType.clipTextBar ? NeverScrollableScrollPhysics() : ScrollPhysics();
     try {
       return ListView.builder(
-        scrollDirection:
-            env.writing_mode.val == 0 ? Axis.vertical : Axis.horizontal,
+        scrollDirection: env.writing_mode.val == 0 ? Axis.vertical : Axis.horizontal,
         reverse: env.writing_mode.val == 0 ? false : true,
         shrinkWrap: true,
         controller: scrollController,
@@ -638,8 +641,7 @@ class ViewerNotifier extends ChangeNotifier {
         findInteractionController: null,
         contextMenu: listContextMenu[index],
         onWebViewCreated: (controller) async {
-          if (listWebViewCtrl.length > index)
-            listWebViewCtrl[index] = controller;
+          if (listWebViewCtrl.length > index) listWebViewCtrl[index] = controller;
         },
         onLoadStart: (controller, url) async {},
         onLoadStop: (controller, url) async {
@@ -657,12 +659,10 @@ class ViewerNotifier extends ChangeNotifier {
             dynamic vw = null;
             if (env.writing_mode.val == 0) {
               vw = await controller.evaluateJavascript(
-                  source:
-                      '''(() => { return document.body.scrollHeight; })()''');
+                  source: '''(() => { return document.body.scrollHeight; })()''');
             } else {
               vw = await controller.evaluateJavascript(
-                  source:
-                      '''(() => { return document.body.scrollWidth; })()''');
+                  source: '''(() => { return document.body.scrollWidth; })()''');
             }
             if (vw != null && vw != '') {
               double dw = double.parse('${vw}');
@@ -674,8 +674,7 @@ class ViewerNotifier extends ChangeNotifier {
                 int d = dw.toInt();
                 int l = listWidth[index].toInt();
                 if ((d - l).abs() >= 200) {
-                  MyLog.debug(
-                      'webWidth [${index}] ${env.font_size.val}px ${l} ${d - l}');
+                  MyLog.debug('webWidth [${index}] ${env.font_size.val}px ${l} ${d - l}');
                 }
                 listWidth[index] = dw;
               }
@@ -788,17 +787,22 @@ class ViewerNotifier extends ChangeNotifier {
   }
 
   // TextToSpeech
+  //--------------
   FlutterTts flutterTts = FlutterTts();
   bool initialized = false;
   bool isSpeaking = false;
   int speakIndex = 0;
   int speakLine = 0;
+  int speakWait = 1000; // ms
+  double pitch = 1.0;
+  double pitch1 = 1.0;
+  double pitch2 = 1.3;
 
   Future startSpeaking() async {
     if (initialized == false) {
       initialized = true;
 
-      // 言語を設定する
+      // 言語を設定
       await flutterTts.setLanguage("ja-JP");
 
       // 特定の言語が利用可能かどうかを確認する
@@ -817,6 +821,7 @@ class ViewerNotifier extends ChangeNotifier {
       // iOS, macOS only
       //await flutterTts.setVoice({"identifier": "com.apple.voice.compact.en-AU.Karen"});
 
+      // コールバック設定
       flutterTts.setCompletionHandler(() async {
         speakLine++;
         speak();
@@ -828,14 +833,19 @@ class ViewerNotifier extends ChangeNotifier {
     switch (env.speak_speed.val) {
       case 80:
         sp = 0.40;
+        speakWait = 1200;
       case 90:
         sp = 0.45;
+        speakWait = 1100;
       case 100:
         sp = 0.50;
+        speakWait = 1000;
       case 110:
         sp = 0.55;
+        speakWait = 900;
       case 120:
         sp = 0.60;
+        speakWait = 800;
     }
     await flutterTts.setSpeechRate(sp);
 
@@ -852,7 +862,8 @@ class ViewerNotifier extends ChangeNotifier {
     await flutterTts.setVolume(vl);
 
     // ピッチ
-    await flutterTts.setPitch(1.0);
+    pitch = pitch1;
+    await flutterTts.setPitch(pitch);
 
     // ボイス
     //[log] voices O-ren
@@ -874,37 +885,68 @@ class ViewerNotifier extends ChangeNotifier {
     speakLine = (listLine[speakIndex].length * nowRatio / 10000).toInt();
 
     isSpeaking = true;
-    this.notifyListeners();
     speak();
+    this.notifyListeners();
+  }
+
+  String getSpeakText() {
+    String text = '';
+    if (speakLine >= listLine[speakIndex].length) {
+      speakIndex++;
+      speakLine = 0;
+    }
+    if (speakIndex < listLine.length) {
+      text = listLine[speakIndex][speakLine];
+    }
+    return text;
   }
 
   Future speak() async {
     if (isSpeaking) {
-      if (speakLine >= listLine[speakIndex].length) {
-        speakIndex++;
-        speakLine = 0;
+      String text = getSpeakText();
+      if (text == '「') {
+        speakLine++;
+        text = getSpeakText();
+        if (pitch != pitch2) {
+          pitch = pitch2;
+          await flutterTts.setPitch(pitch);
+        }
+      } else if (text == '」') {
+        speakLine++;
+        text = getSpeakText();
+        if (text == '「') {
+          speakLine++;
+          text = getSpeakText();
+          if (pitch != pitch2) {
+            pitch = pitch2;
+            await flutterTts.setPitch(pitch);
+          }
+        } else {
+          if (pitch != pitch1) {
+            pitch = pitch1;
+            await flutterTts.setPitch(pitch);
+          }
+        }
       }
-      if (speakIndex >= listLine.length) {
-        isSpeaking = false;
-      }
-      if (isSpeaking) {
-        await Future.delayed(Duration(milliseconds: 1000));
-        String text = listLine[speakIndex][speakLine];
+      if (text != '') {
+        await Future.delayed(Duration(milliseconds: speakWait));
         await flutterTts.speak(text);
-        log('[${speakLine}] ${text}');
-      }
-      if (speakLine % 3 == 0) {
-        int ratio = (speakLine * 10000 / listLine[speakIndex].length).toInt();
-        log('ratio ${ratio}');
-        jumpToIndex(speakIndex, ratio);
+        log('[${speakLine}] [${(pitch * 10).toInt()}] ${text}');
+        if (speakLine % 3 == 0) {
+          int ratio = (speakLine * 10000 / listLine[speakIndex].length).toInt();
+          jumpToIndex(speakIndex, ratio);
+        }
+      } else {
+        isSpeaking = false;
+        flutterTts.stop();
       }
     }
   }
 
   Future stopSpeaking() async {
     isSpeaking = false;
-    this.notifyListeners();
     flutterTts.stop();
+    this.notifyListeners();
   }
 }
 

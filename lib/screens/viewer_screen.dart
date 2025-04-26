@@ -38,7 +38,7 @@ class ViewerScreen extends BaseScreen with WidgetsBindingObserver {
     if (Platform.isAndroid || Platform.isIOS) {
       WidgetsBinding.instance.addObserver(this);
     }
-    ref.read(viewerProvider).bottomBarType = ViewerBottomBarType.none;
+    ref.read(viewerProvider).barType = ViewerBarType.none;
     ref.read(viewerProvider).book = this.book;
     await reload();
     await startReadlog();
@@ -96,25 +96,28 @@ class ViewerScreen extends BaseScreen with WidgetsBindingObserver {
       onPopInvokedWithResult: (didPop, result) async {
         log('pop');
         endReadlog();
+        ref.watch(viewerProvider).stopSpeaking();
       },
       child: Scaffold(
         backgroundColor: env.getBackColor(),
         body: SafeArea(
           child: Stack(children: [
             Container(
-              padding: env.writing_mode.val == 0 ? DEF_VIEW_PADDING_TB : DEF_VIEW_PADDING_RL,
+              padding: env.writing_mode.val == 0
+                  ? DEF_VIEW_PADDING_TB
+                  : DEF_VIEW_PADDING_RL,
               color: env.getBackColor(),
               child: Widget1(),
             ),
             if (ref.watch(viewerProvider).isLoading) loadingWidget(),
-            if (ref.watch(viewerProvider).bottomBarType != ViewerBottomBarType.clipTextBar)
+            if (ref.watch(viewerProvider).barType != ViewerBarType.clipTextBar)
               Container(
                 padding: EdgeInsets.fromLTRB(1, 1, 1, 1),
                 child: RawGestureDetector(
                   behavior: HitTestBehavior.translucent,
                   gestures: {
-                    TapGestureRecognizer:
-                        GestureRecognizerFactoryWithHandlers<TapGestureRecognizer>(
+                    TapGestureRecognizer: GestureRecognizerFactoryWithHandlers<
+                        TapGestureRecognizer>(
                       () => TapGestureRecognizer(),
                       (TapGestureRecognizer instance) {
                         instance
@@ -125,13 +128,14 @@ class ViewerScreen extends BaseScreen with WidgetsBindingObserver {
                             } else if (dx > _width - 120) {
                               //scrollLeft();
                             } else {
-                              if (ref.watch(viewerProvider).bottomBarType !=
-                                  ViewerBottomBarType.actionBar) {
-                                ref.watch(viewerProvider).bottomBarType =
-                                    ViewerBottomBarType.actionBar;
+                              if (ref.watch(viewerProvider).barType !=
+                                  ViewerBarType.actionBar) {
+                                ref.watch(viewerProvider).barType =
+                                    ViewerBarType.actionBar;
                                 redraw();
                               } else {
-                                ref.watch(viewerProvider).bottomBarType = ViewerBottomBarType.none;
+                                ref.watch(viewerProvider).barType =
+                                    ViewerBarType.none;
                                 redraw();
                               }
                             }
@@ -152,7 +156,6 @@ class ViewerScreen extends BaseScreen with WidgetsBindingObserver {
             clipTextBar(),
             settingsBar(),
             clipListBar(),
-            speakBar(),
           ]),
         ),
       ),
@@ -211,6 +214,7 @@ class ViewerScreen extends BaseScreen with WidgetsBindingObserver {
           color: env.getFrontColor(),
           onPressed: () {
             endReadlog();
+            ref.watch(viewerProvider).stopSpeaking();
             Navigator.of(context).pop();
           }),
       if (isActionBar()) SizedBox(width: pad),
@@ -220,36 +224,21 @@ class ViewerScreen extends BaseScreen with WidgetsBindingObserver {
           icon: Icon(Icons.list),
           color: env.getFrontColor(),
           onPressed: () {
-            ref.watch(viewerProvider).bottomBarType = ViewerBottomBarType.tocBar;
+            ref.watch(viewerProvider).barType = ViewerBarType.tocBar;
             redraw();
           },
         ),
       Expanded(child: SizedBox(width: 1)),
       if (isActionBar())
         MyIconLabelButton(
-          label: l10n('Volume'),
-          icon: Icon(Icons.volume_up_outlined),
-          color: env.getFrontColor(),
-          onPressed: () {
-            if (ref.watch(viewerProvider).bottomBarType == ViewerBottomBarType.speakBar) {
-              ref.watch(viewerProvider).bottomBarType = ViewerBottomBarType.none;
-            } else {
-              ref.watch(viewerProvider).bottomBarType = ViewerBottomBarType.speakBar;
-            }
-            redraw();
-          },
-        ),
-      if (isActionBar() && IS_CLIP == true) SizedBox(width: pad),
-      if (isActionBar())
-        MyIconLabelButton(
           label: l10n('jump'),
           icon: Icon(Icons.bookmark_border_outlined),
           color: env.getFrontColor(),
           onPressed: () {
-            if (ref.watch(viewerProvider).bottomBarType == ViewerBottomBarType.maxpageBar) {
-              ref.watch(viewerProvider).bottomBarType = ViewerBottomBarType.none;
+            if (ref.watch(viewerProvider).barType == ViewerBarType.maxpageBar) {
+              ref.watch(viewerProvider).barType = ViewerBarType.none;
             } else {
-              ref.watch(viewerProvider).bottomBarType = ViewerBottomBarType.maxpageBar;
+              ref.watch(viewerProvider).barType = ViewerBarType.maxpageBar;
             }
             redraw();
           },
@@ -261,10 +250,11 @@ class ViewerScreen extends BaseScreen with WidgetsBindingObserver {
           icon: Icon(Icons.pan_tool_alt_outlined),
           color: env.getFrontColor(),
           onPressed: () {
-            if (ref.watch(viewerProvider).bottomBarType == ViewerBottomBarType.clipTextBar) {
-              ref.watch(viewerProvider).bottomBarType = ViewerBottomBarType.none;
+            if (ref.watch(viewerProvider).barType ==
+                ViewerBarType.clipTextBar) {
+              ref.watch(viewerProvider).barType = ViewerBarType.none;
             } else {
-              ref.watch(viewerProvider).bottomBarType = ViewerBottomBarType.clipTextBar;
+              ref.watch(viewerProvider).barType = ViewerBarType.clipTextBar;
             }
             redraw();
           },
@@ -276,7 +266,7 @@ class ViewerScreen extends BaseScreen with WidgetsBindingObserver {
           icon: Icon(Icons.article_outlined),
           color: env.getFrontColor(),
           onPressed: () {
-            ref.watch(viewerProvider).bottomBarType = ViewerBottomBarType.clipListBar;
+            ref.watch(viewerProvider).barType = ViewerBarType.clipListBar;
             redraw();
           },
         ),
@@ -284,10 +274,10 @@ class ViewerScreen extends BaseScreen with WidgetsBindingObserver {
       if (isActionBar())
         MyIconLabelButton(
           label: l10n('option'),
-          icon: Icon(Icons.settings),
+          icon: Icon(Icons.settings_outlined),
           color: env.getFrontColor(),
           onPressed: () {
-            ref.watch(viewerProvider).bottomBarType = ViewerBottomBarType.settingsBar;
+            ref.watch(viewerProvider).barType = ViewerBarType.settingsBar;
             redraw();
           },
         ),
@@ -356,10 +346,11 @@ class ViewerScreen extends BaseScreen with WidgetsBindingObserver {
 
   // ボトムバー
   Widget bottomBar() {
-    double barHeight = 40;
-    double ffBottom = -10;
+    double barHeight = 200;
+    double ffBottom = -160;
     bool isSpeaking = ref.watch(viewerProvider).isSpeaking;
-    if (isActionBar() || isSpeaking) {
+
+    if (ref.watch(viewerProvider).barType == ViewerBarType.speakSettingsBar) {
       ffBottom = 0;
     }
 
@@ -372,8 +363,9 @@ class ViewerScreen extends BaseScreen with WidgetsBindingObserver {
       style: TextStyle(color: env.getFrontColor()),
     );
 
+    double iconSize = 26.0;
     Widget btnStart = IconButton(
-      iconSize: 30,
+      iconSize: iconSize,
       icon: Icon(Icons.volume_up_outlined),
       color: env.getFrontColor(),
       onPressed: () {
@@ -382,31 +374,55 @@ class ViewerScreen extends BaseScreen with WidgetsBindingObserver {
     );
 
     Widget btnStop = IconButton(
-      color: Colors.redAccent,
-      iconSize: 30,
+      iconSize: iconSize,
       icon: Icon(Icons.stop_circle_outlined),
-      //color: env.getFrontColor(),
+      color: Colors.redAccent,
       onPressed: () {
         ref.watch(viewerProvider).stopSpeaking();
       },
     );
 
+    Widget btnSettings = IconButton(
+      iconSize: iconSize,
+      icon: Icon(Icons.settings_outlined),
+      color: env.getFrontColor(),
+      onPressed: () {
+        if (ref.watch(viewerProvider).barType ==
+            ViewerBarType.speakSettingsBar) {
+          ref.watch(viewerProvider).barType = ViewerBarType.none;
+        } else {
+          ref.watch(viewerProvider).barType = ViewerBarType.speakSettingsBar;
+        }
+        redraw();
+      },
+    );
+
     Widget bar = Container(
       color: env.getBackColor(),
-      child: Row(
-        children: [
-          Expanded(child: SizedBox(width: 1)),
-          if (isActionBar() && !isSpeaking) btnStart,
-          if (isSpeaking) btnStop,
-          if (isActionBar() || isSpeaking) SizedBox(width: 40),
-          wText,
-          Expanded(child: SizedBox(width: 1)),
-        ],
-      ),
+      child: Column(children: [
+        SizedBox(height: 6),
+        Row(
+          children: [
+            SizedBox(width: 20, height: iconSize),
+            wText,
+            Expanded(child: SizedBox(width: 1)),
+            if (isActionBar() && !isSpeaking) btnStart,
+            if (isSpeaking) btnStop,
+            Expanded(child: SizedBox(width: 1)),
+            isActionBar() ? btnSettings : SizedBox(width: iconSize),
+            SizedBox(width: 20),
+          ],
+        ),
+        SizedBox(height: 16),
+        MySettingsTile(data: env.speak_voice),
+        MySettingsTile(data: env.speak_speed),
+        MySettingsTile(data: env.speak_volume),
+        Expanded(child: SizedBox(height: 1)),
+      ]),
     );
 
     return AnimatedPositioned(
-      duration: const Duration(milliseconds: 100),
+      duration: const Duration(milliseconds: 200),
       curve: Curves.linear,
       left: 0,
       top: null,
@@ -421,7 +437,7 @@ class ViewerScreen extends BaseScreen with WidgetsBindingObserver {
   Widget maxpageBar() {
     double barHeight = 300;
     double ffBottom = -1.0 * barHeight;
-    if (ref.watch(viewerProvider).bottomBarType == ViewerBottomBarType.maxpageBar) {
+    if (ref.watch(viewerProvider).barType == ViewerBarType.maxpageBar) {
       ffBottom = 0;
     }
 
@@ -496,7 +512,7 @@ class ViewerScreen extends BaseScreen with WidgetsBindingObserver {
   Widget clipTextBar() {
     double barHeight = 200;
     double ffBottom = -1.0 * barHeight;
-    if (ref.watch(viewerProvider).bottomBarType == ViewerBottomBarType.clipTextBar) {
+    if (ref.watch(viewerProvider).barType == ViewerBarType.clipTextBar) {
       ffBottom = 0;
     }
 
@@ -513,7 +529,7 @@ class ViewerScreen extends BaseScreen with WidgetsBindingObserver {
               title: l10n('cancel'),
               width: 140,
               onPressed: () async {
-                ref.watch(viewerProvider).bottomBarType = ViewerBottomBarType.none;
+                ref.watch(viewerProvider).barType = ViewerBarType.none;
                 await ref.watch(viewerProvider).clearFocus();
                 redraw();
               },
@@ -524,7 +540,8 @@ class ViewerScreen extends BaseScreen with WidgetsBindingObserver {
               title: l10n('save_selection'),
               width: 140,
               onPressed: () async {
-                String? text = await ref.watch(viewerProvider).getSelectedText();
+                String? text =
+                    await ref.watch(viewerProvider).getSelectedText();
                 if (text != null && text.length > 2) {
                   alertDialog('save', msg: text).then((ret) {
                     if (ret) {
@@ -556,16 +573,18 @@ class ViewerScreen extends BaseScreen with WidgetsBindingObserver {
 
   @override
   Future onPressedCloseButton() async {
-    ref.watch(viewerProvider).bottomBarType = ViewerBottomBarType.none;
+    ref.watch(viewerProvider).barType = ViewerBarType.none;
     ref.watch(viewerProvider).clearFocus();
     redraw();
   }
 
   /// settingsBar
   Widget settingsBar() {
-    double barHeight = 400;
+    double barHeight = 350;
+    barHeight += env.ui_text_scale.val;
+
     double ffBottom = -1.0 * barHeight;
-    if (ref.watch(viewerProvider).bottomBarType == ViewerBottomBarType.settingsBar) {
+    if (ref.watch(viewerProvider).barType == ViewerBarType.settingsBar) {
       ffBottom = 0;
     }
 
@@ -619,9 +638,10 @@ class ViewerScreen extends BaseScreen with WidgetsBindingObserver {
 
   // 目次バー
   Widget tocBar() {
-    double barHeight = book.index.list.length > 20 ? _height * 3 / 5 : _height / 2;
+    double barHeight =
+        book.index.list.length > 20 ? _height * 3 / 5 : _height / 2;
     double ffBottom = -1.0 * barHeight;
-    if (ref.watch(viewerProvider).bottomBarType == ViewerBottomBarType.tocBar) {
+    if (ref.watch(viewerProvider).barType == ViewerBarType.tocBar) {
       ffBottom = 0;
     }
     List<Widget> list = [];
@@ -678,11 +698,12 @@ class ViewerScreen extends BaseScreen with WidgetsBindingObserver {
   Widget clipListBar() {
     double barHeight = _height * 2 / 3;
     double ffBottom = -1.0 * barHeight;
-    if (ref.watch(viewerProvider).bottomBarType == ViewerBottomBarType.clipListBar) {
+    if (ref.watch(viewerProvider).barType == ViewerBarType.clipListBar) {
       ffBottom = 0;
     }
     ClipData d = ref.watch(viewerProvider).readClip();
 
+    // 表示用
     List<Widget> list = [];
     for (int i = 0; i < d.list.length; i++) {
       list.add(
@@ -699,6 +720,7 @@ class ViewerScreen extends BaseScreen with WidgetsBindingObserver {
       );
     }
 
+    // コピー用
     String clipText = '';
     for (int i = 0; i < d.list.length; i++) {
       clipText += d.list[i].text + '\n';
@@ -709,7 +731,7 @@ class ViewerScreen extends BaseScreen with WidgetsBindingObserver {
         Expanded(child: SizedBox(width: 1)),
         MyTextButton(
           title: l10n('copy_to_clipboard'),
-          width: 190,
+          width: 230,
           scaleRatio: 0.9,
           onPressed: () async {
             final data = ClipboardData(text: clipText);
@@ -722,7 +744,8 @@ class ViewerScreen extends BaseScreen with WidgetsBindingObserver {
     Widget w2 = Row(
       children: [
         Expanded(child: SizedBox(width: 1)),
-        Text('${l10n('swipe_to_delete')}', textScaler: TextScaler.linear(myTextScale * 0.7)),
+        Text('${l10n('swipe_to_delete')}',
+            textScaler: TextScaler.linear(myTextScale * 0.7)),
         SizedBox(width: 20),
       ],
     );
@@ -763,7 +786,10 @@ class ViewerScreen extends BaseScreen with WidgetsBindingObserver {
                             deleteDialog().then((ret) {
                               if (ret) {
                                 log('delette');
-                                ref.watch(viewerProvider).deleteClip(index: index).then((ret) {
+                                ref
+                                    .watch(viewerProvider)
+                                    .deleteClip(index: index)
+                                    .then((ret) {
                                   redraw();
                                 });
                               }
@@ -786,55 +812,6 @@ class ViewerScreen extends BaseScreen with WidgetsBindingObserver {
         ),
       );
     }
-
-    return AnimatedPositioned(
-      duration: const Duration(milliseconds: 400),
-      curve: Curves.linear,
-      left: 0,
-      top: null,
-      right: 0,
-      bottom: ffBottom,
-      height: barHeight,
-      child: bar,
-    );
-  }
-
-  // 読み上げバー
-  Widget speakBar() {
-    double barHeight = _height * 1 / 3;
-    double ffBottom = -1.0 * barHeight;
-    if (ref.watch(viewerProvider).bottomBarType == ViewerBottomBarType.speakBar) {
-      ffBottom = 0;
-    }
-
-    Widget bar = Container(
-      color: env.getBackColor(),
-      child: Row(
-        children: [
-          Expanded(child: SizedBox(width: 1)),
-          IconButton(
-            iconSize: 32,
-            //label: l10n('Volume'),
-            icon: Icon(Icons.play_circle_outline),
-            color: env.getFrontColor(),
-            onPressed: () {
-              ref.watch(viewerProvider).startSpeaking();
-            },
-          ),
-          SizedBox(width: 32),
-          IconButton(
-            iconSize: 32,
-            //label: l10n('Volume'),
-            icon: Icon(Icons.stop_circle_outlined),
-            color: env.getFrontColor(),
-            onPressed: () {
-              ref.watch(viewerProvider).stopSpeaking();
-            },
-          ),
-          Expanded(child: SizedBox(width: 1)),
-        ],
-      ),
-    );
 
     return AnimatedPositioned(
       duration: const Duration(milliseconds: 400),

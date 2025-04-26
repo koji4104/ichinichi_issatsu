@@ -171,7 +171,7 @@ class BaseScreen extends ConsumerWidget {
           bottom: BorderSide(color: myTheme.dividerColor, width: 0.3),
         ),
       ),
-      height: 20 + (16 * myTextScale),
+      height: 22 + (16 * myTextScale),
       padding: EdgeInsets.fromLTRB(20, 0, 20, 0),
       child: child,
     );

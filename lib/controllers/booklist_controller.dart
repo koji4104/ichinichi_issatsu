@@ -36,14 +36,13 @@ class BookListNotifier extends ChangeNotifier {
     bookdir = APP_DIR + '/book';
     await Directory('${bookdir}').create(recursive: true);
 
-    log('readBookList()');
     isReading = true;
     bookList.clear();
 
     List<FileSystemEntity> entities = Directory(bookdir).listSync();
     for (var e in entities) {
       if (FileSystemEntity.isDirectorySync(e.path) == true) {
-        log('readBookList ${e.path}');
+        //log('readBookList ${e.path}');
         String bookId = basename(e.path);
 
         if (File('${e.path}/data/book.json').existsSync()) {

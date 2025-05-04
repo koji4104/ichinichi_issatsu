@@ -229,6 +229,16 @@ class ViewerScreen extends BaseScreen with WidgetsBindingObserver {
           },
         ),
       Expanded(child: SizedBox(width: 1)),
+      if (IS_TEST_BUTTON && isActionBar() == true)
+        MyIconLabelButton(
+          label: l10n('Test'),
+          icon: Icon(Icons.warning_amber_outlined),
+          color: env.getFrontColor(),
+          onPressed: () {
+            ref.watch(viewerProvider).test();
+          },
+        ),
+      if (isActionBar() && IS_CLIP == true) SizedBox(width: pad),
       if (isActionBar())
         MyIconLabelButton(
           label: l10n('jump'),

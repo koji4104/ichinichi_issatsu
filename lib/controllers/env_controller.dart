@@ -83,7 +83,7 @@ class Environment {
     name: 'dark_mode',
   );
 
-  ///
+  /// 0 横書き　1 縦書き
   EnvData writing_mode = EnvData(
     val: 0,
     vals: [0, 1],
@@ -118,6 +118,7 @@ class Environment {
     return col;
   }
 
+  /// #4169E1 or #87CEFA
   String getH3Css() {
     String col = '#4169E1'; // royal blue
     if (back_color.val == 1) {
@@ -158,20 +159,20 @@ class Environment {
     name: 'ui_text_scale',
   );
 
-  // Speak-Speed
-  EnvData speak_speed = EnvData(
-    val: 100,
-    vals: [80, 90, 100, 110, 120],
-    keys: ['80', '90', '100', '110', '120'],
-    name: 'speak_speed',
-  );
-
   // Voice
   EnvData speak_voice = EnvData(
     val: 1,
     vals: [1, 2, 3],
     keys: ['O-Ren', 'Kyoko', 'Hattori'],
     name: 'speak_voice',
+  );
+
+  // Speak-Speed
+  EnvData speak_speed = EnvData(
+    val: 100,
+    vals: [80, 90, 100, 110, 120],
+    keys: ['80', '90', '100', '110', '120'],
+    name: 'speak_speed',
   );
 
   // Volume

@@ -51,8 +51,9 @@ class ViewerNotifier extends ChangeNotifier {
   int nowPixel = 0;
   int allPixel = 100;
   int nowChars = 0;
+  Map<String, String> m = {};
 
-  double pixelMargin = 50;
+  double jumpMarginPx = 100;
 
   ViewerBarType barType = ViewerBarType.none;
 
@@ -61,7 +62,7 @@ class ViewerNotifier extends ChangeNotifier {
   }
 
   List<String> listText = [];
-  List<List<String>> listLine = [[]];
+  List<List<String>> listSpeak = [[]];
   List<double> listWidth = [];
   List<InAppWebViewController?> listWebViewCtrl = [];
   List<GlobalKey> listKey = [];
@@ -82,19 +83,19 @@ class ViewerNotifier extends ChangeNotifier {
 
     isLoading = true;
     listText.clear();
+    listSpeak.clear();
     listWidth.clear();
     listWebViewCtrl.clear();
     listKey.clear();
     listContextMenu.clear();
-    listLine.clear();
-    Map<String, String> m = {};
+    m.clear();
 
     try {
       scrollController = new ScrollController();
       scrollController!.addListener(scrollingListener);
 
       this.notifyListeners();
-      await Future.delayed(Duration(milliseconds: 100));
+      await Future.delayed(Duration(milliseconds: 50));
 
       String bookdir = APP_DIR + '/book';
 
@@ -104,6 +105,7 @@ class ViewerNotifier extends ChangeNotifier {
           String text1 = await File(path1).readAsStringSync();
           String body = text1;
           String speech = text1;
+          String speech2 = text1;
 
           if (env.writing_mode.val == 1) {
             VerticalRotated.map.forEach((String key, String value) {
@@ -128,8 +130,6 @@ class ViewerNotifier extends ChangeNotifier {
 
           int rubyCount = body.split('<ruby>').length;
 
-          //log('rubyCount ${i} ${rubyCount}');
-
           // delete ruby
           body = EpubData.deleteRuby(body);
           List<String> list1 = body.split('<br />');
@@ -145,43 +145,70 @@ class ViewerNotifier extends ChangeNotifier {
           double calcWidth = lineCount.toDouble() * (fsize * dh);
           calcWidth += scrollWidth;
           if (calcWidth < 400) calcWidth = 400;
-          if (Platform.isIOS == false && Platform.isAndroid == false) {
+          if (!Platform.isIOS && !Platform.isAndroid) {
             if (calcWidth > 3000) calcWidth = 3000;
             book!.prop.nowIndex = 1;
             book!.prop.nowRatio = 0;
           }
           // chars
 
-          // speech
-          Stopwatch sw = Stopwatch();
-          sw.start();
+          if (IS_PTAG == false) {
+            // speech_old
+            Stopwatch sw = Stopwatch();
+            sw.start();
 
-          List<String> lines = [];
-          speech = speech.replaceAll('\n', '');
-          speech = speech.replaceAll('<h3>', '');
-          speech = speech.replaceAll('</h3>', '<br />');
-          speech = speech.replaceAll('<h2>', '');
-          speech = speech.replaceAll('</h2>', '<br />');
+            List<String> lines = [];
+            speech = speech.replaceAll('\n', '');
+            speech = speech.replaceAll('<h3>', '');
+            speech = speech.replaceAll('</h3>', '<br />');
+            speech = speech.replaceAll('<h2>', '');
+            speech = speech.replaceAll('</h2>', '<br />');
 
-          speech = EpubData.getRuby(speech, m);
-          //speech = EpubData.extractRuby(speech);
-          m.forEach((String key, String value) {
-            speech = speech.replaceAll(key, value);
-          });
+            speech = EpubData.getRuby(speech, m);
+            //speech = EpubData.extractRuby(speech);
+            m.forEach((String key, String value) {
+              speech = speech.replaceAll(key, value);
+            });
 
-          speech = speech.replaceAll('。', '。<br />');
-          speech = speech.replaceAll('「', '<br />「<br />');
-          speech = speech.replaceAll('」', '<br />」<br />');
-          List<String> list2 = speech.split('<br />');
-          for (String s in list2) {
-            if (s.length >= 1) lines.add(s);
+            speech = speech.replaceAll('。」', '」');
+            speech = speech.replaceAll('。', '。<br />');
+            speech = speech.replaceAll('「', '<br />「<br />');
+            speech = speech.replaceAll('」', '<br />」<br />');
+            List<String> list2 = speech.split('<br />');
+            for (String s in list2) {
+              if (s.length >= 1) lines.add(s);
+            }
+            listSpeak.add(lines);
+
+            sw.stop();
+            //log('ruby ${sw.elapsedMilliseconds.toString()} [ms]');
+            // speech_old
+          } else {
+            // speech2
+            String text2 = speech2;
+            text2 = text2.replaceAll('\n', '');
+            List<String> lines2 = text2.split('<br />');
+            text1 = "";
+            int ii = 0;
+            List<String> linesTemp = [];
+            for (String s in lines2) {
+              text1 += "<p id='p${ii}'>${s}</p>";
+              linesTemp.add(s);
+              ii++;
+            }
+            listSpeak.add(linesTemp);
+
+            if (env.writing_mode.val == 1) {
+              VerticalRotated.map.forEach((String key, String value) {
+                text1 = text1.replaceAll(key, value);
+              });
+            }
+
+            text1 = e.head1 + text1 + e.head2;
+            text1 = text1.replaceAll('<style>', '<style>${getStyle(env)}');
+            text1 += '<br />';
+            // speech2
           }
-          listLine.add(lines);
-
-          sw.stop();
-          log('ruby ${sw.elapsedMilliseconds.toString()} [ms]');
-          // speech
-
           listWidth.add(calcWidth);
           listWebViewCtrl.add(null);
           listKey.add(GlobalKey());
@@ -386,8 +413,10 @@ class ViewerNotifier extends ChangeNotifier {
         if (i < index) dx += listWidth[i];
       }
       dx += listWidth[index] * ratio / 10000;
-      if (dx > pixelMargin) dx -= pixelMargin;
-      log('jumpTo [${index}][${(ratio / 100).toInt()}%] cur=${curdx.toInt()} dx=${dx.toInt()} max=${maxdx.toInt()}');
+      if (dx > jumpMarginPx) dx -= jumpMarginPx;
+      if (isLoading) {
+        log('jumpTo [${index}][${(ratio / 100).toInt()}%] cur=${curdx.toInt()} dx=${dx.toInt()} max=${maxdx.toInt()}');
+      }
       await scrollController!
           .animateTo(dx, duration: Duration(milliseconds: 500), curve: Curves.linear);
 
@@ -469,7 +498,7 @@ class ViewerNotifier extends ChangeNotifier {
     if (isLoading == true) return;
     try {
       double px = scrollController!.position.pixels;
-      if (px > pixelMargin) px -= pixelMargin;
+      if (px > jumpMarginPx) px -= jumpMarginPx;
 
       final past = lastTime.add(Duration(seconds: 1));
       if (DateTime.now().compareTo(past) < 1 || (lastPixel - px).abs() < 200) {
@@ -535,9 +564,22 @@ class ViewerNotifier extends ChangeNotifier {
     int fontSize = env.font_size.val;
     String fontFamily = env.getFontFamily();
 
-    String writing_mode = 'width: ${(width - _widthPad).toInt()}px';
+    String bodyWidth = 'width: ${(width - _widthPad).toInt()}px;';
     if (env.writing_mode.val == 1) {
-      writing_mode = 'height: ${(height - _heightPad).toInt()}px';
+      bodyWidth = 'height: ${(height - _heightPad).toInt()}px;';
+    }
+
+    String bodyPadding = 'padding-left: 0em;';
+    if (env.writing_mode.val == 1) {
+      bodyPadding = """padding-top: 0em;
+padding-bottom: 1em;
+margin: 10;
+""";
+    }
+
+    String hPadding = 'padding-left: 0em;';
+    if (env.writing_mode.val == 1) {
+      hPadding = 'padding-top: 0em;';
     }
 
     String c = '';
@@ -550,43 +592,53 @@ class ViewerNotifier extends ChangeNotifier {
       c += '  -webkit-text-orientation: upright;\n';
       c += '}\n';
     }
-    c += 'body {\n';
-    c += '  color: ${env.getFrontCss()};\n';
-    c += '  background: ${env.getBackCss()};\n';
-    c += '  font-size: ${fontSize}px;\n';
-    c += '  font-family: ${fontFamily};\n';
-    c += '  ${writing_mode};\n';
-    c += '  word-break: break-all;\n';
-    c += '  line-height: ${env.line_height.val}%;\n';
 
-    if (env.writing_mode.val == 0) {
-      c += '  padding-left: 0em;\n';
-    } else {
-      c += '  padding-top: 0em;\n';
-      c += '  padding-bottom: 1em;\n';
-      c += '  margin: 10;\n';
-    }
+    c += """body {
+color: ${env.getFrontCss()};
+background: ${env.getBackCss()};
+font-size: ${fontSize}px;
+font-family: ${fontFamily};
+${bodyWidth}
+word-break: break-all;
+line-height: ${env.line_height.val}%;
+${bodyPadding}
+}
+""";
 
-    c += '}\n';
-    c += 'p {\n';
-    c += '  margin: 0;\n';
-    c += '}\n';
-    c += 'h1, h2, h3 {\n';
-    c += '  font-size: 1.2em;\n';
-    c += '  font-weight: normal;\n';
-    c += '  color: ${env.getH3Css()};\n';
-    if (env.writing_mode.val == 0) {
-      c += '  padding-left: 0em;\n';
-    } else {
-      c += '  padding-top: 0em;\n';
-    }
-    c += '  line-height: ${env.line_height.val}%;\n';
-    c += '}\n';
-    c += 'h4, h5 {\n';
-    c += '  font-size: 1.0em;\n';
-    c += '  font-weight: normal;\n';
-    c += '  line-height: ${env.line_height.val}%;\n';
-    c += '}\n';
+    c += """p {
+margin: 0;
+}
+h1, h2, h3 {
+font-size: 1.2em;
+font-weight: normal;
+color: ${env.getH3Css()};
+${hPadding}
+line-height: ${env.line_height.val}%;
+}
+h4, h5 {
+font-size: 1.0em;
+font-weight: normal;
+line-height: ${env.line_height.val}%;
+}
+""";
+
+    c += """
+::selection {
+color: ${env.getH3Css()};
+}
+""";
+
+/*
+    c += """
+#p3,#p4,#p5{
+color: ${env.getH3Css()};
+}
+"""; */
+
+    //c += '::selection {\n';
+    //c += '  background-color: rgba(128, 128, 192, 0.2);\n';
+    //c += '}\n';
+
     return c;
   }
 
@@ -596,6 +648,7 @@ class ViewerNotifier extends ChangeNotifier {
     PlatformInAppWebViewController.debugLoggingSettings.enabled = false;
     ScrollPhysics physics =
         barType == ViewerBarType.clipTextBar ? NeverScrollableScrollPhysics() : ScrollPhysics();
+    //ScrollPhysics physics = NeverScrollableScrollPhysics();
     try {
       return ListView.builder(
         scrollDirection: env.writing_mode.val == 0 ? Axis.vertical : Axis.horizontal,
@@ -798,6 +851,9 @@ class ViewerNotifier extends ChangeNotifier {
   double pitch1 = 1.0;
   double pitch2 = 1.3;
 
+  int speak2Index = 0;
+  List<String> listSpeak2 = [];
+
   Future startSpeaking() async {
     if (initialized == false) {
       initialized = true;
@@ -814,7 +870,7 @@ class ViewerNotifier extends ChangeNotifier {
         var map = item as Map<Object?, Object?>;
         // 日本語のみ
         if (map["locale"].toString().toLowerCase().contains("ja")) {
-          log('voices ${map["name"].toString()}');
+          //log('voices ${map["name"].toString()}');
         }
       }
 
@@ -823,8 +879,14 @@ class ViewerNotifier extends ChangeNotifier {
 
       // コールバック設定
       flutterTts.setCompletionHandler(() async {
-        speakLine++;
-        speak();
+        //log('setCompletionHandler');
+        if (IS_PTAG) {
+          speak2Index++;
+          speak2();
+        } else {
+          speakLine++;
+          speak();
+        }
       });
     }
 
@@ -847,6 +909,10 @@ class ViewerNotifier extends ChangeNotifier {
         sp = 0.60;
         speakWait = 800;
     }
+    if (!Platform.isIOS && !Platform.isAndroid) {
+      sp = 0.70;
+      speakWait = 0;
+    }
     await flutterTts.setSpeechRate(sp);
 
     // 音量
@@ -858,6 +924,9 @@ class ViewerNotifier extends ChangeNotifier {
         vl = 0.9;
       case 100:
         vl = 1.0;
+    }
+    if (!Platform.isIOS && !Platform.isAndroid) {
+      vl = 0.0;
     }
     await flutterTts.setVolume(vl);
 
@@ -881,28 +950,156 @@ class ViewerNotifier extends ChangeNotifier {
     await flutterTts.setVoice({"name": v, "locale": "ja-JP"});
 
     speakIndex = nowIndex;
-    if (speakIndex > listLine.length - 1) speakIndex = listLine.length - 1;
-    speakLine = (listLine[speakIndex].length * nowRatio / 10000).toInt();
+    if (speakIndex > listSpeak.length - 1) speakIndex = listSpeak.length - 1;
+    speakLine = (listSpeak[speakIndex].length * nowRatio / 10000).toInt();
 
     isSpeaking = true;
-    speak();
-    this.notifyListeners();
+    speak1();
+  }
+
+  int oldIndex = 0;
+  String oldTag = '';
+
+  Future<String> getSpeakText1() async {
+    String text = '';
+    if (speakIndex < listSpeak.length && speakLine >= listSpeak[speakIndex].length) {
+      speakIndex++;
+      speakLine = 0;
+    }
+    if (speakIndex < listSpeak.length) {
+      text = listSpeak[speakIndex][speakLine];
+      if (text == '') {
+        speakLine++;
+        text = await getSpeakText1();
+      }
+    }
+    return text;
+  }
+
+  Future speak1() async {
+    if (isSpeaking) {
+      String text = await getSpeakText1();
+      if (text != '') {
+        text = EpubData.getRuby(text, m);
+        m.forEach((String key, String value) {
+          text = text.replaceAll(key, value);
+        });
+
+        //await listWebViewCtrl[nowIndex]!.evaluateJavascript(source: 'mark1("p${speakLine}");');
+        //await listWebViewCtrl[nowIndex]!.injectCSSCode(source: '#p${speakLine}{color:red;}');
+
+        if (oldTag != '') {
+          String ss1 = 'mark1("${oldTag}", "${env.getFrontCss()}");';
+          await listWebViewCtrl[oldIndex]!.evaluateJavascript(source: ss1);
+          oldTag = '';
+        }
+        String ss2 = 'mark1("p${speakLine}", "${env.getH3Css()}");';
+        await listWebViewCtrl[speakIndex]!.evaluateJavascript(source: ss2);
+        oldTag = 'p${speakLine}';
+        oldIndex = speakIndex;
+
+        text = text.replaceAll('<h3>', '');
+        text = text.replaceAll('</h3>', '<br />');
+        text = text.replaceAll('<h2>', '');
+        text = text.replaceAll('</h2>', '<br />');
+
+        text = text.replaceAll('。」', '」');
+        text = text.replaceAll('。', '。<br />');
+        text = text.replaceAll('「', '<br />「<br />');
+        text = text.replaceAll('」', '<br />」<br />');
+
+        listSpeak2.clear();
+        List<String> list = text.split('<br />');
+        for (String s in list) {
+          if (s.length >= 1) listSpeak2.add(s);
+        }
+
+        speak2Index = 0;
+        log('[${nowIndex}]=[${speakIndex}] mark1("p${speakLine}"); ${text}');
+        speak2();
+
+        int all = 0;
+        int sum = 0;
+        for (int i = 0; i < listSpeak[speakIndex].length; i++) {
+          if (i <= speakLine) sum += listSpeak[speakIndex][i].length;
+          all += listSpeak[speakIndex][i].length;
+        }
+        int ratio = (sum * 10000.0 / all).toInt();
+        jumpToIndex(speakIndex, ratio);
+      } else {
+        log('speak1() stop');
+        isSpeaking = false;
+        flutterTts.stop();
+      }
+    }
+  }
+
+  String getSpeakText2() {
+    String text = '';
+    if (speak2Index < listSpeak2.length) {
+      text = listSpeak2[speak2Index];
+    }
+    if (text == '') {
+      if (speak2Index < listSpeak2.length) {
+        text = listSpeak2[speak2Index];
+      }
+    }
+    return text;
+  }
+
+  Future speak2() async {
+    if (isSpeaking) {
+      String text = getSpeakText2();
+      if (text == '「') {
+        speak2Index++;
+        text = getSpeakText2();
+        if (pitch != pitch2) {
+          pitch = pitch2;
+          await flutterTts.setPitch(pitch);
+        }
+      } else if (text == '」') {
+        speak2Index++;
+        text = getSpeakText2();
+        if (text == '「') {
+          speak2Index++;
+          text = getSpeakText();
+          if (pitch != pitch2) {
+            pitch = pitch2;
+            await flutterTts.setPitch(pitch);
+          }
+        } else {
+          if (pitch != pitch1) {
+            pitch = pitch1;
+            await flutterTts.setPitch(pitch);
+          }
+        }
+      }
+      if (text != '') {
+        await Future.delayed(Duration(milliseconds: speakWait));
+        await flutterTts.speak(text);
+      } else {
+        speakLine++;
+        speak1();
+      }
+    }
   }
 
   String getSpeakText() {
     String text = '';
-    if (speakLine >= listLine[speakIndex].length) {
+    if (speakLine >= listSpeak[speakIndex].length) {
       speakIndex++;
       speakLine = 0;
     }
-    if (speakIndex < listLine.length) {
-      text = listLine[speakIndex][speakLine];
+    if (speakIndex < listSpeak.length) {
+      text = listSpeak[speakIndex][speakLine];
     }
     return text;
   }
 
   Future speak() async {
     if (isSpeaking) {
+      await listWebViewCtrl[nowIndex]!.evaluateJavascript(source: "mark1('p1');");
+
       String text = getSpeakText();
       if (text == '「') {
         speakLine++;
@@ -932,8 +1129,15 @@ class ViewerNotifier extends ChangeNotifier {
         await Future.delayed(Duration(milliseconds: speakWait));
         await flutterTts.speak(text);
         log('[${speakLine}] [${(pitch * 10).toInt()}] ${text}');
-        if (speakLine % 3 == 0) {
-          int ratio = (speakLine * 10000 / listLine[speakIndex].length).toInt();
+        if (speakLine % 2 == 0) {
+          //int ratio = (speakLine * 10000 / listSpeak[speakIndex].length).toInt();
+          int all = 0;
+          int sum = 0;
+          for (int i = 0; i < listSpeak[speakIndex].length; i++) {
+            all += listSpeak[speakIndex][i].length;
+            if (i <= speakLine) sum += listSpeak[speakIndex][i].length;
+          }
+          int ratio = (sum * 10000.0 / all).toInt();
           jumpToIndex(speakIndex, ratio);
         }
       } else {
@@ -946,6 +1150,11 @@ class ViewerNotifier extends ChangeNotifier {
   Future stopSpeaking() async {
     isSpeaking = false;
     flutterTts.stop();
+    this.notifyListeners();
+  }
+
+  Future test() async {
+    await listWebViewCtrl[nowIndex]!.evaluateJavascript(source: 'location.href="#p2"');
     this.notifyListeners();
   }
 }

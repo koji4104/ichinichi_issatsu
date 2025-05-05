@@ -45,12 +45,11 @@ class EpubData {
   <link rel="stylesheet" type="text/css" href="../styles/stylesheet1.css" />
 </head>
 <script type="text/javascript">
-const range = document.createRange();
 function mark1(tag1, color1) {
   var p1 = document.getElementById(tag1);
   var col1 = color1;
-  p1.style.color = col1;
-}
+  p1.style.color = color1;
+}        
 </script>
 <body>
 """;

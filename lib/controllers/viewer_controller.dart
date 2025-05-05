@@ -855,6 +855,7 @@ color: ${env.getH3Css()};
   List<String> listSpeak2 = [];
 
   Future startSpeaking() async {
+    if (isSpeaking) return;
     if (initialized == false) {
       initialized = true;
 
@@ -883,9 +884,6 @@ color: ${env.getH3Css()};
         if (IS_PTAG) {
           speak2Index++;
           speak2();
-        } else {
-          speakLine++;
-          speak();
         }
       });
     }
@@ -955,6 +953,7 @@ color: ${env.getH3Css()};
 
     isSpeaking = true;
     speak1();
+    this.notifyListeners();
   }
 
   int oldIndex = 0;
@@ -984,9 +983,6 @@ color: ${env.getH3Css()};
         m.forEach((String key, String value) {
           text = text.replaceAll(key, value);
         });
-
-        //await listWebViewCtrl[nowIndex]!.evaluateJavascript(source: 'mark1("p${speakLine}");');
-        //await listWebViewCtrl[nowIndex]!.injectCSSCode(source: '#p${speakLine}{color:red;}');
 
         if (oldTag != '') {
           String ss1 = 'mark1("${oldTag}", "${env.getFrontCss()}");';
@@ -1025,7 +1021,12 @@ color: ${env.getH3Css()};
           all += listSpeak[speakIndex][i].length;
         }
         int ratio = (sum * 10000.0 / all).toInt();
+
+        ratio = (speakLine * 10000 / listSpeak[speakIndex].length).toInt();
         jumpToIndex(speakIndex, ratio);
+
+        String ss4 = 'jump1("p${speakLine}");';
+        await listWebViewCtrl[speakIndex]!.evaluateJavascript(source: ss4);
       } else {
         log('speak1() stop');
         isSpeaking = false;
@@ -1062,7 +1063,7 @@ color: ${env.getH3Css()};
         text = getSpeakText2();
         if (text == '「') {
           speak2Index++;
-          text = getSpeakText();
+          text = getSpeakText2();
           if (pitch != pitch2) {
             pitch = pitch2;
             await flutterTts.setPitch(pitch);
@@ -1081,75 +1082,19 @@ color: ${env.getH3Css()};
         speakLine++;
         speak1();
       }
-    }
-  }
-
-  String getSpeakText() {
-    String text = '';
-    if (speakLine >= listSpeak[speakIndex].length) {
-      speakIndex++;
-      speakLine = 0;
-    }
-    if (speakIndex < listSpeak.length) {
-      text = listSpeak[speakIndex][speakLine];
-    }
-    return text;
-  }
-
-  Future speak() async {
-    if (isSpeaking) {
-      await listWebViewCtrl[nowIndex]!.evaluateJavascript(source: "mark1('p1');");
-
-      String text = getSpeakText();
-      if (text == '「') {
-        speakLine++;
-        text = getSpeakText();
-        if (pitch != pitch2) {
-          pitch = pitch2;
-          await flutterTts.setPitch(pitch);
-        }
-      } else if (text == '」') {
-        speakLine++;
-        text = getSpeakText();
-        if (text == '「') {
-          speakLine++;
-          text = getSpeakText();
-          if (pitch != pitch2) {
-            pitch = pitch2;
-            await flutterTts.setPitch(pitch);
-          }
-        } else {
-          if (pitch != pitch1) {
-            pitch = pitch1;
-            await flutterTts.setPitch(pitch);
-          }
-        }
-      }
-      if (text != '') {
-        await Future.delayed(Duration(milliseconds: speakWait));
-        await flutterTts.speak(text);
-        log('[${speakLine}] [${(pitch * 10).toInt()}] ${text}');
-        if (speakLine % 2 == 0) {
-          //int ratio = (speakLine * 10000 / listSpeak[speakIndex].length).toInt();
-          int all = 0;
-          int sum = 0;
-          for (int i = 0; i < listSpeak[speakIndex].length; i++) {
-            all += listSpeak[speakIndex][i].length;
-            if (i <= speakLine) sum += listSpeak[speakIndex][i].length;
-          }
-          int ratio = (sum * 10000.0 / all).toInt();
-          jumpToIndex(speakIndex, ratio);
-        }
-      } else {
-        isSpeaking = false;
-        flutterTts.stop();
-      }
+    } else {
+      flutterTts.stop();
     }
   }
 
   Future stopSpeaking() async {
     isSpeaking = false;
     flutterTts.stop();
+    if (oldTag != '') {
+      String ss1 = 'mark1("${oldTag}", "${env.getFrontCss()}");';
+      await listWebViewCtrl[oldIndex]!.evaluateJavascript(source: ss1);
+      oldTag = '';
+    }
     this.notifyListeners();
   }
 

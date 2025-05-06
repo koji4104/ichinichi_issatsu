@@ -1014,19 +1014,26 @@ color: ${env.getH3Css()};
         log('[${nowIndex}]=[${speakIndex}] mark1("p${speakLine}"); ${text}');
         speak2();
 
+        // ジャンプ長さ
         int all = 0;
         int sum = 0;
         for (int i = 0; i < listSpeak[speakIndex].length; i++) {
-          if (i <= speakLine) sum += listSpeak[speakIndex][i].length;
-          all += listSpeak[speakIndex][i].length;
+          int fsize = env.font_size.val;
+          double w = (env.writing_mode.val == 0) ? (width - _widthPad) : (height - _heightPad);
+          int chars = (w / fsize).toInt();
+
+          double dh = env.line_height.val / 100.0;
+
+          String s = listSpeak[speakIndex][i].replaceAll('<br />', '');
+          int lineCount = (s.length / chars).toInt() + 1;
+          int len = (lineCount * (fsize * dh)).toInt();
+          if (i <= speakLine) sum += len;
+          all += len;
         }
         int ratio = (sum * 10000.0 / all).toInt();
 
-        ratio = (speakLine * 10000 / listSpeak[speakIndex].length).toInt();
+        //ratio = (speakLine * 10000 / listSpeak[speakIndex].length).toInt();
         jumpToIndex(speakIndex, ratio);
-
-        String ss4 = 'jump1("p${speakLine}");';
-        await listWebViewCtrl[speakIndex]!.evaluateJavascript(source: ss4);
       } else {
         log('speak1() stop');
         isSpeaking = false;

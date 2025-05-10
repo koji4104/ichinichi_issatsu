@@ -48,7 +48,6 @@ class SettingsScreen extends BaseScreen {
     list.add(SizedBox(height: 16));
     list.add(MySettingsTile(data: env.speak_voice));
     list.add(MySettingsTile(data: env.speak_speed));
-    list.add(MySettingsTile(data: env.speak_volume));
 
     String sph = l10n('per_hour');
     String spage = l10n('page');

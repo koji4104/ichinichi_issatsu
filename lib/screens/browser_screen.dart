@@ -11,6 +11,7 @@ import '/commons/widgets.dart';
 import '/controllers/epub_controller.dart';
 import '/controllers/browser_controller.dart';
 import '/controllers/booklist_controller.dart';
+import '/controllers/applog_controller.dart';
 
 final browserScreenProvider = ChangeNotifierProvider((ref) => ChangeNotifier());
 
@@ -91,7 +92,8 @@ class BrowserScreen extends BaseScreen {
                   if (webViewController != null) {
                     String? title = await webViewController!.getTitle();
                     alertDialog('save', msg: title).then((ret) {
-                      ref.watch(browserProvider).webViewController = webViewController;
+                      ref.watch(browserProvider).webViewController =
+                          webViewController;
                       ref.watch(browserProvider).saveFavorite();
                     });
                   }
@@ -132,7 +134,8 @@ class BrowserScreen extends BaseScreen {
         children: [
           Row(children: [
             Expanded(child: SizedBox(width: 1)),
-            Text('${l10n('swipe_to_delete')}', textScaler: TextScaler.linear(myTextScale * 0.7)),
+            Text('${l10n('swipe_to_delete')}',
+                textScaler: TextScaler.linear(myTextScale * 0.7)),
             SizedBox(width: 10),
           ]),
           Expanded(child: getUriList()),
@@ -145,43 +148,59 @@ class BrowserScreen extends BaseScreen {
 
   Widget browser() {
     PlatformInAppWebViewController.debugLoggingSettings.enabled = false;
-    return InAppWebView(
-      key: webViewKey,
-      initialUrlRequest: URLRequest(url: WebUri(selectedUri!)),
-      onWebViewCreated: (controller) async {
-        webViewController = controller;
-      },
-      onLoadStart: (controller, url) {},
-      onLoadStop: (controller, url) async {
-        List<MetaTag> metaTagList = await webViewController!.getMetaTags();
-        for (MetaTag tag in metaTagList) {
-          if (tag.attrs!.length > 0) {
-            if (tag.attrs![0].name == 'property' && tag.attrs![0].value == 'og:title') {
-              log('onLoadStop og:title = ${tag.content}');
-              siteTitle = tag.content;
-              break;
-            } else if (tag.attrs![0].name == 'property' && tag.attrs![0].value == 'twitter:title') {
-              log('onLoadStop twitter:title = ${tag.content}');
-              siteTitle = tag.content;
-              break;
+    try {
+      return InAppWebView(
+        key: webViewKey,
+        initialUrlRequest: URLRequest(url: WebUri(selectedUri!)),
+        onWebViewCreated: (controller) async {
+          webViewController = controller;
+        },
+        onLoadStart: (controller, url) {
+          MyLog.debug('browser.onLoadStart() ${url}');
+        },
+        onLoadStop: (controller, url) async {
+          try {
+            List<MetaTag> metaTagList = await webViewController!.getMetaTags();
+            for (MetaTag tag in metaTagList) {
+              if (tag.attrs!.length > 0) {
+                if (tag.attrs![0].name == 'property' &&
+                    tag.attrs![0].value == 'og:title') {
+                  log('onLoadStop og:title = ${tag.content}');
+                  siteTitle = tag.content;
+                  break;
+                } else if (tag.attrs![0].name == 'property' &&
+                    tag.attrs![0].value == 'twitter:title') {
+                  log('onLoadStop twitter:title = ${tag.content}');
+                  siteTitle = tag.content;
+                  break;
+                }
+              }
             }
+          } catch (e) {
+            MyLog.err('browser() ${e.toString()}');
           }
-        }
-
-        if (url != null) {
-          checkHtml(url: url.rawValue);
-          redraw();
-        }
-      },
-    );
+          if (url != null) {
+            checkHtml(url: url.rawValue);
+            redraw();
+          }
+        },
+      );
+    } catch (e) {
+      MyLog.err('browser() ${e.toString()}');
+      return Container();
+    }
   }
 
   checkHtml({String? url}) async {
-    if (url == null) return;
-    String? body = await webViewController!.getHtml();
-    if (body == null) return;
-    ref.watch(epubProvider).webViewController = webViewController;
-    await ref.read(epubProvider).checkHtml(url, body);
+    try {
+      if (url == null) return;
+      String? body = await webViewController!.getHtml();
+      if (body == null) return;
+      ref.watch(epubProvider).webViewController = webViewController;
+      await ref.read(epubProvider).checkHtml(url, body);
+    } catch (e) {
+      MyLog.err('checkHtml() ${e.toString()}');
+    }
   }
 
   @override
@@ -232,7 +251,9 @@ class BrowserScreen extends BaseScreen {
                     deleteDialog().then((ret) {
                       if (ret) {
                         log('delette');
-                        ref.watch(browserProvider).deleteFavorite(favoList[index].uri);
+                        ref
+                            .watch(browserProvider)
+                            .deleteFavorite(favoList[index].uri);
                       }
                     });
                   },
@@ -277,7 +298,8 @@ class BrowserScreen extends BaseScreen {
     Widget child = Row(children: [
       w,
       Expanded(
-        child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+        child:
+            Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
           e,
           wTitle,
           Row(children: [Expanded(child: wUri)]),

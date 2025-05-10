@@ -170,17 +170,9 @@ class Environment {
   // Speak-Speed
   EnvData speak_speed = EnvData(
     val: 100,
-    vals: [80, 90, 100, 110, 120],
-    keys: ['80', '90', '100', '110', '120'],
+    vals: [80, 90, 100, 110, 120, 130, 140],
+    keys: ['80', '90', '100', '110', '120', '130', '140'],
     name: 'speak_speed',
-  );
-
-  // Volume
-  EnvData speak_volume = EnvData(
-    val: 100,
-    vals: [80, 90, 100],
-    keys: ['80', '90', '100'],
-    name: 'speak_volume',
   );
 
   Map<String, dynamic> toJson() => {
@@ -192,6 +184,8 @@ class Environment {
         back_color.name: back_color.val,
         writing_mode.name: writing_mode.val,
         ui_text_scale.name: ui_text_scale.val,
+        speak_voice.name: speak_voice.val,
+        speak_speed.name: speak_speed.val,
       };
 
   Environment.fromJson(Map<String, dynamic> j) {
@@ -203,6 +197,8 @@ class Environment {
     fromJsonSub(j, back_color);
     fromJsonSub(j, writing_mode);
     fromJsonSub(j, ui_text_scale);
+    fromJsonSub(j, speak_voice);
+    fromJsonSub(j, speak_speed);
   }
 
   fromJsonSub(Map<String, dynamic> j, EnvData data) {
@@ -228,6 +224,8 @@ class EnvNotifier extends ChangeNotifier {
     list.add(env.back_color);
     list.add(env.writing_mode);
     list.add(env.ui_text_scale);
+    list.add(env.speak_voice);
+    list.add(env.speak_speed);
     return list;
   }
 

@@ -14,6 +14,7 @@ class BookData {
   int chars = 0;
   String siteId = '';
   String dluri = '';
+  String dlver = '1.0.0';
   DateTime ctime = DateTime(2000, 1, 1);
 
   IndexData index = IndexData();
@@ -26,6 +27,7 @@ class BookData {
         'chars': chars,
         'siteId': siteId,
         'dluri': dluri,
+        'dlver': dlver,
         'ctime': DateFormat('yyyy-MM-dd HH:mm:ss').format(ctime),
       };
 
@@ -36,6 +38,7 @@ class BookData {
     if (j.containsKey('chars')) chars = j['chars'] ?? '';
     if (j.containsKey('siteId')) siteId = j['siteId'] ?? '';
     if (j.containsKey('dluri')) dluri = j['dluri'] ?? '';
+    if (j.containsKey('dlver')) dlver = j['dlver'] ?? '';
 
     if (j.containsKey('ctime')) {
       String date = j['ctime'];
@@ -120,6 +123,7 @@ class ClipInfo {
 
 class ClipData {
   ClipData();
+
   List<ClipInfo> list = [];
 
   sort() {

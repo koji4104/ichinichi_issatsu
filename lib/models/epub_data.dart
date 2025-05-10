@@ -47,9 +47,12 @@ class EpubData {
 <script type="text/javascript">
 function mark1(tag1, color1) {
   var p1 = document.getElementById(tag1);
-  var col1 = color1;
   p1.style.color = color1;
-}        
+}  
+function mark0(tag1) {
+  var p1 = document.getElementById(tag1);
+  p1.style.color = null;
+}         
 </script>
 <body>
 """;
@@ -150,6 +153,22 @@ function mark1(tag1, color1) {
         }
         //log('${b} ${t}');
         text = text.substring(0, s1) + t + text.substring(e1 + tag2.length - 1);
+      } else {
+        break;
+      }
+    }
+    return text;
+  }
+
+  // unit test
+  static String deleteTag(String text, String tag) {
+    int s1 = 0;
+    for (int i = 0; i < 10000; i++) {
+      s1 = text.indexOf(tag, s1);
+      int e1 = (s1 >= 0) ? text.indexOf(r'>', s1 + tag.length) + 1 : 0;
+      if (s1 >= 0 && e1 > 0) {
+        text = text.substring(0, s1) + text.substring(e1);
+        s1++;
       } else {
         break;
       }

@@ -103,21 +103,20 @@ class ViewerScreen extends BaseScreen with WidgetsBindingObserver {
         body: SafeArea(
           child: Stack(children: [
             Container(
-              padding: env.writing_mode.val == 0
-                  ? DEF_VIEW_PADDING_TB
-                  : DEF_VIEW_PADDING_RL,
+              padding: env.writing_mode.val == 0 ? DEF_VIEW_PADDING_TB : DEF_VIEW_PADDING_RL,
               color: env.getBackColor(),
               child: Widget1(),
             ),
-            if (ref.watch(viewerProvider).isLoading) loadingWidget(),
+            if (ref.watch(viewerProvider).isLoading || ref.watch(viewerProvider).isJumping)
+              loadingWidget(),
             if (ref.watch(viewerProvider).barType != ViewerBarType.clipTextBar)
               Container(
                 padding: EdgeInsets.fromLTRB(1, 1, 1, 1),
                 child: RawGestureDetector(
                   behavior: HitTestBehavior.translucent,
                   gestures: {
-                    TapGestureRecognizer: GestureRecognizerFactoryWithHandlers<
-                        TapGestureRecognizer>(
+                    TapGestureRecognizer:
+                        GestureRecognizerFactoryWithHandlers<TapGestureRecognizer>(
                       () => TapGestureRecognizer(),
                       (TapGestureRecognizer instance) {
                         instance
@@ -128,14 +127,11 @@ class ViewerScreen extends BaseScreen with WidgetsBindingObserver {
                             } else if (dx > _width - 120) {
                               //scrollLeft();
                             } else {
-                              if (ref.watch(viewerProvider).barType !=
-                                  ViewerBarType.actionBar) {
-                                ref.watch(viewerProvider).barType =
-                                    ViewerBarType.actionBar;
+                              if (ref.watch(viewerProvider).barType != ViewerBarType.actionBar) {
+                                ref.watch(viewerProvider).barType = ViewerBarType.actionBar;
                                 redraw();
                               } else {
-                                ref.watch(viewerProvider).barType =
-                                    ViewerBarType.none;
+                                ref.watch(viewerProvider).barType = ViewerBarType.none;
                                 redraw();
                               }
                             }
@@ -200,6 +196,7 @@ class ViewerScreen extends BaseScreen with WidgetsBindingObserver {
   Future endReadlog() async {
     int nowChars = ref.watch(viewerProvider).nowChars;
     ref.watch(viewlogProvider).save(nowChars, book);
+    ref.watch(viewerProvider).listText.clear();
   }
 
   Widget actionRow() {
@@ -232,10 +229,12 @@ class ViewerScreen extends BaseScreen with WidgetsBindingObserver {
       if (IS_TEST_BUTTON && isActionBar() == true)
         MyIconLabelButton(
           label: l10n('Test'),
-          icon: Icon(Icons.warning_amber_outlined),
+          icon: Icon(Icons.refresh),
           color: env.getFrontColor(),
           onPressed: () {
-            ref.watch(viewerProvider).test();
+            //ref.watch(viewerProvider).test();
+            //redraw();
+            refresh();
           },
         ),
       if (isActionBar() && IS_CLIP == true) SizedBox(width: pad),
@@ -260,8 +259,7 @@ class ViewerScreen extends BaseScreen with WidgetsBindingObserver {
           icon: Icon(Icons.pan_tool_alt_outlined),
           color: env.getFrontColor(),
           onPressed: () {
-            if (ref.watch(viewerProvider).barType ==
-                ViewerBarType.clipTextBar) {
+            if (ref.watch(viewerProvider).barType == ViewerBarType.clipTextBar) {
               ref.watch(viewerProvider).barType = ViewerBarType.none;
             } else {
               ref.watch(viewerProvider).barType = ViewerBarType.clipTextBar;
@@ -357,7 +355,7 @@ class ViewerScreen extends BaseScreen with WidgetsBindingObserver {
   // ボトムバー
   Widget bottomBar() {
     double barHeight = 200;
-    double ffBottom = -160;
+    double ffBottom = 40 - barHeight; // -160
     bool isSpeaking = ref.watch(viewerProvider).isSpeaking;
 
     if (ref.watch(viewerProvider).barType == ViewerBarType.speakSettingsBar) {
@@ -373,7 +371,7 @@ class ViewerScreen extends BaseScreen with WidgetsBindingObserver {
       style: TextStyle(color: env.getFrontColor()),
     );
 
-    double iconSize = 26.0;
+    double iconSize = ICON_BUTTON_SIZE;
     Widget btnStart = IconButton(
       iconSize: iconSize,
       icon: Icon(Icons.volume_up_outlined),
@@ -397,8 +395,7 @@ class ViewerScreen extends BaseScreen with WidgetsBindingObserver {
       icon: Icon(Icons.settings_outlined),
       color: env.getFrontColor(),
       onPressed: () {
-        if (ref.watch(viewerProvider).barType ==
-            ViewerBarType.speakSettingsBar) {
+        if (ref.watch(viewerProvider).barType == ViewerBarType.speakSettingsBar) {
           ref.watch(viewerProvider).barType = ViewerBarType.none;
         } else {
           ref.watch(viewerProvider).barType = ViewerBarType.speakSettingsBar;
@@ -417,7 +414,7 @@ class ViewerScreen extends BaseScreen with WidgetsBindingObserver {
             wText,
             Expanded(child: SizedBox(width: 1)),
             if (isActionBar() && !isSpeaking) btnStart,
-            if (isSpeaking) btnStop,
+            if (isSpeaking) btnStop else SizedBox(width: iconSize, height: iconSize),
             Expanded(child: SizedBox(width: 1)),
             isActionBar() ? btnSettings : SizedBox(width: iconSize),
             SizedBox(width: 20),
@@ -426,7 +423,6 @@ class ViewerScreen extends BaseScreen with WidgetsBindingObserver {
         SizedBox(height: 16),
         MySettingsTile(data: env.speak_voice),
         MySettingsTile(data: env.speak_speed),
-        MySettingsTile(data: env.speak_volume),
         Expanded(child: SizedBox(height: 1)),
       ]),
     );
@@ -550,8 +546,7 @@ class ViewerScreen extends BaseScreen with WidgetsBindingObserver {
               title: l10n('save_selection'),
               width: 140,
               onPressed: () async {
-                String? text =
-                    await ref.watch(viewerProvider).getSelectedText();
+                String? text = await ref.watch(viewerProvider).getSelectedText();
                 if (text != null && text.length > 2) {
                   alertDialog('save', msg: text).then((ret) {
                     if (ret) {
@@ -608,7 +603,6 @@ class ViewerScreen extends BaseScreen with WidgetsBindingObserver {
     list.add(SizedBox(height: 10));
     list.add(MySettingsTile(data: env.speak_voice));
     list.add(MySettingsTile(data: env.speak_speed));
-    list.add(MySettingsTile(data: env.speak_volume));
 
     Widget bar = Container(
       color: myTheme.cardColor,
@@ -648,8 +642,7 @@ class ViewerScreen extends BaseScreen with WidgetsBindingObserver {
 
   // 目次バー
   Widget tocBar() {
-    double barHeight =
-        book.index.list.length > 20 ? _height * 3 / 5 : _height / 2;
+    double barHeight = book.index.list.length > 20 ? _height * 3 / 5 : _height / 2;
     double ffBottom = -1.0 * barHeight;
     if (ref.watch(viewerProvider).barType == ViewerBarType.tocBar) {
       ffBottom = 0;
@@ -754,8 +747,7 @@ class ViewerScreen extends BaseScreen with WidgetsBindingObserver {
     Widget w2 = Row(
       children: [
         Expanded(child: SizedBox(width: 1)),
-        Text('${l10n('swipe_to_delete')}',
-            textScaler: TextScaler.linear(myTextScale * 0.7)),
+        Text('${l10n('swipe_to_delete')}', textScaler: TextScaler.linear(myTextScale * 0.7)),
         SizedBox(width: 20),
       ],
     );
@@ -796,10 +788,7 @@ class ViewerScreen extends BaseScreen with WidgetsBindingObserver {
                             deleteDialog().then((ret) {
                               if (ret) {
                                 log('delette');
-                                ref
-                                    .watch(viewerProvider)
-                                    .deleteClip(index: index)
-                                    .then((ret) {
+                                ref.watch(viewerProvider).deleteClip(index: index).then((ret) {
                                   redraw();
                                 });
                               }

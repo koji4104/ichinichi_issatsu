@@ -41,6 +41,7 @@ class ViewerNotifier extends ChangeNotifier {
 
   ScrollController? scrollController;
   bool isLoading = false;
+  bool isJumping = false;
 
   DateTime lastTime = DateTime.now();
   double lastPixel = 0;
@@ -75,7 +76,7 @@ class ViewerNotifier extends ChangeNotifier {
   double _heightPad = DEF_VIEW_LINE_HEIGHT;
 
   Future load(Environment env, double w, double h) async {
-    log('load()');
+    log('load() start');
     this.env = env;
 
     width = w;
@@ -91,6 +92,7 @@ class ViewerNotifier extends ChangeNotifier {
     m.clear();
 
     try {
+      if (scrollController != null) scrollController!.dispose();
       scrollController = new ScrollController();
       scrollController!.addListener(scrollingListener);
 
@@ -203,9 +205,17 @@ class ViewerNotifier extends ChangeNotifier {
                 text1 = text1.replaceAll(key, value);
               });
             }
-
             text1 = e.head1 + text1 + e.head2;
-            text1 = text1.replaceAll('<style>', '<style>${getStyle(env)}');
+            //text1 = text1.replaceAll('<style>', '<style>${getStyle(env)}');
+
+            String tag1 = '<style>';
+            String tag2 = '</style>';
+            int s1 = text1.indexOf(tag1);
+            int e1 = (s1 >= 0) ? text1.indexOf(tag2, s1 + tag1.length) : 0;
+            if (s1 >= 0 && e1 > 0 && e1 - s1 < 500) {
+              text1 = text1.substring(0, s1) + '<style>${getStyle(env)}' + text1.substring(e1);
+            }
+
             text1 += '<br />';
             // speech2
           }
@@ -233,11 +243,13 @@ class ViewerNotifier extends ChangeNotifier {
         } else {
           if (i >= 1) break;
         }
-      }
+      } // for (int i = 0; i < 10000; i++) {
+    } on Exception catch (e) {
+      MyLog.err('ViewerController.losd() ${e.toString()}');
+    }
+    isLoading = false;
 
-      await Future.delayed(Duration(milliseconds: 100));
-      this.notifyListeners();
-
+    try {
       nowIndex = book!.prop.nowIndex;
       nowRatio = book!.prop.nowRatio;
       maxRatio = book!.prop.maxRatio;
@@ -245,13 +257,29 @@ class ViewerNotifier extends ChangeNotifier {
       nowChars = getNowChars();
       jumpToIndex(nowIndex, nowRatio);
     } on Exception catch (e) {
-      MyLog.err('ViewerNotifier.losd() ${e.toString()}');
+      MyLog.err('ViewerController.losd().jump ${e.toString()}');
     }
+    log('load() end');
   }
 
+  /// テキストを読み直して Style を書き換える
+  /// 高さは同じ
   Future refresh() async {
     log('refresh()');
     try {
+      for (int i = 0; i < listText.length; i++) {
+        String text1 = listText[i];
+        String tag1 = '<style>';
+        String tag2 = '</style>';
+        int s1 = text1.indexOf(tag1);
+        int e1 = (s1 >= 0) ? text1.indexOf(tag2, s1 + tag1.length) : 0;
+        if (s1 >= 0 && e1 > 0 && e1 - s1 < 500) {
+          text1 = text1.substring(0, s1) + '<style>${getStyle(env)}' + text1.substring(e1);
+        }
+        listText[i] = text1;
+      }
+
+      /*
       listText.clear();
 
       String bookdir = APP_DIR + '/book';
@@ -275,7 +303,7 @@ class ViewerNotifier extends ChangeNotifier {
           if (i >= 1) break;
         }
       }
-
+      */
       await Future.delayed(Duration(milliseconds: 100));
 
       if (Platform.isIOS) {
@@ -390,7 +418,8 @@ class ViewerNotifier extends ChangeNotifier {
     try {
       for (int k = 0; k < 5; k++) {
         if (scrollController!.hasClients == false) {
-          log('scrollController.hasClients==false k=${k}');
+          log('scrollController.hasClients == false k=${k}');
+          await Future.delayed(Duration(milliseconds: 200));
           this.notifyListeners();
           await Future.delayed(Duration(milliseconds: 100));
         }
@@ -401,7 +430,7 @@ class ViewerNotifier extends ChangeNotifier {
       }
       if (listWidth.length == 0) return;
       if (index > listWidth.length - 1) index = listWidth.length - 1;
-      if ((nowIndex - index).abs() >= 2) isLoading = true;
+      if ((nowIndex - index).abs() >= 2) isJumping = true;
       nowIndex = index;
       this.notifyListeners();
 
@@ -420,7 +449,7 @@ class ViewerNotifier extends ChangeNotifier {
       await scrollController!
           .animateTo(dx, duration: Duration(milliseconds: 500), curve: Curves.linear);
 
-      isLoading = false;
+      isJumping = false;
       this.notifyListeners();
       scrollingListener();
     } on Exception catch (e) {
@@ -627,28 +656,17 @@ line-height: ${env.line_height.val}%;
 color: ${env.getH3Css()};
 }
 """;
-
-/*
-    c += """
-#p3,#p4,#p5{
-color: ${env.getH3Css()};
-}
-"""; */
-
-    //c += '::selection {\n';
-    //c += '  background-color: rgba(128, 128, 192, 0.2);\n';
-    //c += '}\n';
-
     return c;
   }
 
   Widget viewer(Environment env) {
     if (listText.length == 0) return Container();
+    if (isLoading) return Container();
 
     PlatformInAppWebViewController.debugLoggingSettings.enabled = false;
     ScrollPhysics physics =
         barType == ViewerBarType.clipTextBar ? NeverScrollableScrollPhysics() : ScrollPhysics();
-    //ScrollPhysics physics = NeverScrollableScrollPhysics();
+    //log('viewer');
     try {
       return ListView.builder(
         scrollDirection: env.writing_mode.val == 0 ? Axis.vertical : Axis.horizontal,
@@ -893,19 +911,25 @@ color: ${env.getH3Css()};
     switch (env.speak_speed.val) {
       case 80:
         sp = 0.40;
-        speakWait = 1200;
+        speakWait = 1000;
       case 90:
         sp = 0.45;
-        speakWait = 1100;
+        speakWait = 1000;
       case 100:
         sp = 0.50;
-        speakWait = 1000;
+        speakWait = 800;
       case 110:
         sp = 0.55;
-        speakWait = 900;
+        speakWait = 600;
       case 120:
         sp = 0.60;
-        speakWait = 800;
+        speakWait = 400;
+      case 130:
+        sp = 0.65;
+        speakWait = 300;
+      case 140:
+        sp = 0.70;
+        speakWait = 200;
     }
     if (!Platform.isIOS && !Platform.isAndroid) {
       sp = 0.70;
@@ -913,16 +937,8 @@ color: ${env.getH3Css()};
     }
     await flutterTts.setSpeechRate(sp);
 
-    // 音量
+    // 音量（無効）
     double vl = 1.0;
-    switch (env.speak_speed.val) {
-      case 80:
-        vl = 0.8;
-      case 90:
-        vl = 0.9;
-      case 100:
-        vl = 1.0;
-    }
     if (!Platform.isIOS && !Platform.isAndroid) {
       vl = 0.0;
     }
@@ -985,7 +1001,7 @@ color: ${env.getH3Css()};
         });
 
         if (oldTag != '') {
-          String ss1 = 'mark1("${oldTag}", "${env.getFrontCss()}");';
+          String ss1 = 'mark0("${oldTag}");';
           await listWebViewCtrl[oldIndex]!.evaluateJavascript(source: ss1);
           oldTag = '';
         }
@@ -993,6 +1009,7 @@ color: ${env.getH3Css()};
         await listWebViewCtrl[speakIndex]!.evaluateJavascript(source: ss2);
         oldTag = 'p${speakLine}';
         oldIndex = speakIndex;
+        this.notifyListeners();
 
         text = text.replaceAll('<h3>', '');
         text = text.replaceAll('</h3>', '<br />');
@@ -1021,16 +1038,17 @@ color: ${env.getH3Css()};
           int fsize = env.font_size.val;
           double w = (env.writing_mode.val == 0) ? (width - _widthPad) : (height - _heightPad);
           int chars = (w / fsize).toInt();
-
           double dh = env.line_height.val / 100.0;
 
           String s = listSpeak[speakIndex][i].replaceAll('<br />', '');
           int lineCount = (s.length / chars).toInt() + 1;
           int len = (lineCount * (fsize * dh)).toInt();
-          if (i <= speakLine) sum += len;
+          if (i < speakLine) sum += len;
           all += len;
         }
+
         int ratio = (sum * 10000.0 / all).toInt();
+        if (ratio > 500) ratio -= 500;
 
         //ratio = (speakLine * 10000 / listSpeak[speakIndex].length).toInt();
         jumpToIndex(speakIndex, ratio);

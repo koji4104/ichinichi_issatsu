@@ -123,7 +123,7 @@ class BookListNotifier extends ChangeNotifier {
         this.notifyListeners();
       }
     } on Exception catch (e) {
-      MyLog.err('saveLastAccess() ${e.toString()}');
+      MyLog.err('BookList.saveLastAccess() ${e.toString()}');
     }
   }
 

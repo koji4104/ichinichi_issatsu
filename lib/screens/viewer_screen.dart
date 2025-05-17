@@ -107,8 +107,7 @@ class ViewerScreen extends BaseScreen with WidgetsBindingObserver {
               color: env.getBackColor(),
               child: Widget1(),
             ),
-            if (ref.watch(viewerProvider).isLoading || ref.watch(viewerProvider).isJumping)
-              loadingWidget(),
+            if (ref.watch(viewerProvider).isLoading) loadingWidget(),
             if (ref.watch(viewerProvider).barType != ViewerBarType.clipTextBar)
               Container(
                 padding: EdgeInsets.fromLTRB(1, 1, 1, 1),
@@ -653,6 +652,10 @@ class ViewerScreen extends BaseScreen with WidgetsBindingObserver {
     }
     List<Widget> list = [];
 
+    int nowIndex = ref.watch(viewerProvider).nowIndex;
+    int nowRatio = ref.watch(viewerProvider).nowRatio;
+    if (nowIndex < book.index.list.length - 1 && nowRatio > 9500) nowIndex++;
+
     for (int i = 0; i < book.index.list.length; i++) {
       int sum = 0;
       for (int j = 0; j <= i; j++) {
@@ -660,7 +663,6 @@ class ViewerScreen extends BaseScreen with WidgetsBindingObserver {
       }
       String txt = '${book.index.list[i].title}';
       String pages = '${(sum / CHARS_PAGE).toInt()}';
-      int nowIndex = ref.watch(viewerProvider).nowIndex;
 
       list.add(
         MyTocTile(
@@ -668,7 +670,9 @@ class ViewerScreen extends BaseScreen with WidgetsBindingObserver {
           title1: MyText(txt, maxLength: 24),
           title2: MyText(pages),
           onPressed: () {
-            ref.read(viewerProvider).jumpToIndex(i, 400);
+            int ii = i;
+            if (ii > 0) ii--;
+            ref.read(viewerProvider).jumpToIndex(ii, 9700);
             startReadlog();
           },
         ),

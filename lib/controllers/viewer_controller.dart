@@ -57,7 +57,7 @@ class ViewerNotifier extends ChangeNotifier {
 
   Map<String, String> m = {};
 
-  double jumpMarginPx = 100;
+  double jumpMarginPx = 0;
 
   ViewerBarType barType = ViewerBarType.none;
 
@@ -95,12 +95,18 @@ class ViewerNotifier extends ChangeNotifier {
 
     try {
       if (scrollController != null) scrollController!.dispose();
+      for (InAppWebViewController? ctrl in listWebViewCtrl) {
+        if (ctrl != null) ctrl.dispose();
+      }
+    } on Exception catch (e) {
+      MyLog.err('ViewerController.ctrl.dispose() ${e.toString()}');
+    } catch (_) {
+      MyLog.err('ViewerController.ctrl.dispose()(_)');
+    }
+
+    try {
       scrollController = new ScrollController();
       scrollController!.addListener(scrollingListener);
-
-      for (InAppWebViewController? ctrl in listWebViewCtrl) {
-        if (ctrl != null) ctrl!.dispose();
-      }
       listWebViewCtrl.clear();
 
       this.notifyListeners();
@@ -175,9 +181,16 @@ class ViewerNotifier extends ChangeNotifier {
           int ii = 0;
           List<String> linesTemp = [];
           for (String s in lines2) {
-            text1 += "<p id='p${ii}'>${s}</p>";
-            linesTemp.add(s);
-            ii++;
+            if (s == "") {
+              text1 += "<br />";
+              linesTemp.add("");
+              ii++;
+            } else {
+              text1 += "<p id='p${ii}'>${s}</p>";
+              ii++;
+              s = EpubData.getRuby(s, m);
+              linesTemp.add(s);
+            }
           }
           listSpeak.add(linesTemp);
 
@@ -217,11 +230,9 @@ class ViewerNotifier extends ChangeNotifier {
       MyLog.err('ViewerController.catch(_)');
     }
     isLoading = false;
-
     try {
       nowChars = book!.prop.nowChars;
       maxChars = book!.prop.maxChars;
-
       int chars1 = nowChars;
       for (int i = 0; i < book!.index.list.length; i++) {
         int c = book!.index.list[i].chars;
@@ -359,10 +370,11 @@ class ViewerNotifier extends ChangeNotifier {
 
   Future jumpToIndex(int index, int ratio) async {
     if (scrollController == null) return;
+    isJumping = true;
     try {
       for (int k = 0; k < 5; k++) {
         if (scrollController!.hasClients == false) {
-          log('scrollController.hasClients==false k=${k}');
+          log('scrollController.hasClients==false nowIndex=${index} k=${k}');
           await Future.delayed(Duration(milliseconds: 100));
           this.notifyListeners();
           await Future.delayed(Duration(milliseconds: 100));
@@ -374,7 +386,7 @@ class ViewerNotifier extends ChangeNotifier {
       }
       if (listWidth.length == 0) return;
       if (index > listWidth.length - 1) index = listWidth.length - 1;
-      if ((nowIndex - index).abs() >= 2) isJumping = true;
+      if ((nowIndex - index).abs() >= 2) isLoading = true;
       nowIndex = index;
       this.notifyListeners();
 
@@ -392,13 +404,13 @@ class ViewerNotifier extends ChangeNotifier {
       }
       await scrollController!
           .animateTo(dx, duration: Duration(milliseconds: 500), curve: Curves.linear);
-
-      isJumping = false;
-      this.notifyListeners();
-      scrollingListener();
     } on Exception catch (e) {
       MyLog.err('jumpToIndex() ${e.toString()}');
     }
+    isJumping = false;
+    isLoading = false;
+    this.notifyListeners();
+    scrollingListener();
   }
 
   String getProgress() {
@@ -459,10 +471,11 @@ class ViewerNotifier extends ChangeNotifier {
     if (scrollController == null) return;
     if (scrollController!.hasClients == false) return;
     if (isLoading == true) return;
+    if (isJumping == true) return;
     try {
       double px = scrollController!.position.pixels;
       if (px > jumpMarginPx) px -= jumpMarginPx;
-      if ((lastPixel - px).abs() < 200) return;
+      if ((lastPixel - px).abs() < 100) return;
 
       final past = lastTime.add(Duration(milliseconds: 500));
       if (DateTime.now().compareTo(past) < 1) return;
@@ -498,14 +511,6 @@ class ViewerNotifier extends ChangeNotifier {
     if (isLoading == true) return;
 
     try {
-      /*
-      book!.prop.nowIndex = nowIndex;
-      book!.prop.nowRatio = nowRatio;
-      book!.prop.nowChars = nowChars;
-      book!.prop.maxIndex = maxIndex;
-      book!.prop.maxRatio = maxRatio;
-      book!.prop.maxChars = book!.chars;
-      */
       book!.prop.nowChars = nowChars;
       book!.prop.maxChars = maxChars;
       book!.prop.atime = DateTime.now();
@@ -640,6 +645,7 @@ line-height: ${env.line_height.val}%;
     if ((nowIndex - index).abs() > 1) {
       return Container();
     }
+    //log('inviewer ${index} nowIndex${index}');
     try {
       return InAppWebView(
         key: listKey[index],
@@ -878,8 +884,61 @@ line-height: ${env.line_height.val}%;
 
     speakIndex = nowIndex;
     if (speakIndex > listSpeak.length - 1) speakIndex = listSpeak.length - 1;
-    speakLine = (listSpeak[speakIndex].length * nowRatio / 10000).toInt();
+    int ratio = nowRatio;
+    if (speakIndex > listSpeak.length - 1 && ratio < 9500) {
+      ratio += 500;
+    } else if (speakIndex > listSpeak.length - 2 && ratio >= 9500) {
+      speakIndex++;
+      ratio = ratio + 500 - 10000;
+    }
 
+    //speakLine = (listSpeak[speakIndex].length * nowRatio / 10000).toInt();
+
+    int fsize = env.font_size.val;
+    double w = (env.writing_mode.val == 0) ? (width - _widthPad) : (height - _heightPad);
+    int chars = (w / fsize).toInt();
+    double dh = env.line_height.val / 100.0;
+
+    int all = 0;
+    // allを計算
+    for (int i = 0; i < listSpeak[speakIndex].length; i++) {
+      String s = listSpeak[speakIndex][i].replaceAll('<br />', ' ');
+      int lineCount = (s.length / chars).toInt() + 1;
+      int len = (lineCount * (fsize * dh)).toInt();
+
+      all += len;
+    }
+
+    // sumを計算
+    speakLine = 0;
+    int sum = 0;
+    for (int i = 0; i < listSpeak[speakIndex].length; i++) {
+      String s = listSpeak[speakIndex][i].replaceAll('<br />', ' ');
+      int lineCount = (s.length / chars).toInt() + 1;
+      int len = (lineCount * (fsize * dh)).toInt();
+
+      sum += len;
+      if ((sum * 10000 / all) > ratio) {
+        break;
+      }
+      speakLine = i;
+    }
+
+/*
+    int all = 0;
+    for (int i = 0; i < listSpeak[speakIndex].length; i++) {
+      all += listSpeak[speakIndex][i].length;
+    }
+    int sum = 0;
+    speakLine = 0;
+    for (int i = 0; i < listSpeak[speakIndex].length; i++) {
+      sum += listSpeak[speakIndex][i].length;
+      if ((sum * 10000 / all) > ratio) {
+        break;
+      }
+      speakLine = i;
+    }
+*/
     isSpeaking = true;
     speak1();
     this.notifyListeners();
@@ -908,7 +967,7 @@ line-height: ${env.line_height.val}%;
     if (isSpeaking) {
       String text = await getSpeakText1();
       if (text != '') {
-        text = EpubData.getRuby(text, m);
+        //text = EpubData.getRuby(text, m);
         m.forEach((String key, String value) {
           text = text.replaceAll(key, value);
         });
@@ -941,7 +1000,7 @@ line-height: ${env.line_height.val}%;
         }
 
         speak2Index = 0;
-        log('[${nowIndex}]=[${speakIndex}] mark1("p${speakLine}"); ${text}');
+        log('[${nowIndex}]=[${speakIndex}] [${nowRatio}] mark1("p${speakLine}"); ${text}');
         speak2();
 
         // ジャンプ長さ
@@ -956,6 +1015,7 @@ line-height: ${env.line_height.val}%;
           String s = listSpeak[speakIndex][i].replaceAll('<br />', '');
           int lineCount = (s.length / chars).toInt() + 1;
           int len = (lineCount * (fsize * dh)).toInt();
+
           if (i < speakLine) sum += len;
           all += len;
         }
@@ -977,11 +1037,6 @@ line-height: ${env.line_height.val}%;
     String text = '';
     if (speak2Index < listSpeak2.length) {
       text = listSpeak2[speak2Index];
-    }
-    if (text == '') {
-      if (speak2Index < listSpeak2.length) {
-        text = listSpeak2[speak2Index];
-      }
     }
     return text;
   }

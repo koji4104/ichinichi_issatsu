@@ -175,12 +175,16 @@ class EpubNotifier extends ChangeNotifier {
     }
 
     if (epub.bookId != null && epub.uriList.isNotEmpty) {
-      existingIndex = await getExistingIndex(epub.bookId!);
-      if (existingIndex > epub.uriList.length) existingIndex = epub.uriList.length;
-      if (existingIndex == epub.uriList.length)
-        status = MyEpubStatus.same;
-      else
+      if (uri.contains('www.aozora.gr.jp/cards/')) {
         status = MyEpubStatus.downloadable;
+      } else {
+        existingIndex = await getExistingIndex(epub.bookId!);
+        if (existingIndex > epub.uriList.length) existingIndex = epub.uriList.length;
+        if (existingIndex == epub.uriList.length)
+          status = MyEpubStatus.same;
+        else
+          status = MyEpubStatus.downloadable;
+      }
       this.notifyListeners();
     } else if (status != MyEpubStatus.none) {
       status = MyEpubStatus.none;
@@ -960,7 +964,8 @@ class DownloadController {
     try {
       http.Response res = await http.get(Uri.parse(uri), headers: headers);
       if (res.statusCode == 200) {
-        body = res.body;
+        body = utf8.decode(res.bodyBytes);
+        //body = res.body;
       }
     } catch (e) {
       MyLog.err('DownloadController.download() ${e.toString()}');

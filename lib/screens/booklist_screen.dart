@@ -109,10 +109,26 @@ class BookListScreen extends BaseScreen {
             },
           ),
           endActionPane: ActionPane(
-            extentRatio: 0.60,
+            extentRatio: 0.50,
             motion: const StretchMotion(),
             children: [
-              if (isAddDownload)
+              if (isAddDownload == false)
+                MySlidableAction(
+                  onPressed: (_) {
+                    okDialog(msg: l10n('redownload')).then((ret) {
+                      if (ret) {
+                        AddDownload(bookList[index]);
+                      }
+                    });
+                  },
+                  foregroundColor: Colors.white,
+                  backgroundColor: Color(0xFF444488),
+                  icon: Icons.download,
+                  label: l10n('download'),
+                  spacing: 0,
+                  padding: EdgeInsets.fromLTRB(0, 0, 0, 0),
+                ),
+              if (isAddDownload == true)
                 MySlidableAction(
                   onPressed: (_) {
                     okDialog(msg: l10n('check_addition')).then((ret) {

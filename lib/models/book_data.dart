@@ -156,33 +156,21 @@ class PropData {
   PropData();
 
   int flag = 0;
-  int nowIndex = 0;
-  int nowRatio = 0;
   int nowChars = 0;
-  int maxIndex = 0;
-  int maxRatio = 0;
   int maxChars = 1;
   DateTime atime = DateTime.now();
 
   Map<String, dynamic> toJson() => {
-        'nowIndex': nowIndex,
-        'nowRatio': nowRatio,
-        'nowChars': nowChars,
-        'maxIndex': maxIndex,
-        'maxRatio': maxRatio,
-        'maxChars': maxChars,
         'flag': flag,
+        'nowChars': nowChars,
+        'maxChars': maxChars,
         'atime': DateFormat('yyyy-MM-dd HH:mm:ss').format(atime),
       };
 
   PropData.fromJson(Map<String, dynamic> j) {
-    if (j.containsKey('nowIndex')) nowIndex = j['nowIndex'] ?? 0;
-    if (j.containsKey('nowRatio')) nowRatio = j['nowRatio'] ?? 0;
-    if (j.containsKey('nowChars')) nowChars = j['nowChars'] ?? 0;
-    if (j.containsKey('maxIndex')) maxIndex = j['maxIndex'] ?? 0;
-    if (j.containsKey('maxRatio')) maxRatio = j['maxRatio'] ?? 0;
-    if (j.containsKey('maxChars')) maxChars = j['maxChars'] ?? 0;
     if (j.containsKey('flag')) flag = j['flag'] ?? 0;
+    if (j.containsKey('nowChars')) nowChars = j['nowChars'] ?? 0;
+    if (j.containsKey('maxChars')) maxChars = j['maxChars'] ?? 0;
     if (j.containsKey('atime')) {
       String date = j['atime'];
       try {

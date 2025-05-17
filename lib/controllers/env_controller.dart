@@ -83,6 +83,12 @@ class Environment {
     name: 'dark_mode',
   );
 
+  bool isDarkMode() {
+    bool r = true;
+    if (back_color.val == 0) r = false;
+    return r;
+  }
+
   /// 0 横書き　1 縦書き
   EnvData writing_mode = EnvData(
     val: 0,
@@ -91,6 +97,7 @@ class Environment {
     name: 'writing_mode',
   );
 
+  /// 'white', 'gray', 'black'
   EnvData back_color = EnvData(
     val: 0,
     vals: [0, 1, 2],
@@ -180,7 +187,7 @@ class Environment {
         font_size.name: font_size.val,
         font_family.name: font_family.val,
         //line_height.name: line_height.val,
-        dark_mode.name: dark_mode.val,
+        //dark_mode.name: dark_mode.val,
         back_color.name: back_color.val,
         writing_mode.name: writing_mode.val,
         ui_text_scale.name: ui_text_scale.val,
@@ -193,7 +200,7 @@ class Environment {
     fromJsonSub(j, font_size);
     fromJsonSub(j, font_family);
     //fromJsonSub(j, line_height);
-    fromJsonSub(j, dark_mode);
+    //fromJsonSub(j, dark_mode);
     fromJsonSub(j, back_color);
     fromJsonSub(j, writing_mode);
     fromJsonSub(j, ui_text_scale);
@@ -220,7 +227,7 @@ class EnvNotifier extends ChangeNotifier {
     list.add(env.font_size);
     list.add(env.font_family);
     //list.add(env.line_height);
-    list.add(env.dark_mode);
+    //list.add(env.dark_mode);
     list.add(env.back_color);
     list.add(env.writing_mode);
     list.add(env.ui_text_scale);

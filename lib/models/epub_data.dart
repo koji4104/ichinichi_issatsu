@@ -45,14 +45,14 @@ class EpubData {
   <link rel="stylesheet" type="text/css" href="../styles/stylesheet1.css" />
 </head>
 <script type="text/javascript">
-function mark1(tag1, color1) {
+function mark1(tag1, col1) {
   var p1 = document.getElementById(tag1);
-  p1.style.color = color1;
+  p1.style.color = col1;
 }  
 function mark0(tag1) {
   var p1 = document.getElementById(tag1);
   p1.style.color = null;
-}         
+}       
 </script>
 <body>
 """;

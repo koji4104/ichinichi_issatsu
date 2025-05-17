@@ -41,7 +41,7 @@ class SettingsScreen extends BaseScreen {
     list.add(MySettingsTile(data: env.font_family));
 
     list.add(SizedBox(height: 16));
-    list.add(MySettingsTile(data: env.dark_mode));
+    //list.add(MySettingsTile(data: env.dark_mode));
     list.add(MySettingsTile(data: env.language_code));
     list.add(MySettingsTile(data: env.ui_text_scale));
 

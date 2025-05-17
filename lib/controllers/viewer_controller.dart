@@ -47,11 +47,14 @@ class ViewerNotifier extends ChangeNotifier {
   double lastPixel = 0;
   int nowIndex = 0;
   int nowRatio = 0;
-  int maxIndex = 0;
-  int maxRatio = 0;
-  int nowPixel = 0;
-  int allPixel = 100;
+
+  //int maxIndex = 0;
+  //int maxRatio = 0;
+  //int nowPixel = 0;
+
   int nowChars = 0;
+  int maxChars = 0;
+
   Map<String, String> m = {};
 
   double jumpMarginPx = 100;
@@ -86,7 +89,6 @@ class ViewerNotifier extends ChangeNotifier {
     listText.clear();
     listSpeak.clear();
     listWidth.clear();
-    listWebViewCtrl.clear();
     listKey.clear();
     listContextMenu.clear();
     m.clear();
@@ -95,6 +97,11 @@ class ViewerNotifier extends ChangeNotifier {
       if (scrollController != null) scrollController!.dispose();
       scrollController = new ScrollController();
       scrollController!.addListener(scrollingListener);
+
+      for (InAppWebViewController? ctrl in listWebViewCtrl) {
+        if (ctrl != null) ctrl!.dispose();
+      }
+      listWebViewCtrl.clear();
 
       this.notifyListeners();
       await Future.delayed(Duration(milliseconds: 50));
@@ -149,76 +156,36 @@ class ViewerNotifier extends ChangeNotifier {
           if (calcWidth < 400) calcWidth = 400;
           if (!Platform.isIOS && !Platform.isAndroid) {
             if (calcWidth > 3000) calcWidth = 3000;
-            book!.prop.nowIndex = 1;
-            book!.prop.nowRatio = 0;
+            book!.prop.nowChars = 1;
           }
           // chars
 
-          if (IS_PTAG == false) {
-            // speech_old
-            Stopwatch sw = Stopwatch();
-            sw.start();
+          // speech
+          String text2 = speech2;
 
-            List<String> lines = [];
-            speech = speech.replaceAll('\n', '');
-            speech = speech.replaceAll('<h3>', '');
-            speech = speech.replaceAll('</h3>', '<br />');
-            speech = speech.replaceAll('<h2>', '');
-            speech = speech.replaceAll('</h2>', '<br />');
-
-            speech = EpubData.getRuby(speech, m);
-            //speech = EpubData.extractRuby(speech);
-            m.forEach((String key, String value) {
-              speech = speech.replaceAll(key, value);
+          if (env.writing_mode.val == 1) {
+            VerticalRotated.map.forEach((String key, String value) {
+              text2 = text2.replaceAll(key, value);
             });
-
-            speech = speech.replaceAll('。」', '」');
-            speech = speech.replaceAll('。', '。<br />');
-            speech = speech.replaceAll('「', '<br />「<br />');
-            speech = speech.replaceAll('」', '<br />」<br />');
-            List<String> list2 = speech.split('<br />');
-            for (String s in list2) {
-              if (s.length >= 1) lines.add(s);
-            }
-            listSpeak.add(lines);
-
-            sw.stop();
-            //log('ruby ${sw.elapsedMilliseconds.toString()} [ms]');
-            // speech_old
-          } else {
-            // speech2
-            String text2 = speech2;
-            text2 = text2.replaceAll('\n', '');
-            List<String> lines2 = text2.split('<br />');
-            text1 = "";
-            int ii = 0;
-            List<String> linesTemp = [];
-            for (String s in lines2) {
-              text1 += "<p id='p${ii}'>${s}</p>";
-              linesTemp.add(s);
-              ii++;
-            }
-            listSpeak.add(linesTemp);
-
-            if (env.writing_mode.val == 1) {
-              VerticalRotated.map.forEach((String key, String value) {
-                text1 = text1.replaceAll(key, value);
-              });
-            }
-            text1 = e.head1 + text1 + e.head2;
-            //text1 = text1.replaceAll('<style>', '<style>${getStyle(env)}');
-
-            String tag1 = '<style>';
-            String tag2 = '</style>';
-            int s1 = text1.indexOf(tag1);
-            int e1 = (s1 >= 0) ? text1.indexOf(tag2, s1 + tag1.length) : 0;
-            if (s1 >= 0 && e1 > 0 && e1 - s1 < 500) {
-              text1 = text1.substring(0, s1) + '<style>${getStyle(env)}' + text1.substring(e1);
-            }
-
-            text1 += '<br />';
-            // speech2
           }
+
+          text2 = text2.replaceAll('\n', '');
+          List<String> lines2 = text2.split('<br />');
+          text1 = "";
+          int ii = 0;
+          List<String> linesTemp = [];
+          for (String s in lines2) {
+            text1 += "<p id='p${ii}'>${s}</p>";
+            linesTemp.add(s);
+            ii++;
+          }
+          listSpeak.add(linesTemp);
+
+          text1 = e.head1 + text1 + e.head2;
+          text1 = changeTextStyle(text1);
+          text1 += '<br />';
+          // speech
+
           listWidth.add(calcWidth);
           listWebViewCtrl.add(null);
           listKey.add(GlobalKey());
@@ -246,15 +213,27 @@ class ViewerNotifier extends ChangeNotifier {
       } // for (int i = 0; i < 10000; i++) {
     } on Exception catch (e) {
       MyLog.err('ViewerController.losd() ${e.toString()}');
+    } catch (_) {
+      MyLog.err('ViewerController.catch(_)');
     }
     isLoading = false;
 
     try {
-      nowIndex = book!.prop.nowIndex;
-      nowRatio = book!.prop.nowRatio;
-      maxRatio = book!.prop.maxRatio;
-      maxRatio = book!.prop.maxRatio;
-      nowChars = getNowChars();
+      nowChars = book!.prop.nowChars;
+      maxChars = book!.prop.maxChars;
+
+      int chars1 = nowChars;
+      for (int i = 0; i < book!.index.list.length; i++) {
+        int c = book!.index.list[i].chars;
+        if (chars1 > c) {
+          chars1 -= c;
+        } else {
+          nowIndex = i;
+          nowRatio = (chars1 * 10000 / c).toInt();
+          break;
+        }
+      }
+      log('jump [${nowIndex}] ${(nowRatio / 100).toInt()}% (${nowChars})');
       jumpToIndex(nowIndex, nowRatio);
     } on Exception catch (e) {
       MyLog.err('ViewerController.losd().jump ${e.toString()}');
@@ -262,84 +241,49 @@ class ViewerNotifier extends ChangeNotifier {
     log('load() end');
   }
 
-  /// テキストを読み直して Style を書き換える
-  /// 高さは同じ
+  /// Styleを書き換えて高さは同じ
   Future refresh() async {
     log('refresh()');
     try {
       for (int i = 0; i < listText.length; i++) {
-        String text1 = listText[i];
-        String tag1 = '<style>';
-        String tag2 = '</style>';
-        int s1 = text1.indexOf(tag1);
-        int e1 = (s1 >= 0) ? text1.indexOf(tag2, s1 + tag1.length) : 0;
-        if (s1 >= 0 && e1 > 0 && e1 - s1 < 500) {
-          text1 = text1.substring(0, s1) + '<style>${getStyle(env)}' + text1.substring(e1);
-        }
-        listText[i] = text1;
+        listText[i] = changeTextStyle(listText[i]);
       }
-
-      /*
-      listText.clear();
-
-      String bookdir = APP_DIR + '/book';
-
-      for (int i = 0; i < 10000; i++) {
-        String path1 = '${bookdir}/${book!.bookId}/text/ch${(i).toString().padLeft(4, '0')}.txt';
-        if (File(path1).existsSync()) {
-          String text = await File(path1).readAsStringSync();
-
-          if (env.writing_mode.val == 1) {
-            VerticalRotated.map.forEach((String key, String value) {
-              text = text.replaceAll(key, value);
-            });
-          }
-
-          EpubData e = new EpubData();
-          String text1 = e.head1 + text + e.head2;
-          text1 = text1.replaceAll('<style>', '<style>${getStyle(env)}');
-          listText.add(text1);
-        } else {
-          if (i >= 1) break;
-        }
-      }
-      */
       await Future.delayed(Duration(milliseconds: 100));
 
-      if (Platform.isIOS) {
-        int ni = nowIndex;
-        if (listWebViewCtrl.length > ni && listWebViewCtrl[ni] != null && listText.length > ni) {
-          try {
-            await listWebViewCtrl[ni]!.loadData(data: listText[ni]);
-          } on Exception catch (e) {
-            log('warn ViewerNotifier.refresh()');
-          }
+      //if (Platform.isIOS) {
+      int ni = nowIndex;
+      if (listWebViewCtrl.length > ni && listWebViewCtrl[ni] != null && listText.length > ni) {
+        try {
+          await listWebViewCtrl[ni]!.loadData(data: listText[ni]);
+        } on Exception catch (e) {
+          log('warn Viewer.refresh() +0');
         }
-        if (ni > 0 &&
-            listWebViewCtrl.length > ni - 1 &&
-            listWebViewCtrl[ni - 1] != null &&
-            listText.length > ni - 1) {
-          try {
-            await listWebViewCtrl[ni - 1]!.loadData(data: listText[ni - 1]);
-          } on Exception catch (e) {
-            log('warn ViewerNotifier.refresh()');
-          }
-        }
-        if (listWebViewCtrl.length > ni + 1 &&
-            listWebViewCtrl[ni + 1] != null &&
-            listText.length > ni + 1) {
-          try {
-            await listWebViewCtrl[ni + 1]!.loadData(data: listText[ni + 1]);
-          } on Exception catch (e) {
-            log('warn ViewerNotifier.refresh()');
-          }
-        }
-      } else {
-        log('refresh() loadData is ios only');
       }
+      if (ni > 0 &&
+          listWebViewCtrl.length > ni - 1 &&
+          listWebViewCtrl[ni - 1] != null &&
+          listText.length > ni - 1) {
+        try {
+          await listWebViewCtrl[ni - 1]!.loadData(data: listText[ni - 1]);
+        } on Exception catch (e) {
+          log('warn Viewer.refresh() -1');
+        }
+      }
+      if (listWebViewCtrl.length > ni + 1 &&
+          listWebViewCtrl[ni + 1] != null &&
+          listText.length > ni + 1) {
+        try {
+          await listWebViewCtrl[ni + 1]!.loadData(data: listText[ni + 1]);
+        } on Exception catch (e) {
+          log('warn Viewer.refresh() +1');
+        }
+      }
+      //} else {
+      //  log('refresh() loadData is ios only');
+      //}
       this.notifyListeners();
     } on Exception catch (e) {
-      MyLog.err('ViewerNotifier.refresh() ${e.toString()}');
+      MyLog.err('Viewer.refresh() ${e.toString()}');
     }
   }
 
@@ -418,8 +362,8 @@ class ViewerNotifier extends ChangeNotifier {
     try {
       for (int k = 0; k < 5; k++) {
         if (scrollController!.hasClients == false) {
-          log('scrollController.hasClients == false k=${k}');
-          await Future.delayed(Duration(milliseconds: 200));
+          log('scrollController.hasClients==false k=${k}');
+          await Future.delayed(Duration(milliseconds: 100));
           this.notifyListeners();
           await Future.delayed(Duration(milliseconds: 100));
         }
@@ -459,19 +403,31 @@ class ViewerNotifier extends ChangeNotifier {
 
   String getProgress() {
     if (book == null) return '';
-    int c = book!.chars;
-    if (c < 1) c = 1;
-    int per = (nowChars * 100 / c).toInt();
+    int allChars = book!.chars;
+    if (allChars < 100) allChars = 100;
+    int per = (nowChars * 100 / allChars).toInt();
     return '${per} %';
   }
 
   Future moveMaxpage() async {
+    int maxIndex = 0;
+    int maxRatio = 0;
+    int chars1 = maxChars;
+    for (int i = 0; i < book!.index.list.length; i++) {
+      int c = book!.index.list[i].chars;
+      if (chars1 > c) {
+        chars1 -= c;
+      } else {
+        maxIndex = i;
+        maxRatio = (chars1 * 10000 / c).toInt();
+        break;
+      }
+    }
     jumpToIndex(maxIndex, maxRatio);
   }
 
   Future resetMaxpage() async {
-    maxIndex = nowIndex;
-    maxRatio = nowRatio;
+    maxChars = nowChars;
     saveIndex();
     notifyListeners();
   }
@@ -492,33 +448,11 @@ class ViewerNotifier extends ChangeNotifier {
   }
 
   String getNowPage() {
-    if (book == null) return '-1';
-    int chars = 0;
-    for (int i = 0; i < book!.index.list.length; i++) {
-      if (i < nowIndex) {
-        chars += book!.index.list[i].chars;
-      } else if (i == nowIndex) {
-        chars += (book!.index.list[i].chars * nowRatio / 10000).toInt();
-      } else {
-        break;
-      }
-    }
-    return '${(chars / 450).toInt()}';
+    return '${(nowChars / 450).toInt()}';
   }
 
   String getMaxPage() {
-    if (book == null) return '-1';
-    int chars = 0;
-    for (int i = 0; i < book!.index.list.length; i++) {
-      if (i < maxIndex) {
-        chars += book!.index.list[i].chars;
-      } else if (i == maxIndex) {
-        chars += (book!.index.list[i].chars * maxRatio / 10000).toInt();
-      } else {
-        break;
-      }
-    }
-    return '${(chars / 450).toInt()}';
+    return '${(maxChars / 450).toInt()}';
   }
 
   void scrollingListener() async {
@@ -528,14 +462,13 @@ class ViewerNotifier extends ChangeNotifier {
     try {
       double px = scrollController!.position.pixels;
       if (px > jumpMarginPx) px -= jumpMarginPx;
+      if ((lastPixel - px).abs() < 200) return;
 
-      final past = lastTime.add(Duration(seconds: 1));
-      if (DateTime.now().compareTo(past) < 1 || (lastPixel - px).abs() < 200) {
-        return;
-      }
+      final past = lastTime.add(Duration(milliseconds: 500));
+      if (DateTime.now().compareTo(past) < 1) return;
 
-      lastTime = DateTime.now();
       lastPixel = px;
+      lastTime = DateTime.now();
 
       for (int i = 0; i < listWidth.length; i++) {
         if (px < listWidth[i]) {
@@ -546,16 +479,11 @@ class ViewerNotifier extends ChangeNotifier {
         px -= listWidth[i];
       }
       nowChars = getNowChars();
-      nowPixel = scrollController!.position.pixels.toInt();
-      allPixel = 1;
-      for (int i = 0; i < listWidth.length; i++) {
-        allPixel += listWidth[i].toInt();
+      //nowPixel = scrollController!.position.pixels.toInt();
+      if (maxChars < nowChars) {
+        maxChars = nowChars;
       }
 
-      if (maxIndex * 10000 + maxRatio <= nowIndex * 10000 + nowRatio) {
-        maxIndex = nowIndex;
-        maxRatio = nowRatio;
-      }
       saveIndex();
     } on Exception catch (e) {
       MyLog.err('scrollingListener() ${e.toString()}');
@@ -570,14 +498,16 @@ class ViewerNotifier extends ChangeNotifier {
     if (isLoading == true) return;
 
     try {
+      /*
       book!.prop.nowIndex = nowIndex;
       book!.prop.nowRatio = nowRatio;
       book!.prop.nowChars = nowChars;
-
       book!.prop.maxIndex = maxIndex;
       book!.prop.maxRatio = maxRatio;
       book!.prop.maxChars = book!.chars;
-
+      */
+      book!.prop.nowChars = nowChars;
+      book!.prop.maxChars = maxChars;
       book!.prop.atime = DateTime.now();
 
       String bookdir = APP_DIR + '/book';
@@ -587,6 +517,18 @@ class ViewerNotifier extends ChangeNotifier {
     } on Exception catch (e) {
       MyLog.err('saveIndex() ${e.toString()}');
     }
+  }
+
+  /// <style>を変える
+  String changeTextStyle(String t1) {
+    String tag1 = '<style>';
+    String tag2 = '</style>';
+    int s1 = t1.indexOf(tag1);
+    int e1 = (s1 >= 0) ? t1.indexOf(tag2, s1 + tag1.length) : 0;
+    if (s1 >= 0 && e1 > 0 && e1 - s1 < 1000) {
+      t1 = t1.substring(0, s1) + '<style>${getStyle(env)}' + t1.substring(e1);
+    }
+    return t1;
   }
 
   String getStyle(Environment env) {
@@ -613,13 +555,14 @@ margin: 10;
 
     String c = '';
     if (env.writing_mode.val == 1) {
-      c += 'html {\n';
-      c += '  -webkit-writing-mode: vertical-rl;\n';
-      c += '  -epub-writing-mode: tb-rl;\n';
-      c += '  writing-mode: vertical-rl;\n';
-      c += '  text-orientation: upright;\n';
-      c += '  -webkit-text-orientation: upright;\n';
-      c += '}\n';
+      c += """body {
+-webkit-writing-mode: vertical-rl;
+-epub-writing-mode: tb-rl;
+writing-mode: vertical-rl;
+text-orientation: upright;
+-webkit-text-orientation: upright;
+}
+""";
     }
 
     c += """body {
@@ -648,12 +591,6 @@ h4, h5 {
 font-size: 1.0em;
 font-weight: normal;
 line-height: ${env.line_height.val}%;
-}
-""";
-
-    c += """
-::selection {
-color: ${env.getH3Css()};
 }
 """;
     return c;
@@ -703,7 +640,6 @@ color: ${env.getH3Css()};
     if ((nowIndex - index).abs() > 1) {
       return Container();
     }
-    //log('inviewer [${index}]');
     try {
       return InAppWebView(
         key: listKey[index],
@@ -880,29 +816,10 @@ color: ${env.getH3Css()};
       // 言語を設定
       await flutterTts.setLanguage("ja-JP");
 
-      // 特定の言語が利用可能かどうかを確認する
-      //await flutterTts.isLanguageAvailable("en-US");
-
-      // OSのボイス名一覧
-      List voices = await flutterTts.getVoices;
-      for (var item in voices) {
-        var map = item as Map<Object?, Object?>;
-        // 日本語のみ
-        if (map["locale"].toString().toLowerCase().contains("ja")) {
-          //log('voices ${map["name"].toString()}');
-        }
-      }
-
-      // iOS, macOS only
-      //await flutterTts.setVoice({"identifier": "com.apple.voice.compact.en-AU.Karen"});
-
       // コールバック設定
       flutterTts.setCompletionHandler(() async {
-        //log('setCompletionHandler');
-        if (IS_PTAG) {
-          speak2Index++;
-          speak2();
-        }
+        speak2Index++;
+        speak2();
       });
     }
 
@@ -930,10 +847,6 @@ color: ${env.getH3Css()};
       case 140:
         sp = 0.70;
         speakWait = 200;
-    }
-    if (!Platform.isIOS && !Platform.isAndroid) {
-      sp = 0.70;
-      speakWait = 0;
     }
     await flutterTts.setSpeechRate(sp);
 

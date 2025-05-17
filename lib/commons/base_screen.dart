@@ -12,8 +12,7 @@ import '/controllers/epub_controller.dart';
 class BaseScreen extends ConsumerWidget {
   late BuildContext context;
   late WidgetRef ref;
-  ChangeNotifierProvider baseProvider =
-      ChangeNotifierProvider((ref) => ChangeNotifier());
+  ChangeNotifierProvider baseProvider = ChangeNotifierProvider((ref) => ChangeNotifier());
 
   late Environment env;
   bool bInit = false;
@@ -135,8 +134,8 @@ class BaseScreen extends ConsumerWidget {
       child: TextButton(
         style: TextButton.styleFrom(
           backgroundColor: bgcol,
-          shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.all(Radius.circular(DEF_RADIUS))),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(DEF_RADIUS))),
           side: bdcol != null ? BorderSide(color: bdcol) : null,
         ),
         child: Text(
@@ -151,8 +150,7 @@ class BaseScreen extends ConsumerWidget {
   }
 
   redraw() {
-    if (ref.read(baseProvider) != null)
-      ref.read(baseProvider)!.notifyListeners();
+    if (ref.read(baseProvider) != null) ref.read(baseProvider)!.notifyListeners();
   }
 
   Widget MySettingsTile({required EnvData data}) {
@@ -243,8 +241,9 @@ class BaseScreen extends ConsumerWidget {
   @override
   Future onDownloadFinished() async {}
 
+  /// ダウンロードバー
   Widget downloadBar() {
-    double barHeight = Platform.isIOS ? 300 : 200;
+    double barHeight = Platform.isIOS ? 260 : 200;
     double ffBottom = 0;
     if (ref.watch(epubProvider).status == MyEpubStatus.none) {
       ffBottom = -1.0 * barHeight;
@@ -266,11 +265,14 @@ class BaseScreen extends ConsumerWidget {
     int all = ref.watch(epubProvider).epub.uriList.length;
     int req1 = 0;
     int req2 = 0;
-    label1 =
-        '${ref.watch(epubProvider).epub.bookTitle ?? ref.watch(epubProvider).epub.bookId}';
+    label1 = '${ref.watch(epubProvider).epub.bookTitle ?? ref.watch(epubProvider).epub.bookId}';
 
     if (ref.watch(epubProvider).status == MyEpubStatus.downloadable) {
-      if (all > 0 && already == 0) {
+      if (all == 1) {
+        // 全1話
+        req1 = all;
+        req2 = 0;
+      } else if (all > 0 && already == 0) {
         // 初回ダウンロード
         if (all < DL_COUNT1 + DL_SPARE) {
           req1 = all;
@@ -337,11 +339,9 @@ class BaseScreen extends ConsumerWidget {
       ]);
     } else if (req1 > 0) {
       // 10 話 まで ダウンロード
-      String btnTitle1 =
-          '${req1} ${l10n('episode')} ${l10n('up_to')} ${l10n('download')}';
+      String btnTitle1 = '${req1} ${l10n('episode')} ${l10n('up_to')} ${l10n('download')}';
       if (req1 == 1) btnTitle1 = '${l10n('download')}';
-      String btnTitle2 =
-          '${req2} ${l10n('episode')} ${l10n('up_to')} ${l10n('download')}';
+      String btnTitle2 = '${req2} ${l10n('episode')} ${l10n('up_to')} ${l10n('download')}';
 
       btn = Column(children: [
         MyTextButton(

@@ -164,7 +164,6 @@ class ViewerScreen extends BaseScreen with WidgetsBindingObserver {
   }
 
   Widget loadingWidget() {
-    //String txt = ref.read(viewerProvider).jumpStatusText;
     return Stack(children: [
       Container(color: env.getBackColor()),
       Positioned(
@@ -232,8 +231,6 @@ class ViewerScreen extends BaseScreen with WidgetsBindingObserver {
           icon: Icon(Icons.refresh),
           color: env.getFrontColor(),
           onPressed: () {
-            //ref.watch(viewerProvider).test();
-            //redraw();
             refresh();
           },
         ),
@@ -363,12 +360,14 @@ class ViewerScreen extends BaseScreen with WidgetsBindingObserver {
     }
 
     String progress = ref.watch(viewerProvider).getProgress();
-    Widget wText = Text(
-      progress,
-      overflow: TextOverflow.ellipsis,
-      maxLines: 1,
-      textScaler: TextScaler.linear(0.9),
-      style: TextStyle(color: env.getFrontColor()),
+    Widget wText = Container(
+      child: Text(
+        progress,
+        overflow: TextOverflow.ellipsis,
+        maxLines: 1,
+        textScaler: TextScaler.linear(0.9),
+        style: TextStyle(color: env.getFrontColor()),
+      ),
     );
 
     double iconSize = ICON_BUTTON_SIZE;
@@ -404,19 +403,23 @@ class ViewerScreen extends BaseScreen with WidgetsBindingObserver {
       },
     );
 
+    Widget leftBtn = SizedBox(width: iconSize + 24, height: iconSize + 24);
+    if (isSpeaking)
+      leftBtn = btnStop;
+    else if (isActionBar() && !isSpeaking) leftBtn = btnStart;
+
     Widget bar = Container(
       color: env.getBackColor(),
       child: Column(children: [
-        SizedBox(height: 6),
+        SizedBox(height: 4),
         Row(
           children: [
             SizedBox(width: 20, height: iconSize),
+            leftBtn,
+            Expanded(child: SizedBox(width: 1)),
             wText,
             Expanded(child: SizedBox(width: 1)),
-            if (isActionBar() && !isSpeaking) btnStart,
-            if (isSpeaking) btnStop else SizedBox(width: iconSize, height: iconSize),
-            Expanded(child: SizedBox(width: 1)),
-            isActionBar() ? btnSettings : SizedBox(width: iconSize),
+            isActionBar() ? btnSettings : SizedBox(width: iconSize + 24, height: iconSize + 24),
             SizedBox(width: 20),
           ],
         ),
@@ -585,7 +588,7 @@ class ViewerScreen extends BaseScreen with WidgetsBindingObserver {
 
   /// settingsBar
   Widget settingsBar() {
-    double barHeight = 350;
+    double barHeight = 300;
     barHeight += env.ui_text_scale.val;
 
     double ffBottom = -1.0 * barHeight;
@@ -599,7 +602,7 @@ class ViewerScreen extends BaseScreen with WidgetsBindingObserver {
     list.add(MySettingsTile(data: env.back_color));
     list.add(MySettingsTile(data: env.writing_mode));
     list.add(MySettingsTile(data: env.font_family));
-    list.add(MySettingsTile(data: env.dark_mode));
+    //list.add(MySettingsTile(data: env.dark_mode));
     list.add(SizedBox(height: 10));
     list.add(MySettingsTile(data: env.speak_voice));
     list.add(MySettingsTile(data: env.speak_speed));
@@ -625,8 +628,9 @@ class ViewerScreen extends BaseScreen with WidgetsBindingObserver {
   onSettingsDropdownChanged(EnvData data) {
     if (data.name == 'font_size' || data.name == 'writing_mode') {
       reload();
-    } else if (data.name == 'dark_mode') {
+    } else if (data.name == 'back_color') {
       super.onSettingsDropdownChanged(data);
+      refresh();
     } else {
       refresh();
     }
@@ -664,7 +668,7 @@ class ViewerScreen extends BaseScreen with WidgetsBindingObserver {
           title1: MyText(txt, maxLength: 24),
           title2: MyText(pages),
           onPressed: () {
-            ref.read(viewerProvider).jumpToIndex(i, 0);
+            ref.read(viewerProvider).jumpToIndex(i, 400);
             startReadlog();
           },
         ),

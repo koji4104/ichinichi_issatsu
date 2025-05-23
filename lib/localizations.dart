@@ -85,6 +85,7 @@ class Localized {
       'black': 'Black',
       'ja': 'Japanese',
       'en': 'English',
+      'bookmark': 'Bookmark',
     },
     'ja': {
       'app_name': '一日一冊',
@@ -149,6 +150,7 @@ class Localized {
       'black': '黒',
       'ja': '日本語',
       'en': '英語',
+      'bookmark': 'ブックマーク',
     },
   };
 

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_slidable/flutter_slidable.dart';
+import 'dart:io';
 
 import '/constants.dart';
 
@@ -250,23 +251,29 @@ Widget MyIconLabelButton({
   if (label != null && label.length >= 4) {
     fontSize = 7;
   }
-  return Column(
-      mainAxisSize: MainAxisSize.min,
-      mainAxisAlignment: MainAxisAlignment.start,
-      children: [
-        IconButton(
-          icon: icon,
-          color: color,
-          onPressed: onPressed,
-          padding: EdgeInsets.all(0),
+  double pad = 4;
+  if (!Platform.isIOS && !Platform.isAndroid) {
+    pad = 12;
+  }
+  return Stack(children: [
+    IconButton(
+      icon: icon,
+      color: color,
+      onPressed: onPressed,
+      padding: EdgeInsets.fromLTRB(0, 0, 0, pad),
+    ),
+    if (label != null)
+      Positioned(
+        left: 0,
+        right: 0,
+        bottom: 0,
+        child: Text(
+          label,
+          style: TextStyle(color: color, fontSize: fontSize),
+          textAlign: TextAlign.center,
         ),
-        if (label != null)
-          Text(
-            label,
-            style: TextStyle(color: color, fontSize: fontSize),
-            textAlign: TextAlign.center,
-          ),
-      ]);
+      ),
+  ]);
 }
 
 /// MyTextButton

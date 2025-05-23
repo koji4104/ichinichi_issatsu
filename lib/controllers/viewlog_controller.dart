@@ -42,6 +42,7 @@ class ViewlogNotifier extends ChangeNotifier {
     int sec = DateTime.now().difference(startDate).inSeconds;
     int defChars = chars - startChars;
 
+    // キャプチャー用・テスト用
     if (IS_TEST_VIEWLOG == true) {
       sec = DateTime.now().second * 60 + 1;
       sec = (sec / ((sec % 3) + 1)).toInt();
@@ -49,10 +50,14 @@ class ViewlogNotifier extends ChangeNotifier {
       log('IS_TEST save sec=${sec} defChars=${defChars}');
     }
 
-    if (sec >= 30 && defChars >= CHARS_PAGE) {
-      String tsv = '${date}\t${sec}\t${defChars}\t${book.bookId}\t${book.title}\n';
-      await File(path).writeAsString(tsv, mode: FileMode.append, flush: true);
-      this.notifyListeners();
+    int temp_per_hour = (defChars * 3600 / sec / CHARS_PAGE).toInt();
+    if (temp_per_hour <= 900) {
+      if (sec >= 60 && defChars >= CHARS_PAGE) {
+        String tsv =
+            '${date}\t${sec}\t${defChars}\t${book.bookId}\t${book.title}\n';
+        await File(path).writeAsString(tsv, mode: FileMode.append, flush: true);
+        this.notifyListeners();
+      }
     }
   }
 
@@ -112,7 +117,8 @@ class ViewlogNotifier extends ChangeNotifier {
           if (d.date == date) {
             logList.remove(d);
             String tsv = listToTsv(logList);
-            await File(path).writeAsString(tsv, mode: FileMode.write, flush: true);
+            await File(path)
+                .writeAsString(tsv, mode: FileMode.write, flush: true);
             done = true;
             break;
           }
@@ -133,7 +139,8 @@ class ViewlogNotifier extends ChangeNotifier {
           if (d.date == date) {
             logList.remove(d);
             String tsv = listToTsv(logList);
-            await File(path).writeAsString(tsv, mode: FileMode.write, flush: true);
+            await File(path)
+                .writeAsString(tsv, mode: FileMode.write, flush: true);
             done = true;
             break;
           }

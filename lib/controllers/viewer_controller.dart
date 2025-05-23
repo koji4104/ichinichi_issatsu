@@ -7,6 +7,8 @@ import 'dart:convert';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 import 'package:flutter_tts/flutter_tts.dart';
 import 'dart:core';
+import 'package:flutter/widgets.dart';
+import 'package:flutter/src/widgets/framework.dart';
 
 import '/models/book_data.dart';
 import '/models/epub_data.dart';
@@ -47,18 +49,11 @@ class ViewerNotifier extends ChangeNotifier {
   double lastPixel = 0;
   int nowIndex = 0;
   int nowRatio = 0;
-
-  //int maxIndex = 0;
-  //int maxRatio = 0;
-  //int nowPixel = 0;
-
   int nowChars = 0;
   int maxChars = 0;
 
   Map<String, String> m = {};
-
   double jumpMarginPx = 0;
-
   ViewerBarType barType = ViewerBarType.none;
 
   bool isActionBar() {
@@ -71,6 +66,9 @@ class ViewerNotifier extends ChangeNotifier {
   List<InAppWebViewController?> listWebViewCtrl = [];
   List<GlobalKey> listKey = [];
   List<ContextMenu?> listContextMenu = [];
+  List<Widget?> listView = [];
+
+  List<DateTime> listViewTime = [];
 
   double scrollWidth = DEF_VIEW_SCROLL_WIDTH;
   double width = 1000.0;
@@ -113,25 +111,13 @@ class ViewerNotifier extends ChangeNotifier {
       await Future.delayed(Duration(milliseconds: 50));
 
       String bookdir = APP_DIR + '/book';
+      EpubData e = new EpubData();
 
       for (int i = 0; i < 10000; i++) {
         String path1 = '${bookdir}/${book!.bookId}/text/ch${(i).toString().padLeft(4, '0')}.txt';
         if (File(path1).existsSync()) {
-          String text1 = await File(path1).readAsStringSync();
-          String body = text1;
-          String speech = text1;
-          String speech2 = text1;
-
-          if (env.writing_mode.val == 1) {
-            VerticalRotated.map.forEach((String key, String value) {
-              text1 = text1.replaceAll(key, value);
-            });
-          }
-
-          EpubData e = new EpubData();
-          text1 = e.head1 + text1 + e.head2;
-          text1 = text1.replaceAll('<style>', '<style>${getStyle(env)}');
-          text1 += '<br />';
+          String orgText = await File(path1).readAsStringSync();
+          String body = orgText;
 
           // chars
           int fsize = env.font_size.val;
@@ -162,13 +148,13 @@ class ViewerNotifier extends ChangeNotifier {
           if (calcWidth < 400) calcWidth = 400;
           if (!Platform.isIOS && !Platform.isAndroid) {
             if (calcWidth > 3000) calcWidth = 3000;
-            book!.prop.nowChars = 1;
           }
           // chars
 
           // speech
-          String text2 = speech2;
+          String text2 = orgText;
 
+          // 縦書き
           if (env.writing_mode.val == 1) {
             VerticalRotated.map.forEach((String key, String value) {
               text2 = text2.replaceAll(key, value);
@@ -177,7 +163,7 @@ class ViewerNotifier extends ChangeNotifier {
 
           text2 = text2.replaceAll('\n', '');
           List<String> lines2 = text2.split('<br />');
-          text1 = "";
+          String text1 = "";
           int ii = 0;
           List<String> linesTemp = [];
           for (String s in lines2) {
@@ -203,6 +189,8 @@ class ViewerNotifier extends ChangeNotifier {
           listWebViewCtrl.add(null);
           listKey.add(GlobalKey());
           listText.add(text1);
+          listView.add(null);
+          listViewTime.add(DateTime.now().add(Duration(seconds: -10)));
 
           if (Platform.isIOS) {
             ContextMenu contextMenu = ContextMenu(
@@ -244,6 +232,7 @@ class ViewerNotifier extends ChangeNotifier {
           break;
         }
       }
+
       log('jump [${nowIndex}] ${(nowRatio / 100).toInt()}% (${nowChars})');
       jumpToIndex(nowIndex, nowRatio);
     } on Exception catch (e) {
@@ -289,9 +278,6 @@ class ViewerNotifier extends ChangeNotifier {
           log('warn Viewer.refresh() +1');
         }
       }
-      //} else {
-      //  log('refresh() loadData is ios only');
-      //}
       this.notifyListeners();
     } on Exception catch (e) {
       MyLog.err('Viewer.refresh() ${e.toString()}');
@@ -399,11 +385,12 @@ class ViewerNotifier extends ChangeNotifier {
       }
       dx += listWidth[index] * ratio / 10000;
       if (dx > jumpMarginPx) dx -= jumpMarginPx;
-      if (isLoading) {
-        log('jumpTo [${index}][${(ratio / 100).toInt()}%] cur=${curdx.toInt()} dx=${dx.toInt()} max=${maxdx.toInt()}');
-      }
+      log('jumpTo start [${index}][${(ratio / 100).toInt()}%] cur=${curdx.toInt()} dx=${dx.toInt()} max=${maxdx.toInt()}');
+
+      if ((dx - curdx).abs() < 2000) isJumping = false;
       await scrollController!
           .animateTo(dx, duration: Duration(milliseconds: 500), curve: Curves.linear);
+      log('jumpTo end');
     } on Exception catch (e) {
       MyLog.err('jumpToIndex() ${e.toString()}');
     }
@@ -492,7 +479,6 @@ class ViewerNotifier extends ChangeNotifier {
         px -= listWidth[i];
       }
       nowChars = getNowChars();
-      //nowPixel = scrollController!.position.pixels.toInt();
       if (maxChars < nowChars) {
         maxChars = nowChars;
       }
@@ -608,15 +594,45 @@ line-height: ${env.line_height.val}%;
     PlatformInAppWebViewController.debugLoggingSettings.enabled = false;
     ScrollPhysics physics =
         barType == ViewerBarType.clipTextBar ? NeverScrollableScrollPhysics() : ScrollPhysics();
-    //log('viewer');
+
     try {
+/*
+      return ListView.custom(
+        scrollDirection: env.writing_mode.val == 0 ? Axis.vertical : Axis.horizontal,
+        reverse: env.writing_mode.val == 0 ? false : true,
+        shrinkWrap: true,
+        controller: scrollController,
+        //itemCount: listText.length,
+        cacheExtent: 5000,
+        physics: physics,
+        hitTestBehavior: HitTestBehavior.opaque,
+        childrenDelegate: SliverChildBuilderDelegate(childCount: listText.length,
+            (BuildContext context, int index) {
+          if (listWidth.length <= index) return null;
+          if ((nowIndex - index).abs() > 1) {
+            return null;
+          }
+          if (env.writing_mode.val == 0) {
+            return SizedBox(
+              height: listWidth[index],
+              child: inviewer(index, listText[index], env),
+            );
+          } else {
+            return SizedBox(
+              width: listWidth[index],
+              child: inviewer(index, listText[index], env),
+            );
+          }
+        }),
+      );
+ */
       return ListView.builder(
         scrollDirection: env.writing_mode.val == 0 ? Axis.vertical : Axis.horizontal,
         reverse: env.writing_mode.val == 0 ? false : true,
         shrinkWrap: true,
         controller: scrollController,
         itemCount: listText.length,
-        cacheExtent: 10000,
+        cacheExtent: 1000,
         physics: physics,
         hitTestBehavior: HitTestBehavior.opaque,
         itemBuilder: (context, int index) {
@@ -645,10 +661,19 @@ line-height: ${env.line_height.val}%;
     if ((nowIndex - index).abs() > 1) {
       return Container();
     }
-    //log('inviewer ${index} nowIndex${index}');
+
+    final past = listViewTime[index].add(Duration(milliseconds: 500));
+    if (DateTime.now().compareTo(past) < 1 && listView[index] != null) {
+      log('inviewer listView ${index}');
+      return listView[index]!;
+    }
+
+    log('inviewer ${index}');
+    listViewTime[index] = DateTime.now();
     try {
-      return InAppWebView(
+      Widget view = InAppWebView(
         key: listKey[index],
+        //key: UniqueKey(),
         initialData: InAppWebViewInitialData(data: text),
         initialSettings: initialSettings,
         findInteractionController: null,
@@ -663,11 +688,6 @@ line-height: ${env.line_height.val}%;
             if (nowIndex == index) this.notifyListeners();
             return;
           }
-          if (index == 0) {
-            this.notifyListeners();
-            return;
-          }
-          //log('onLoadStop [${index}]');
           try {
             dynamic vw = null;
             if (env.writing_mode.val == 0) {
@@ -689,14 +709,22 @@ line-height: ${env.line_height.val}%;
                 if ((d - l).abs() >= 200) {
                   MyLog.debug('webWidth [${index}] ${env.font_size.val}px ${l} ${d - l}');
                 }
+                //if ((d - l).abs() >= 1) {
+                //  await Future.delayed(Duration(milliseconds: 100));
+                //}
                 listWidth[index] = dw;
               }
             }
             this.notifyListeners();
-          } catch (_) {}
+          } catch (_) {
+            log('onLoadStop catch');
+          }
         },
       );
+      listView[index] = view;
+      return view;
     } catch (_) {
+      log('inviewer catch');
       return Container();
     }
   }
@@ -892,8 +920,6 @@ line-height: ${env.line_height.val}%;
       ratio = ratio + 500 - 10000;
     }
 
-    //speakLine = (listSpeak[speakIndex].length * nowRatio / 10000).toInt();
-
     int fsize = env.font_size.val;
     double w = (env.writing_mode.val == 0) ? (width - _widthPad) : (height - _heightPad);
     int chars = (w / fsize).toInt();
@@ -924,21 +950,6 @@ line-height: ${env.line_height.val}%;
       speakLine = i;
     }
 
-/*
-    int all = 0;
-    for (int i = 0; i < listSpeak[speakIndex].length; i++) {
-      all += listSpeak[speakIndex][i].length;
-    }
-    int sum = 0;
-    speakLine = 0;
-    for (int i = 0; i < listSpeak[speakIndex].length; i++) {
-      sum += listSpeak[speakIndex][i].length;
-      if ((sum * 10000 / all) > ratio) {
-        break;
-      }
-      speakLine = i;
-    }
-*/
     isSpeaking = true;
     speak1();
     this.notifyListeners();
@@ -1021,9 +1032,8 @@ line-height: ${env.line_height.val}%;
         }
 
         int ratio = (sum * 10000.0 / all).toInt();
-        if (ratio > 500) ratio -= 500;
+        //if (ratio > 400) ratio -= 400;
 
-        //ratio = (speakLine * 10000 / listSpeak[speakIndex].length).toInt();
         jumpToIndex(speakIndex, ratio);
       } else {
         log('speak1() stop');
@@ -1156,4 +1166,38 @@ class VerticalRotated {
     ',': '︐',
     '､': '︑',
   };
+}
+
+//class MountedState<T extends InAppWebView> extends State<T> {
+class MyWidget extends StatefulWidget {
+//class MyWidget extends InAppWebView {
+  @override
+  _MyWidgetState createState() => _MyWidgetState();
+}
+
+class _MyWidgetState extends State<MyWidget> {
+  @override
+  void initState() {
+    super.initState();
+    setState(() {
+      // 状態を更新するコード
+    });
+  }
+
+  @override
+  void dispose() {
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container();
+  }
+
+  @override
+  void setState(VoidCallback fn) {
+    if (mounted) {
+      super.setState(fn);
+    }
+  }
 }

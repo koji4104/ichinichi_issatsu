@@ -109,9 +109,7 @@ class ViewerScreen extends BaseScreen with WidgetsBindingObserver {
               color: env.getBackColor(),
               child: Widget1(),
             ),
-            if (ref.watch(viewerProvider).isLoading ||
-                ref.watch(viewerProvider).isJumping)
-              loadingWidget(),
+            if (ref.watch(viewerProvider).isLoading) loadingWidget(),
             if (ref.watch(viewerProvider).barType != ViewerBarType.clipTextBar)
               Container(
                 padding: EdgeInsets.fromLTRB(1, 1, 1, 1),
@@ -688,7 +686,7 @@ class ViewerScreen extends BaseScreen with WidgetsBindingObserver {
           onPressed: () {
             int ii = i;
             if (ii > 0) ii--;
-            ref.read(viewerProvider).jumpToIndex(ii, 9700);
+            ref.read(viewerProvider).jumpToIndex(ii, 9800);
             startReadlog();
           },
         ),

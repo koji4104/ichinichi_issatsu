@@ -543,9 +543,10 @@ class EpubNotifier extends ChangeNotifier {
         }
 
         // <ruby><rb>A</rb><rp>（</rp><rt>b</rt><rp>）</rp></ruby> 53 chars
-        // ドグマ104
-        // 30000/25000 = 33
-        // 15000/10000 = 79
+        // ver 1.1
+        // int count1 = 15000 len>100 20000
+        // int count2 = 10000 len>100 15000
+
         for (int i = 0; i < 100; i++) {
           int count1 = 15000;
           int count2 = 10000;
@@ -553,7 +554,6 @@ class EpubNotifier extends ChangeNotifier {
             count1 = 20000;
             count2 = 15000;
           }
-
           if (t1.length < count1) {
             if (i >= 1) {
               t1 = '<h3>${listText.length}</h3>' + t1;
@@ -729,6 +729,10 @@ class EpubNotifier extends ChangeNotifier {
       text = text.replaceAll('<br>', '<br />');
       text = text.replaceAll('&nbsp;', '');
       String title = '<h3>${f.title}</h3>\n';
+
+      // delete <a
+      text = deleteTag(text, '<a ');
+      text = text.replaceAll('</a>', '');
 
       // delete <p>
       text = deleteTag(text, '<p ');
@@ -910,6 +914,10 @@ class EpubNotifier extends ChangeNotifier {
       String t1 = el.innerHtml;
       t1 = t1.replaceAll('<br>', '<br />');
       t1 = t1.replaceAll('&nbsp;', '');
+
+      // delete <a
+      text = deleteTag(text, '<a ');
+      text = text.replaceAll('</a>', '');
 
       // delete <p>
       t1 = deleteTag(t1, '<p ');

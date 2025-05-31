@@ -66,9 +66,6 @@ class ViewerNotifier extends ChangeNotifier {
   List<InAppWebViewController?> listWebViewCtrl = [];
   List<GlobalKey> listKey = [];
   List<ContextMenu?> listContextMenu = [];
-  List<Widget?> listView = [];
-
-  List<DateTime> listViewTime = [];
 
   double scrollWidth = DEF_VIEW_SCROLL_WIDTH;
   double width = 1000.0;
@@ -147,7 +144,7 @@ class ViewerNotifier extends ChangeNotifier {
           calcWidth += scrollWidth;
           if (calcWidth < 400) calcWidth = 400;
           if (!Platform.isIOS && !Platform.isAndroid) {
-            if (calcWidth > 3000) calcWidth = 3000;
+            //if (calcWidth > 3000) calcWidth = 3000;
           }
           // chars
 
@@ -189,8 +186,6 @@ class ViewerNotifier extends ChangeNotifier {
           listWebViewCtrl.add(null);
           listKey.add(GlobalKey());
           listText.add(text1);
-          listView.add(null);
-          listViewTime.add(DateTime.now().add(Duration(seconds: -10)));
 
           if (Platform.isIOS) {
             ContextMenu contextMenu = ContextMenu(
@@ -232,14 +227,13 @@ class ViewerNotifier extends ChangeNotifier {
           break;
         }
       }
-
-      log('jump [${nowIndex}] ${(nowRatio / 100).toInt()}% (${nowChars})');
+      log('load jump [${nowIndex}] ${(nowRatio / 100).toInt()}% (${nowChars})');
       jumpToIndex(nowIndex, nowRatio);
     } on Exception catch (e) {
       MyLog.err('ViewerController.losd().jump ${e.toString()}');
     }
     log('load() end');
-  }
+  } // load
 
   /// Styleを書き換えて高さは同じ
   Future refresh() async {
@@ -374,7 +368,8 @@ class ViewerNotifier extends ChangeNotifier {
       if (index > listWidth.length - 1) index = listWidth.length - 1;
       if ((nowIndex - index).abs() >= 2) isLoading = true;
       nowIndex = index;
-      this.notifyListeners();
+      nowRatio = ratio;
+      //this.notifyListeners();
 
       double curdx = scrollController!.position.pixels;
       double maxdx = scrollController!.position.maxScrollExtent;
@@ -385,20 +380,66 @@ class ViewerNotifier extends ChangeNotifier {
       }
       dx += listWidth[index] * ratio / 10000;
       if (dx > jumpMarginPx) dx -= jumpMarginPx;
-      log('jumpTo start [${index}][${(ratio / 100).toInt()}%] cur=${curdx.toInt()} dx=${dx.toInt()} max=${maxdx.toInt()}');
 
       if ((dx - curdx).abs() < 2000) isJumping = false;
-      await scrollController!
-          .animateTo(dx, duration: Duration(milliseconds: 500), curve: Curves.linear);
-      log('jumpTo end');
+
+      if (dx > maxdx) {
+        log('jumpTo [${index}] dx>max dx=${dx.toInt()} max=${maxdx.toInt()}');
+
+        await scrollController!
+            .animateTo(dx / 2, duration: Duration(milliseconds: 500), curve: Curves.linear);
+
+        this.notifyListeners();
+        for (int k = 0; k < 5; k++) {
+          await Future.delayed(Duration(milliseconds: 100));
+          if (scrollController != null && scrollController!.hasClients == true) {
+            curdx = scrollController!.position.pixels;
+            double new_maxdx = scrollController!.position.maxScrollExtent;
+            if (maxdx < new_maxdx) {
+              log('jumpTo max ${maxdx.toInt()} -> ${new_maxdx.toInt()}');
+              maxdx = new_maxdx;
+              break;
+            }
+          }
+        }
+      }
+
+      if (index > 0 && curdx == 0) {
+        log('jumpTo [${index}][${(ratio / 100).toInt()}%] curdx==0');
+        this.notifyListeners();
+        for (int k = 0; k < 1; k++) {
+          await Future.delayed(Duration(milliseconds: 100));
+          if (scrollController != null && scrollController!.hasClients == true) {
+            curdx = scrollController!.position.pixels;
+            maxdx = scrollController!.position.maxScrollExtent;
+            break;
+          }
+        }
+      }
+
+      if (dx < maxdx) {
+        log('jumpTo start [${index}][${(ratio / 100).toInt()}%] cur=${curdx.toInt()} dx=${dx.toInt()} max=${maxdx.toInt()}');
+        await scrollController!
+            .animateTo(dx, duration: Duration(milliseconds: 500), curve: Curves.linear);
+        log('jumpTo end');
+      } else {
+        log('jumpTo else [${index}][${(ratio / 100).toInt()}%] cur=${curdx.toInt()} dx=${dx.toInt()} max=${maxdx.toInt()}');
+      }
+
+      // 進捗を保存
+      isLoading = false;
+      nowChars = getNowChars();
+      if (maxChars < nowChars) {
+        maxChars = nowChars;
+      }
+      saveIndex();
     } on Exception catch (e) {
       MyLog.err('jumpToIndex() ${e.toString()}');
     }
     isJumping = false;
     isLoading = false;
     this.notifyListeners();
-    scrollingListener();
-  }
+  } // jumpToIndex
 
   String getProgress() {
     if (book == null) return '';
@@ -431,6 +472,7 @@ class ViewerNotifier extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// nowIndexとnowRatioからnowCharsを計算
   int getNowChars() {
     if (book == null) return -1;
     int chars = 0;
@@ -478,11 +520,11 @@ class ViewerNotifier extends ChangeNotifier {
         }
         px -= listWidth[i];
       }
+
       nowChars = getNowChars();
       if (maxChars < nowChars) {
         maxChars = nowChars;
       }
-
       saveIndex();
     } on Exception catch (e) {
       MyLog.err('scrollingListener() ${e.toString()}');
@@ -596,43 +638,14 @@ line-height: ${env.line_height.val}%;
         barType == ViewerBarType.clipTextBar ? NeverScrollableScrollPhysics() : ScrollPhysics();
 
     try {
-/*
-      return ListView.custom(
-        scrollDirection: env.writing_mode.val == 0 ? Axis.vertical : Axis.horizontal,
-        reverse: env.writing_mode.val == 0 ? false : true,
-        shrinkWrap: true,
-        controller: scrollController,
-        //itemCount: listText.length,
-        cacheExtent: 5000,
-        physics: physics,
-        hitTestBehavior: HitTestBehavior.opaque,
-        childrenDelegate: SliverChildBuilderDelegate(childCount: listText.length,
-            (BuildContext context, int index) {
-          if (listWidth.length <= index) return null;
-          if ((nowIndex - index).abs() > 1) {
-            return null;
-          }
-          if (env.writing_mode.val == 0) {
-            return SizedBox(
-              height: listWidth[index],
-              child: inviewer(index, listText[index], env),
-            );
-          } else {
-            return SizedBox(
-              width: listWidth[index],
-              child: inviewer(index, listText[index], env),
-            );
-          }
-        }),
-      );
- */
       return ListView.builder(
         scrollDirection: env.writing_mode.val == 0 ? Axis.vertical : Axis.horizontal,
         reverse: env.writing_mode.val == 0 ? false : true,
         shrinkWrap: true,
         controller: scrollController,
         itemCount: listText.length,
-        cacheExtent: 1000,
+        // 999,999,999,999,999
+        cacheExtent: 100 * 1000,
         physics: physics,
         hitTestBehavior: HitTestBehavior.opaque,
         itemBuilder: (context, int index) {
@@ -661,19 +674,24 @@ line-height: ${env.line_height.val}%;
     if ((nowIndex - index).abs() > 1) {
       return Container();
     }
-
-    final past = listViewTime[index].add(Duration(milliseconds: 500));
-    if (DateTime.now().compareTo(past) < 1 && listView[index] != null) {
-      log('inviewer listView ${index}');
-      return listView[index]!;
+    // now=20 ratio=10% 19は不要
+    // now=20 ratio=10% 21は不要
+    String logtxt = '[${index}] [${nowIndex}][${(nowRatio / 100).toInt()}%]';
+    if (nowIndex - 1 == index) {
+      //log('inviewer1 Container ${logtxt}');
+      return Container();
+    } else if (nowIndex + 1 == index) {
+      double rest = (listWidth[nowIndex] * (10000 - nowRatio) / 10000);
+      if (rest > 2000) {
+        //log('inviewer1 Container ${logtxt}');
+        return Container();
+      }
     }
 
-    log('inviewer ${index}');
-    listViewTime[index] = DateTime.now();
+    //log('inviewer1 ${logtxt}');
     try {
       Widget view = InAppWebView(
         key: listKey[index],
-        //key: UniqueKey(),
         initialData: InAppWebViewInitialData(data: text),
         initialSettings: initialSettings,
         findInteractionController: null,
@@ -683,49 +701,48 @@ line-height: ${env.line_height.val}%;
         },
         onLoadStart: (controller, url) async {},
         onLoadStop: (controller, url) async {
-          if (controller == null) log('error onLoadStop controller==null');
-          if (IS_UNUSE_VIEW_WIDTH == true) {
-            if (nowIndex == index) this.notifyListeners();
-            return;
-          }
-          try {
-            dynamic vw = null;
-            if (env.writing_mode.val == 0) {
-              vw = await controller.evaluateJavascript(
-                  source: '''(() => { return document.body.scrollHeight; })()''');
-            } else {
-              vw = await controller.evaluateJavascript(
-                  source: '''(() => { return document.body.scrollWidth; })()''');
-            }
-            if (vw != null && vw != '') {
-              double dw = double.parse('${vw}');
-              if (dw > 400 && (dw - listWidth[index]).abs() > 10) {
-                if ((dw - listWidth[index]) > 300) {
-                  // 隙間が多い不具合
-                  dw = listWidth[index] + 300;
-                }
-                int d = dw.toInt();
-                int l = listWidth[index].toInt();
-                if ((d - l).abs() >= 200) {
-                  MyLog.debug('webWidth [${index}] ${env.font_size.val}px ${l} ${d - l}');
-                }
-                //if ((d - l).abs() >= 1) {
-                //  await Future.delayed(Duration(milliseconds: 100));
-                //}
-                listWidth[index] = dw;
-              }
-            }
-            this.notifyListeners();
-          } catch (_) {
-            log('onLoadStop catch');
-          }
+          getActualWidth(controller, index);
         },
       );
-      listView[index] = view;
       return view;
     } catch (_) {
       log('inviewer catch');
       return Container();
+    }
+  }
+
+  Future getActualWidth(InAppWebViewController controller, int index) async {
+    if (!Platform.isIOS && !Platform.isAndroid) {
+      //this.notifyListeners();
+      //return;
+    }
+    try {
+      dynamic vw = null;
+      if (env.writing_mode.val == 0) {
+        vw = await controller
+            .evaluateJavascript(source: '''(() => { return document.body.scrollHeight; })()''');
+      } else {
+        vw = await controller
+            .evaluateJavascript(source: '''(() => { return document.body.scrollWidth; })()''');
+      }
+      if (vw != null && vw != '') {
+        double dw = double.parse('${vw}');
+        if (dw > 400 && (dw - listWidth[index]).abs() > 10) {
+          if ((dw - listWidth[index]) > 300) {
+            // 隙間が多い不具合
+            dw = listWidth[index] + 300;
+          }
+          int d = dw.toInt();
+          int l = listWidth[index].toInt();
+          if ((d - l).abs() >= 200) {
+            MyLog.debug('webWidth [${index}] ${l} ${d - l}');
+          }
+          listWidth[index] = dw;
+        }
+      }
+      this.notifyListeners();
+    } catch (_) {
+      log('onLoadStop catch');
     }
   }
 
@@ -1032,13 +1049,16 @@ line-height: ${env.line_height.val}%;
         }
 
         int ratio = (sum * 10000.0 / all).toInt();
-        //if (ratio > 400) ratio -= 400;
 
-        jumpToIndex(speakIndex, ratio);
+        bool isJump = true;
+        if (speakIndex == listWidth.length - 1) {
+          double rest = listWidth[speakIndex] * (10000 - ratio) / 10000;
+          if (rest < height) isJump = false;
+        }
+        if (isJump) jumpToIndex(speakIndex, ratio);
       } else {
         log('speak1() stop');
-        isSpeaking = false;
-        flutterTts.stop();
+        stopSpeaking();
       }
     }
   }
@@ -1086,7 +1106,7 @@ line-height: ${env.line_height.val}%;
         speak1();
       }
     } else {
-      flutterTts.stop();
+      stopSpeaking();
     }
   }
 
@@ -1166,38 +1186,4 @@ class VerticalRotated {
     ',': '︐',
     '､': '︑',
   };
-}
-
-//class MountedState<T extends InAppWebView> extends State<T> {
-class MyWidget extends StatefulWidget {
-//class MyWidget extends InAppWebView {
-  @override
-  _MyWidgetState createState() => _MyWidgetState();
-}
-
-class _MyWidgetState extends State<MyWidget> {
-  @override
-  void initState() {
-    super.initState();
-    setState(() {
-      // 状態を更新するコード
-    });
-  }
-
-  @override
-  void dispose() {
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Container();
-  }
-
-  @override
-  void setState(VoidCallback fn) {
-    if (mounted) {
-      super.setState(fn);
-    }
-  }
 }

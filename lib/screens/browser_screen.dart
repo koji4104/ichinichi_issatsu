@@ -87,7 +87,7 @@ class BrowserScreen extends BaseScreen {
           actions: [
             if (isActionButton())
               MyIconLabelButton(
-                label: l10n('bookmark'),
+                //label: l10n('bookmark'),
                 icon: Icon(Icons.star_border),
                 onPressed: () async {
                   if (webViewController != null) {

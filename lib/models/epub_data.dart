@@ -72,6 +72,7 @@ function mark0(tag1) {
     return str;
   }
 
+  /// rubyを消して漢字を残す
   static String deleteRuby(String str) {
     // <ruby><rb>獅子</rb><rp>（</rp><rt>しし</rt><rp>）</rp></ruby>
     // <ruby><rb>卍<rb><rp>（<rp><rt>まんじ<rt><rp>）<rp><ruby>

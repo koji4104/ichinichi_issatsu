@@ -41,9 +41,10 @@ class ViewerNotifier extends ChangeNotifier {
   Environment env = Environment();
   BookData? book;
 
-  ScrollController? scrollController;
+  ScrollController? scrollCtrl;
   bool isLoading = false;
   bool isJumping = false;
+  bool bScrollingListener = true;
 
   DateTime lastTime = DateTime.now();
   double lastPixel = 0;
@@ -75,6 +76,7 @@ class ViewerNotifier extends ChangeNotifier {
 
   Future load(Environment env, double w, double h) async {
     log('load() start');
+
     this.env = env;
 
     width = w;
@@ -89,7 +91,7 @@ class ViewerNotifier extends ChangeNotifier {
     m.clear();
 
     try {
-      if (scrollController != null) scrollController!.dispose();
+      if (scrollCtrl != null) scrollCtrl!.dispose();
       for (InAppWebViewController? ctrl in listWebViewCtrl) {
         if (ctrl != null) ctrl.dispose();
       }
@@ -100,8 +102,8 @@ class ViewerNotifier extends ChangeNotifier {
     }
 
     try {
-      scrollController = new ScrollController();
-      scrollController!.addListener(scrollingListener);
+      scrollCtrl = new ScrollController();
+      scrollCtrl!.addListener(scrollingListener);
       listWebViewCtrl.clear();
 
       this.notifyListeners();
@@ -125,7 +127,6 @@ class ViewerNotifier extends ChangeNotifier {
           body = body.replaceAll('</h3>', '<br />');
           body = body.replaceAll('<h2>', '');
           body = body.replaceAll('</h2>', '<br />');
-
           int rubyCount = body.split('<ruby>').length;
 
           // delete ruby
@@ -137,10 +138,10 @@ class ViewerNotifier extends ChangeNotifier {
             lineCount += d;
           }
           lineCount += 1;
-          lineCount += (rubyCount / (40 + fsize)).toInt();
+          lineCount += (rubyCount / (40 + fsize * 2)).toInt();
 
-          double dh = env.line_height.val / 100.0;
-          double calcWidth = lineCount.toDouble() * (fsize * dh);
+          double dh = (env.line_height.val - 3) / 100.0;
+          double calcWidth = lineCount.toDouble() * fsize * dh;
           calcWidth += scrollWidth;
           if (calcWidth < 400) calcWidth = 400;
           if (!Platform.isIOS && !Platform.isAndroid) {
@@ -278,23 +279,6 @@ class ViewerNotifier extends ChangeNotifier {
     }
   }
 
-  scrollRight() {
-    if (scrollController == null) return;
-    if (scrollController!.hasClients == false) return;
-    var px = scrollController!.position.pixels + 400.0;
-    if (px < 0) px = 0;
-    scrollController!.animateTo(px, duration: Duration(milliseconds: 600), curve: Curves.linear);
-  }
-
-  scrollLeft() {
-    if (scrollController == null) return;
-    if (scrollController!.hasClients == false) return;
-    var px = scrollController!.position.pixels - 400.0;
-    final maxpx = scrollController!.position.maxScrollExtent;
-    if (px > maxpx) px = maxpx;
-    scrollController!.animateTo(px, duration: Duration(milliseconds: 600), curve: Curves.linear);
-  }
-
   Future<String?> getSelectedText() async {
     String? text = null;
     try {
@@ -349,18 +333,20 @@ class ViewerNotifier extends ChangeNotifier {
   }
 
   Future jumpToIndex(int index, int ratio) async {
-    if (scrollController == null) return;
+    if (scrollCtrl == null) return;
     isJumping = true;
+    bScrollingListener = false;
+
     try {
       for (int k = 0; k < 5; k++) {
-        if (scrollController!.hasClients == false) {
+        if (scrollCtrl!.hasClients == false) {
           log('scrollController.hasClients==false nowIndex=${index} k=${k}');
           await Future.delayed(Duration(milliseconds: 100));
           this.notifyListeners();
           await Future.delayed(Duration(milliseconds: 100));
         }
       }
-      if (scrollController!.hasClients == false) {
+      if (scrollCtrl!.hasClients == false) {
         log('return jumpTo index [${index}] ${(ratio / 100).toInt()}%');
         return;
       }
@@ -369,10 +355,8 @@ class ViewerNotifier extends ChangeNotifier {
       if ((nowIndex - index).abs() >= 2) isLoading = true;
       nowIndex = index;
       nowRatio = ratio;
-      //this.notifyListeners();
-
-      double curdx = scrollController!.position.pixels;
-      double maxdx = scrollController!.position.maxScrollExtent;
+      double curdx = scrollCtrl!.position.pixels;
+      double maxdx = scrollCtrl!.position.maxScrollExtent;
 
       double dx = 0;
       for (int i = 0; i < index + 1; i++) {
@@ -380,27 +364,32 @@ class ViewerNotifier extends ChangeNotifier {
       }
       dx += listWidth[index] * ratio / 10000;
       if (dx > jumpMarginPx) dx -= jumpMarginPx;
-
       if ((dx - curdx).abs() < 2000) isJumping = false;
 
-      if (dx > maxdx) {
-        log('jumpTo [${index}] dx>max dx=${dx.toInt()} max=${maxdx.toInt()}');
+      for (int k = 0; k < 5; k++) {
+        if (dx > maxdx && maxdx > 2000) {
+          //log('jumpTo [x${k}][${index}] dx>max cur=${curdx.toInt()} dx=${dx.toInt()} max=${maxdx.toInt()}');
 
-        await scrollController!
-            .animateTo(dx / 2, duration: Duration(milliseconds: 500), curve: Curves.linear);
+          double dx1 = curdx + (dx - curdx) / 2;
+          if (dx1 - curdx > (100000)) dx1 = curdx + (100000);
 
-        this.notifyListeners();
-        for (int k = 0; k < 5; k++) {
-          await Future.delayed(Duration(milliseconds: 100));
-          if (scrollController != null && scrollController!.hasClients == true) {
-            curdx = scrollController!.position.pixels;
-            double new_maxdx = scrollController!.position.maxScrollExtent;
-            if (maxdx < new_maxdx) {
-              log('jumpTo max ${maxdx.toInt()} -> ${new_maxdx.toInt()}');
-              maxdx = new_maxdx;
-              break;
-            }
+          if (scrollCtrl!.hasClients == true) {
+            log('jumpTo [x${k}][${index}] dx>max cur=${curdx.toInt()} dx=${dx.toInt()} max=${maxdx.toInt()} dx1=${dx1.toInt()}');
+            await scrollCtrl!
+                .animateTo(dx1, duration: Duration(milliseconds: 500), curve: Curves.linear);
+            this.notifyListeners();
+          } else {
+            log('jumpTo [x${k}][${index}] dx>max cur=${curdx.toInt()} dx=${dx.toInt()} max=${maxdx.toInt()} scrollController!.hasClients');
+            this.notifyListeners();
           }
+
+          await Future.delayed(Duration(milliseconds: 100));
+          if (scrollCtrl!.hasClients == true) {
+            curdx = scrollCtrl!.position.pixels;
+            maxdx = scrollCtrl!.position.maxScrollExtent;
+          }
+        } else {
+          break;
         }
       }
 
@@ -409,9 +398,9 @@ class ViewerNotifier extends ChangeNotifier {
         this.notifyListeners();
         for (int k = 0; k < 1; k++) {
           await Future.delayed(Duration(milliseconds: 100));
-          if (scrollController != null && scrollController!.hasClients == true) {
-            curdx = scrollController!.position.pixels;
-            maxdx = scrollController!.position.maxScrollExtent;
+          if (scrollCtrl != null && scrollCtrl!.hasClients == true) {
+            curdx = scrollCtrl!.position.pixels;
+            maxdx = scrollCtrl!.position.maxScrollExtent;
             break;
           }
         }
@@ -419,7 +408,7 @@ class ViewerNotifier extends ChangeNotifier {
 
       if (dx < maxdx) {
         log('jumpTo start [${index}][${(ratio / 100).toInt()}%] cur=${curdx.toInt()} dx=${dx.toInt()} max=${maxdx.toInt()}');
-        await scrollController!
+        await scrollCtrl!
             .animateTo(dx, duration: Duration(milliseconds: 500), curve: Curves.linear);
         log('jumpTo end');
       } else {
@@ -438,6 +427,7 @@ class ViewerNotifier extends ChangeNotifier {
     }
     isJumping = false;
     isLoading = false;
+    bScrollingListener = true;
     this.notifyListeners();
   } // jumpToIndex
 
@@ -472,7 +462,7 @@ class ViewerNotifier extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// nowIndexとnowRatioからnowCharsを計算
+  /// nowIndex と nowRatio から nowChars を計算
   int getNowChars() {
     if (book == null) return -1;
     int chars = 0;
@@ -497,12 +487,14 @@ class ViewerNotifier extends ChangeNotifier {
   }
 
   void scrollingListener() async {
-    if (scrollController == null) return;
-    if (scrollController!.hasClients == false) return;
+    if (scrollCtrl == null) return;
+    if (scrollCtrl!.hasClients == false) return;
     if (isLoading == true) return;
     if (isJumping == true) return;
+    if (bScrollingListener == false) return;
+
     try {
-      double px = scrollController!.position.pixels;
+      double px = scrollCtrl!.position.pixels;
       if (px > jumpMarginPx) px -= jumpMarginPx;
       if ((lastPixel - px).abs() < 100) return;
 
@@ -512,6 +504,7 @@ class ViewerNotifier extends ChangeNotifier {
       lastPixel = px;
       lastTime = DateTime.now();
 
+      int oldNowIndex = nowIndex;
       for (int i = 0; i < listWidth.length; i++) {
         if (px < listWidth[i]) {
           nowIndex = i;
@@ -520,6 +513,7 @@ class ViewerNotifier extends ChangeNotifier {
         }
         px -= listWidth[i];
       }
+      if (oldNowIndex - 1 == nowIndex) this.notifyListeners();
 
       nowChars = getNowChars();
       if (maxChars < nowChars) {
@@ -531,10 +525,11 @@ class ViewerNotifier extends ChangeNotifier {
     }
   }
 
+  /// nowChars と maxChars を保存
   saveIndex() {
-    if (scrollController == null) return;
-    if (scrollController!.hasClients == false) return;
-    if (scrollController == null) return;
+    if (scrollCtrl == null) return;
+    if (scrollCtrl!.hasClients == false) return;
+    if (scrollCtrl == null) return;
     if (book == null) return;
     if (isLoading == true) return;
 
@@ -632,6 +627,7 @@ line-height: ${env.line_height.val}%;
   Widget viewer(Environment env) {
     if (listText.length == 0) return Container();
     if (isLoading) return Container();
+    this.env = env;
 
     PlatformInAppWebViewController.debugLoggingSettings.enabled = false;
     ScrollPhysics physics =
@@ -642,7 +638,7 @@ line-height: ${env.line_height.val}%;
         scrollDirection: env.writing_mode.val == 0 ? Axis.vertical : Axis.horizontal,
         reverse: env.writing_mode.val == 0 ? false : true,
         shrinkWrap: true,
-        controller: scrollController,
+        controller: scrollCtrl,
         itemCount: listText.length,
         // 999,999,999,999,999
         cacheExtent: 100 * 1000,
@@ -653,12 +649,12 @@ line-height: ${env.line_height.val}%;
           if (env.writing_mode.val == 0) {
             return SizedBox(
               height: listWidth[index],
-              child: inviewer(index, listText[index], env),
+              child: inviewer(index, listText[index]),
             );
           } else {
             return SizedBox(
               width: listWidth[index],
-              child: inviewer(index, listText[index], env),
+              child: inviewer(index, listText[index]),
             );
           }
         },
@@ -669,7 +665,7 @@ line-height: ${env.line_height.val}%;
     }
   }
 
-  Widget inviewer(int index, String text, Environment env) {
+  Widget inviewer(int index, String text) {
     PlatformInAppWebViewController.debugLoggingSettings.enabled = false;
     if ((nowIndex - index).abs() > 1) {
       return Container();
@@ -688,7 +684,6 @@ line-height: ${env.line_height.val}%;
       }
     }
 
-    //log('inviewer1 ${logtxt}');
     try {
       Widget view = InAppWebView(
         key: listKey[index],
@@ -751,7 +746,7 @@ line-height: ${env.line_height.val}%;
     javaScriptEnabled: true,
     enableViewportScale: false,
     mediaPlaybackRequiresUserGesture: false,
-    transparentBackground: true,
+    transparentBackground: false,
     supportZoom: false,
     allowsInlineMediaPlayback: false,
     isElementFullscreenEnabled: true,
@@ -762,8 +757,8 @@ line-height: ${env.line_height.val}%;
     allowsLinkPreview: false,
     alwaysBounceVertical: false,
     alwaysBounceHorizontal: false,
-    // Cache
-    clearCache: true,
+    // Cache InAppWebViewController. clearAllCache
+    //clearCache: true,
     // Scroll
     verticalScrollBarEnabled: false,
     horizontalScrollBarEnabled: false,

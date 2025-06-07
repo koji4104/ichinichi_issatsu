@@ -15,13 +15,14 @@ import '/controllers/viewer_controller.dart';
 import '/controllers/env_controller.dart';
 import '/controllers/viewlog_controller.dart';
 
+/*
 final stateProvider = ChangeNotifierProvider((ref) => stateNotifier(ref));
 
 class stateNotifier extends ChangeNotifier {
   stateNotifier(ref) {}
   List<double> listWidth = [];
 }
-
+*/
 class ViewerScreen extends BaseScreen with WidgetsBindingObserver {
   ViewerScreen({required BookData this.book}) {}
 
@@ -89,7 +90,7 @@ class ViewerScreen extends BaseScreen with WidgetsBindingObserver {
 
     super.build(context, ref);
     ref.watch(viewerProvider);
-    ref.watch(stateProvider);
+    //ref.watch(stateProvider);
 
     return PopScope(
       canPop: true,
@@ -122,22 +123,15 @@ class ViewerScreen extends BaseScreen with WidgetsBindingObserver {
                       (TapGestureRecognizer instance) {
                         instance
                           ..onTapUp = (TapUpDetails details) {
-                            double dx = details.globalPosition.dx;
-                            if (dx < 120) {
-                              //scrollRight();
-                            } else if (dx > _width - 120) {
-                              //scrollLeft();
+                            if (ref.watch(viewerProvider).barType !=
+                                ViewerBarType.actionBar) {
+                              ref.watch(viewerProvider).barType =
+                                  ViewerBarType.actionBar;
+                              redraw();
                             } else {
-                              if (ref.watch(viewerProvider).barType !=
-                                  ViewerBarType.actionBar) {
-                                ref.watch(viewerProvider).barType =
-                                    ViewerBarType.actionBar;
-                                redraw();
-                              } else {
-                                ref.watch(viewerProvider).barType =
-                                    ViewerBarType.none;
-                                redraw();
-                              }
+                              ref.watch(viewerProvider).barType =
+                                  ViewerBarType.none;
+                              redraw();
                             }
                           }
                           ..onTapDown = (TapDownDetails details) {}
@@ -184,14 +178,6 @@ class ViewerScreen extends BaseScreen with WidgetsBindingObserver {
         ),
       ),
     ]);
-  }
-
-  scrollRight() {
-    ref.read(viewerProvider).scrollRight();
-  }
-
-  scrollLeft() {
-    ref.read(viewerProvider).scrollLeft();
   }
 
   Future startReadlog() async {

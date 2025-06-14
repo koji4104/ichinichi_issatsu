@@ -14,12 +14,11 @@ class MyApp extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    ref.watch(envProvider);
+    myEnv = ref.watch(envProvider).env;
     //myTheme = ref.watch(envProvider).env.dark_mode.val == 0 ? myLightTheme : myDarkTheme;
-    myTheme =
-        ref.watch(envProvider).env.isDarkMode() ? myDarkTheme : myLightTheme;
-    myTextScale =
-        (ref.watch(envProvider).env.ui_text_scale.val / 100).toDouble();
+
+    myTheme = myEnv.isDarkMode() ? myDarkTheme : myLightTheme;
+    myTextScale = (myEnv.ui_text_scale.val / 100).toDouble();
 
     return MaterialApp(
       debugShowCheckedModeBanner: false,

@@ -12,12 +12,14 @@ import '/controllers/epub_controller.dart';
 class BaseScreen extends ConsumerWidget {
   late BuildContext context;
   late WidgetRef ref;
-  ChangeNotifierProvider baseProvider = ChangeNotifierProvider((ref) => ChangeNotifier());
 
-  late Environment env;
-  bool bInit = false;
+  Environment get env {
+    return myEnv;
+  }
 
   @override
+  bool bInit = false;
+
   Future init() async {
     if (bInit == false) {
       bInit = true;
@@ -26,12 +28,8 @@ class BaseScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    ref.watch(baseProvider);
     this.context = context;
     this.ref = ref;
-    this.env = ref.watch(envProvider).env;
-
-    ref.watch(envProvider);
     myLanguageCode = env.language_code.val == 0 ? 'ja' : 'en';
 
     if (bInit == false) {
@@ -134,8 +132,8 @@ class BaseScreen extends ConsumerWidget {
       child: TextButton(
         style: TextButton.styleFrom(
           backgroundColor: bgcol,
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(DEF_RADIUS))),
+          shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.all(Radius.circular(DEF_RADIUS))),
           side: bdcol != null ? BorderSide(color: bdcol) : null,
         ),
         child: Text(
@@ -147,10 +145,6 @@ class BaseScreen extends ConsumerWidget {
         onPressed: onPressed,
       ),
     );
-  }
-
-  redraw() {
-    if (ref.read(baseProvider) != null) ref.read(baseProvider)!.notifyListeners();
   }
 
   Widget MySettingsTile({required EnvData data}) {
@@ -209,6 +203,9 @@ class BaseScreen extends ConsumerWidget {
     redraw();
   }
 
+  @override
+  redraw() {}
+
   IconButton closeButton() {
     return IconButton(
       icon: Icon(Icons.close),
@@ -265,7 +262,8 @@ class BaseScreen extends ConsumerWidget {
     int all = ref.watch(epubProvider).epub.uriList.length;
     int req1 = 0;
     int req2 = 0;
-    label1 = '${ref.watch(epubProvider).epub.bookTitle ?? ref.watch(epubProvider).epub.bookId}';
+    label1 =
+        '${ref.watch(epubProvider).epub.bookTitle ?? ref.watch(epubProvider).epub.bookId}';
 
     if (ref.watch(epubProvider).status == MyEpubStatus.downloadable) {
       if (all == 1) {
@@ -339,9 +337,11 @@ class BaseScreen extends ConsumerWidget {
       ]);
     } else if (req1 > 0) {
       // 10 話 まで ダウンロード
-      String btnTitle1 = '${req1} ${l10n('episode')} ${l10n('up_to')} ${l10n('download')}';
+      String btnTitle1 =
+          '${req1} ${l10n('episode')} ${l10n('up_to')} ${l10n('download')}';
       if (req1 == 1) btnTitle1 = '${l10n('download')}';
-      String btnTitle2 = '${req2} ${l10n('episode')} ${l10n('up_to')} ${l10n('download')}';
+      String btnTitle2 =
+          '${req2} ${l10n('episode')} ${l10n('up_to')} ${l10n('download')}';
 
       btn = Column(children: [
         MyTextButton(

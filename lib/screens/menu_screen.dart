@@ -57,7 +57,7 @@ class MenuScreen extends BaseScreen {
 
   void _onItemTapped(int index) {
     ref.read(menuProvider).selectedIndex = index;
-    redraw();
+    ref.read(menuProvider).notifyListeners();
   }
 
   Widget getScreen(int index) {

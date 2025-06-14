@@ -730,20 +730,28 @@ class EpubNotifier extends ChangeNotifier {
       text = text.replaceAll('&nbsp;', '');
       String title = '<h3>${f.title}</h3>\n';
 
+      // delete div
+      text = deleteTag(text, '<div');
+      text = text.replaceAll('</div>', '');
+
       // delete <a
       text = deleteTag(text, '<a ');
       text = text.replaceAll('</a>', '');
+
+      // delete <img
+      text = deleteTag(text, '<img');
 
       // delete <p>
       text = deleteTag(text, '<p ');
       text = text.replaceAll('</p>', '<br />');
 
-      // delete <img
-      text = deleteTag(text, '<img');
-
       // delete <span
       text = deleteTag(text, '<span');
       text = text.replaceAll('</span>', '');
+
+      // delete <em
+      text = deleteTag(text, '<em');
+      text = text.replaceAll('</em>', '');
 
       f.text = title + text;
       f.chars = calcChars(text);
@@ -915,20 +923,24 @@ class EpubNotifier extends ChangeNotifier {
       t1 = t1.replaceAll('<br>', '<br />');
       t1 = t1.replaceAll('&nbsp;', '');
 
+      // delete div
+      text = deleteTag(text, '<div');
+      text = text.replaceAll('</div>', '');
+
       // delete <a
       text = deleteTag(text, '<a ');
       text = text.replaceAll('</a>', '');
 
-      // delete <p>
-      t1 = deleteTag(t1, '<p ');
-      t1 = t1.replaceAll('</p>', '<br />');
-
       // delete <img
-      t1 = deleteTag(t1, '<img');
+      text = deleteTag(text, '<img');
+
+      // delete <p>
+      text = deleteTag(text, '<p ');
+      text = text.replaceAll('</p>', '<br />');
 
       // delete <span
-      t1 = deleteTag(t1, '<span');
-      t1 = t1.replaceAll('</span>', '');
+      text = deleteTag(text, '<span');
+      text = text.replaceAll('</span>', '');
 
       if (t1 != '') t1 += '<br />';
       text += t1;

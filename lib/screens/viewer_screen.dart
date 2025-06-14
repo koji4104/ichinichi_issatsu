@@ -3,7 +3,6 @@ import 'dart:io';
 import 'package:flutter_slidable/flutter_slidable.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:flutter/services.dart';
 
@@ -14,24 +13,20 @@ import '/constants.dart';
 import '/controllers/viewer_controller.dart';
 import '/controllers/env_controller.dart';
 import '/controllers/viewlog_controller.dart';
+import '/controllers/applog_controller.dart';
 
-/*
-final stateProvider = ChangeNotifierProvider((ref) => stateNotifier(ref));
-
-class stateNotifier extends ChangeNotifier {
-  stateNotifier(ref) {}
-  List<double> listWidth = [];
-}
-*/
 class ViewerScreen extends BaseScreen with WidgetsBindingObserver {
   ViewerScreen({required BookData this.book}) {}
 
   BookData book;
   double _width = 1000.0;
   double _height = 1000.0;
+  ViewerBarType barType = ViewerBarType.none;
+
+  ViewerController viewerCtrl = ViewerController();
 
   bool isActionBar() {
-    return ref.watch(viewerProvider).isActionBar();
+    return barType != ViewerBarType.none;
   }
 
   @override
@@ -40,15 +35,18 @@ class ViewerScreen extends BaseScreen with WidgetsBindingObserver {
       WidgetsBinding.instance.addObserver(this);
     }
     ref.read(viewerProvider).barType = ViewerBarType.none;
-    ref.read(viewerProvider).book = this.book;
-    await reload();
-    await startReadlog();
+    viewerCtrl.ref = ref;
+    viewerCtrl.book = this.book;
+
+    viewerCtrl.load(env, _width, _height).then((ret) {
+      startReadlog();
+    });
   }
 
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
-    ref.watch(viewerProvider).stopSpeaking();
+    viewerCtrl.stopSpeaking();
   }
 
   @override
@@ -62,11 +60,11 @@ class ViewerScreen extends BaseScreen with WidgetsBindingObserver {
       } else if (state == AppLifecycleState.paused) {
         log('paused');
         endReadlog();
-        ref.watch(viewerProvider).stopSpeaking();
+        viewerCtrl.stopSpeaking();
       } else if (state == AppLifecycleState.detached) {
         log('detached');
         endReadlog();
-        ref.watch(viewerProvider).stopSpeaking();
+        viewerCtrl.stopSpeaking();
       }
     }
   }
@@ -77,7 +75,7 @@ class ViewerScreen extends BaseScreen with WidgetsBindingObserver {
     _width = MediaQuery.of(context).size.width;
     if (_width != oldWidth) {
       log('width ${_width.toInt()}');
-      ref.read(viewerProvider).width = _width;
+      viewerCtrl.width = _width;
     }
 
     double oldHeight = _height;
@@ -85,19 +83,18 @@ class ViewerScreen extends BaseScreen with WidgetsBindingObserver {
     myTheme.appBarTheme.toolbarHeight;
     if (_height != oldHeight) {
       log('height ${_height.toInt()}');
-      ref.read(viewerProvider).height = _height;
+      viewerCtrl.height = _height;
     }
 
     super.build(context, ref);
-    ref.watch(viewerProvider);
-    //ref.watch(stateProvider);
+    barType = ref.watch(viewerProvider).barType;
 
     return PopScope(
       canPop: true,
       onPopInvokedWithResult: (didPop, result) async {
         log('pop');
         endReadlog();
-        ref.watch(viewerProvider).stopSpeaking();
+        viewerCtrl.stopSpeaking();
       },
       child: Scaffold(
         backgroundColor: env.getBackColor(),
@@ -110,8 +107,8 @@ class ViewerScreen extends BaseScreen with WidgetsBindingObserver {
               color: env.getBackColor(),
               child: Widget1(),
             ),
-            if (ref.watch(viewerProvider).isLoading) loadingWidget(),
-            if (ref.watch(viewerProvider).barType != ViewerBarType.clipTextBar)
+            //if (ref.watch(viewerProvider).isLoading) loadingWidget(),
+            if (this.barType != ViewerBarType.clipTextBar)
               Container(
                 padding: EdgeInsets.fromLTRB(1, 1, 1, 1),
                 child: RawGestureDetector(
@@ -123,13 +120,12 @@ class ViewerScreen extends BaseScreen with WidgetsBindingObserver {
                       (TapGestureRecognizer instance) {
                         instance
                           ..onTapUp = (TapUpDetails details) {
-                            if (ref.watch(viewerProvider).barType !=
-                                ViewerBarType.actionBar) {
-                              ref.watch(viewerProvider).barType =
+                            if (barType != ViewerBarType.actionBar) {
+                              ref.read(viewerProvider).barType =
                                   ViewerBarType.actionBar;
                               redraw();
                             } else {
-                              ref.watch(viewerProvider).barType =
+                              ref.read(viewerProvider).barType =
                                   ViewerBarType.none;
                               redraw();
                             }
@@ -157,8 +153,7 @@ class ViewerScreen extends BaseScreen with WidgetsBindingObserver {
   }
 
   Widget Widget1() {
-    PlatformInAppWebViewController.debugLoggingSettings.enabled = false;
-    return ref.read(viewerProvider).viewer(env);
+    return viewerCtrl.viewer(env, barType);
   }
 
   Widget loadingWidget() {
@@ -181,14 +176,14 @@ class ViewerScreen extends BaseScreen with WidgetsBindingObserver {
   }
 
   Future startReadlog() async {
-    int nowChars = ref.watch(viewerProvider).nowChars;
+    int nowChars = viewerCtrl.nowChars;
     ref.watch(viewlogProvider).init(nowChars);
   }
 
   Future endReadlog() async {
-    int nowChars = ref.watch(viewerProvider).nowChars;
+    int nowChars = viewerCtrl.nowChars;
     ref.watch(viewlogProvider).save(nowChars, book);
-    ref.watch(viewerProvider).listText.clear();
+    viewerCtrl.listText.clear();
   }
 
   Widget actionRow() {
@@ -203,7 +198,7 @@ class ViewerScreen extends BaseScreen with WidgetsBindingObserver {
           color: env.getFrontColor(),
           onPressed: () {
             endReadlog();
-            ref.watch(viewerProvider).stopSpeaking();
+            viewerCtrl.stopSpeaking();
             Navigator.of(context).pop();
           }),
       if (isActionBar()) SizedBox(width: pad),
@@ -213,31 +208,21 @@ class ViewerScreen extends BaseScreen with WidgetsBindingObserver {
           icon: Icon(Icons.list),
           color: env.getFrontColor(),
           onPressed: () {
-            ref.watch(viewerProvider).barType = ViewerBarType.tocBar;
+            ref.read(viewerProvider).barType = ViewerBarType.tocBar;
             redraw();
           },
         ),
       Expanded(child: SizedBox(width: 1)),
-      if (IS_TEST_BUTTON && isActionBar() == true)
-        MyIconLabelButton(
-          label: l10n('Test'),
-          icon: Icon(Icons.refresh),
-          color: env.getFrontColor(),
-          onPressed: () {
-            refresh();
-          },
-        ),
-      if (isActionBar() && IS_CLIP == true) SizedBox(width: pad),
       if (isActionBar())
         MyIconLabelButton(
           label: l10n('jump'),
           icon: Icon(Icons.bookmark_border_outlined),
           color: env.getFrontColor(),
           onPressed: () {
-            if (ref.watch(viewerProvider).barType == ViewerBarType.maxpageBar) {
-              ref.watch(viewerProvider).barType = ViewerBarType.none;
+            if (barType == ViewerBarType.maxpageBar) {
+              ref.read(viewerProvider).barType = ViewerBarType.none;
             } else {
-              ref.watch(viewerProvider).barType = ViewerBarType.maxpageBar;
+              ref.read(viewerProvider).barType = ViewerBarType.maxpageBar;
             }
             redraw();
           },
@@ -249,11 +234,10 @@ class ViewerScreen extends BaseScreen with WidgetsBindingObserver {
           icon: Icon(Icons.pan_tool_alt_outlined),
           color: env.getFrontColor(),
           onPressed: () {
-            if (ref.watch(viewerProvider).barType ==
-                ViewerBarType.clipTextBar) {
-              ref.watch(viewerProvider).barType = ViewerBarType.none;
+            if (barType == ViewerBarType.clipTextBar) {
+              ref.read(viewerProvider).barType = ViewerBarType.none;
             } else {
-              ref.watch(viewerProvider).barType = ViewerBarType.clipTextBar;
+              ref.read(viewerProvider).barType = ViewerBarType.clipTextBar;
             }
             redraw();
           },
@@ -265,7 +249,7 @@ class ViewerScreen extends BaseScreen with WidgetsBindingObserver {
           icon: Icon(Icons.article_outlined),
           color: env.getFrontColor(),
           onPressed: () {
-            ref.watch(viewerProvider).barType = ViewerBarType.clipListBar;
+            ref.read(viewerProvider).barType = ViewerBarType.clipListBar;
             redraw();
           },
         ),
@@ -276,7 +260,7 @@ class ViewerScreen extends BaseScreen with WidgetsBindingObserver {
           icon: Icon(Icons.settings_outlined),
           color: env.getFrontColor(),
           onPressed: () {
-            ref.watch(viewerProvider).barType = ViewerBarType.settingsBar;
+            ref.read(viewerProvider).barType = ViewerBarType.settingsBar;
             redraw();
           },
         ),
@@ -293,7 +277,7 @@ class ViewerScreen extends BaseScreen with WidgetsBindingObserver {
     }
 
     Widget wText = Text(
-      ref.watch(viewerProvider).getTitle(),
+      viewerCtrl.getTitle(),
       overflow: TextOverflow.ellipsis,
       maxLines: 1,
       textAlign: TextAlign.center,
@@ -347,13 +331,12 @@ class ViewerScreen extends BaseScreen with WidgetsBindingObserver {
   Widget bottomBar() {
     double barHeight = 200;
     double ffBottom = 40 - barHeight; // -160
-    bool isSpeaking = ref.watch(viewerProvider).isSpeaking;
-
-    if (ref.watch(viewerProvider).barType == ViewerBarType.speakSettingsBar) {
+    bool isSpeaking = viewerCtrl.isSpeaking;
+    if (barType == ViewerBarType.speakSettingsBar) {
       ffBottom = 0;
     }
 
-    String progress = ref.watch(viewerProvider).getProgress();
+    String progress = viewerCtrl.getProgress();
     Widget wText = Container(
       child: Text(
         progress,
@@ -370,7 +353,7 @@ class ViewerScreen extends BaseScreen with WidgetsBindingObserver {
       icon: Icon(Icons.volume_up_outlined),
       color: env.getFrontColor(),
       onPressed: () {
-        ref.watch(viewerProvider).startSpeaking();
+        viewerCtrl.startSpeaking();
       },
     );
 
@@ -379,7 +362,7 @@ class ViewerScreen extends BaseScreen with WidgetsBindingObserver {
       icon: Icon(Icons.stop_circle_outlined),
       color: Colors.redAccent,
       onPressed: () {
-        ref.watch(viewerProvider).stopSpeaking();
+        viewerCtrl.stopSpeaking();
       },
     );
 
@@ -388,11 +371,10 @@ class ViewerScreen extends BaseScreen with WidgetsBindingObserver {
       icon: Icon(Icons.settings_outlined),
       color: env.getFrontColor(),
       onPressed: () {
-        if (ref.watch(viewerProvider).barType ==
-            ViewerBarType.speakSettingsBar) {
-          ref.watch(viewerProvider).barType = ViewerBarType.none;
+        if (barType == ViewerBarType.speakSettingsBar) {
+          ref.read(viewerProvider).barType = ViewerBarType.none;
         } else {
-          ref.watch(viewerProvider).barType = ViewerBarType.speakSettingsBar;
+          ref.read(viewerProvider).barType = ViewerBarType.speakSettingsBar;
         }
         redraw();
       },
@@ -443,13 +425,13 @@ class ViewerScreen extends BaseScreen with WidgetsBindingObserver {
   Widget maxpageBar() {
     double barHeight = 300;
     double ffBottom = -1.0 * barHeight;
-    if (ref.watch(viewerProvider).barType == ViewerBarType.maxpageBar) {
+    if (barType == ViewerBarType.maxpageBar) {
       ffBottom = 0;
     }
 
     double pad = (_width - 290) / 2;
-    String nowPage = ref.watch(viewerProvider).getNowPage();
-    String maxPage = ref.watch(viewerProvider).getMaxPage();
+    String nowPage = viewerCtrl.getNowPage();
+    String maxPage = viewerCtrl.getMaxPage();
     Widget wNow = Row(children: [
       SizedBox(width: pad),
       MyText(l10n('nowpage')),
@@ -480,7 +462,7 @@ class ViewerScreen extends BaseScreen with WidgetsBindingObserver {
             onPressed: () async {
               okDialog().then((ret) {
                 if (ret) {
-                  ref.watch(viewerProvider).moveMaxpage();
+                  viewerCtrl.moveMaxpage();
                 }
               });
             },
@@ -492,7 +474,7 @@ class ViewerScreen extends BaseScreen with WidgetsBindingObserver {
               onPressed: () async {
                 okDialog().then((ret) {
                   if (ret) {
-                    ref.read(viewerProvider).resetMaxpage();
+                    viewerCtrl.resetMaxpage();
                     redraw();
                   }
                 });
@@ -518,7 +500,7 @@ class ViewerScreen extends BaseScreen with WidgetsBindingObserver {
   Widget clipTextBar() {
     double barHeight = 200;
     double ffBottom = -1.0 * barHeight;
-    if (ref.watch(viewerProvider).barType == ViewerBarType.clipTextBar) {
+    if (barType == ViewerBarType.clipTextBar) {
       ffBottom = 0;
     }
 
@@ -535,8 +517,8 @@ class ViewerScreen extends BaseScreen with WidgetsBindingObserver {
               title: l10n('cancel'),
               width: 140,
               onPressed: () async {
-                ref.watch(viewerProvider).barType = ViewerBarType.none;
-                await ref.watch(viewerProvider).clearFocus();
+                ref.read(viewerProvider).barType = ViewerBarType.none;
+                await viewerCtrl.clearFocus();
                 redraw();
               },
             ),
@@ -546,12 +528,11 @@ class ViewerScreen extends BaseScreen with WidgetsBindingObserver {
               title: l10n('save_selection'),
               width: 140,
               onPressed: () async {
-                String? text =
-                    await ref.watch(viewerProvider).getSelectedText();
+                String? text = await viewerCtrl.getSelectedText();
                 if (text != null && text.length > 2) {
                   alertDialog('save', msg: text).then((ret) {
                     if (ret) {
-                      ref.read(viewerProvider).saveClip(text);
+                      viewerCtrl.saveClip(text);
                     }
                   });
                 } else {}
@@ -579,8 +560,8 @@ class ViewerScreen extends BaseScreen with WidgetsBindingObserver {
 
   @override
   Future onPressedCloseButton() async {
-    ref.watch(viewerProvider).barType = ViewerBarType.none;
-    ref.watch(viewerProvider).clearFocus();
+    ref.read(viewerProvider).barType = ViewerBarType.none;
+    viewerCtrl.clearFocus();
     redraw();
   }
 
@@ -590,7 +571,7 @@ class ViewerScreen extends BaseScreen with WidgetsBindingObserver {
     barHeight += env.ui_text_scale.val;
 
     double ffBottom = -1.0 * barHeight;
-    if (ref.watch(viewerProvider).barType == ViewerBarType.settingsBar) {
+    if (barType == ViewerBarType.settingsBar) {
       ffBottom = 0;
     }
 
@@ -634,12 +615,17 @@ class ViewerScreen extends BaseScreen with WidgetsBindingObserver {
     }
   }
 
+  @override
+  Future redraw() async {
+    ref.read(viewerProvider).notifyListeners();
+  }
+
   Future reload() async {
-    ref.read(viewerProvider).load(env, _width, _height);
+    viewerCtrl.load(env, _width, _height);
   }
 
   Future refresh() async {
-    ref.read(viewerProvider).refresh();
+    viewerCtrl.refresh();
   }
 
   // 目次バー
@@ -647,13 +633,13 @@ class ViewerScreen extends BaseScreen with WidgetsBindingObserver {
     double barHeight =
         book.index.list.length > 20 ? _height * 3 / 5 : _height / 2;
     double ffBottom = -1.0 * barHeight;
-    if (ref.watch(viewerProvider).barType == ViewerBarType.tocBar) {
+    if (barType == ViewerBarType.tocBar) {
       ffBottom = 0;
     }
     List<Widget> list = [];
 
-    int nowIndex = ref.watch(viewerProvider).nowIndex;
-    int nowRatio = ref.watch(viewerProvider).nowRatio;
+    int nowIndex = viewerCtrl.nowIndex;
+    int nowRatio = viewerCtrl.nowRatio;
     if (nowIndex < book.index.list.length - 1 && nowRatio > 9500) nowIndex++;
 
     for (int i = 0; i < book.index.list.length; i++) {
@@ -672,7 +658,7 @@ class ViewerScreen extends BaseScreen with WidgetsBindingObserver {
           onPressed: () {
             int ii = i;
             if (ii > 0) ii--;
-            ref.read(viewerProvider).jumpToIndex(ii, 9800);
+            viewerCtrl.jumpToIndex(ii, 9800);
             startReadlog();
           },
         ),
@@ -709,10 +695,10 @@ class ViewerScreen extends BaseScreen with WidgetsBindingObserver {
   Widget clipListBar() {
     double barHeight = _height * 2 / 3;
     double ffBottom = -1.0 * barHeight;
-    if (ref.watch(viewerProvider).barType == ViewerBarType.clipListBar) {
+    if (barType == ViewerBarType.clipListBar) {
       ffBottom = 0;
     }
-    ClipData d = ref.watch(viewerProvider).readClip();
+    ClipData d = viewerCtrl.readClip();
 
     // 表示用
     List<Widget> list = [];
@@ -723,7 +709,7 @@ class ViewerScreen extends BaseScreen with WidgetsBindingObserver {
           onPressed: () {
             deleteDialog().then((ret) {
               if (ret) {
-                ref.watch(viewerProvider).deleteClip(index: i);
+                viewerCtrl.deleteClip(index: i);
               }
             });
           },
@@ -797,10 +783,7 @@ class ViewerScreen extends BaseScreen with WidgetsBindingObserver {
                             deleteDialog().then((ret) {
                               if (ret) {
                                 log('delette');
-                                ref
-                                    .watch(viewerProvider)
-                                    .deleteClip(index: index)
-                                    .then((ret) {
+                                viewerCtrl.deleteClip(index: index).then((ret) {
                                   redraw();
                                 });
                               }

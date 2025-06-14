@@ -36,7 +36,7 @@ class ViewlogScreen extends BaseScreen {
             icon: Icon(Icons.refresh),
             onPressed: () async {
               await ref.watch(viewlogProvider).read();
-              redraw();
+              ref.watch(viewlogProvider).notifyListeners();
             },
           ),
         ]),
@@ -70,7 +70,8 @@ class ViewlogScreen extends BaseScreen {
     return Row(
       children: [
         Expanded(child: SizedBox(width: 1)),
-        Text('${l10n('swipe_to_delete')}', textScaler: TextScaler.linear(myTextScale * 0.7)),
+        Text('${l10n('swipe_to_delete')}',
+            textScaler: TextScaler.linear(myTextScale * 0.7)),
       ],
     );
   }
@@ -84,7 +85,8 @@ class ViewlogScreen extends BaseScreen {
         Expanded(flex: 1, child: Text('Date', textScaler: sc)),
         Expanded(flex: 1, child: Text('min', textScaler: sc, textAlign: al)),
         Expanded(flex: 1, child: Text('pages', textScaler: sc, textAlign: al)),
-        Expanded(flex: 1, child: Text('pages/h', textScaler: sc, textAlign: al)),
+        Expanded(
+            flex: 1, child: Text('pages/h', textScaler: sc, textAlign: al)),
         SizedBox(width: 20),
       ],
     );
@@ -112,7 +114,7 @@ class ViewlogScreen extends BaseScreen {
             deleteDialog().then((ret) async {
               if (ret) {
                 await ref.watch(viewlogProvider).delete(i);
-                redraw();
+                ref.watch(viewlogProvider).notifyListeners();
               }
             });
           },
@@ -138,7 +140,7 @@ class ViewlogScreen extends BaseScreen {
                     if (ret) {
                       log('delete');
                       ref.watch(viewlogProvider).delete(index).then((ret) {
-                        redraw();
+                        ref.watch(viewlogProvider).notifyListeners();
                       });
                     }
                   });

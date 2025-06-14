@@ -24,6 +24,7 @@ class BookListScreen extends BaseScreen {
 
   GlobalKey webViewKey1 = GlobalKey();
   InAppWebViewController? webViewController1;
+  int selectedFlag = 0;
 
   @override
   Future init() async {}
@@ -149,7 +150,9 @@ class BookListScreen extends BaseScreen {
                   flagDialog().then((ret) {
                     if (ret >= 0) {
                       bookList[index].prop.flag = ret;
-                      ref.watch(booklistProvider).saveFlag(bookList[index].bookId, ret);
+                      ref
+                          .watch(booklistProvider)
+                          .saveFlag(bookList[index].bookId, ret);
                     }
                   });
                 },
@@ -221,15 +224,14 @@ class BookListScreen extends BaseScreen {
           buttonPadding: EdgeInsets.all(0.0),
           iconPadding: EdgeInsets.all(0.0),
           backgroundColor: myTheme.cardColor,
-          title: Text(l10n('flag_changes'), style: myTheme.textTheme.bodyMedium!),
+          title:
+              Text(l10n('flag_changes'), style: myTheme.textTheme.bodyMedium!),
           actions: [w1, w2, w3],
         );
       },
     );
     return ret;
   }
-
-  int selectedFlag = 0;
 
   List<Icon> getIconList(double size) {
     List<Icon> list = [];
@@ -257,7 +259,7 @@ class BookListScreen extends BaseScreen {
       onChanged: (value) {
         if (selectedFlag != value) {
           selectedFlag = value;
-          redraw();
+          ref.read(booklistProvider).notifyListeners();
         }
       },
       dropdownColor: myTheme.cardColor,
@@ -279,7 +281,8 @@ class BookListScreen extends BaseScreen {
     }
     Widget flagIcon = Container(width: 16);
     if (1 <= data.prop.flag && data.prop.flag <= 6) {
-      flagIcon = Icon(Icons.circle, size: 16.0, color: COL_FLAG_LIST[data.prop.flag]);
+      flagIcon =
+          Icon(Icons.circle, size: 16.0, color: COL_FLAG_LIST[data.prop.flag]);
     }
 
     double scale = myTextScale;

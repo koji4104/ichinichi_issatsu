@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:path_provider/path_provider.dart';
 import 'dart:io';
@@ -23,7 +24,8 @@ class BookListNotifier extends ChangeNotifier {
   List<BookData> bookList = [];
   List<PropData> propList = [];
   bool isReading = false;
-
+  int selectedFlag = 0;
+  
   /// read books.json
   Future readBookList() async {
     if (APP_DIR == '') {

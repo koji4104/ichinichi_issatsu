@@ -13,8 +13,6 @@ import '/controllers/browser_controller.dart';
 import '/controllers/booklist_controller.dart';
 import '/controllers/applog_controller.dart';
 
-final browserScreenProvider = ChangeNotifierProvider((ref) => ChangeNotifier());
-
 class BrowserScreen extends BaseScreen {
   BrowserScreen() {}
 
@@ -51,7 +49,6 @@ class BrowserScreen extends BaseScreen {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     super.build(context, ref);
-    ref.watch(browserScreenProvider);
     ref.watch(browserProvider);
     ref.watch(epubProvider);
 
@@ -93,8 +90,9 @@ class BrowserScreen extends BaseScreen {
                   if (webViewController != null) {
                     String? title = await webViewController!.getTitle();
                     alertDialog('save', msg: title).then((ret) {
-                      ref.watch(browserProvider).webViewController = webViewController;
-                      ref.watch(browserProvider).saveFavorite();
+                      ref.read(browserProvider).webViewController =
+                          webViewController;
+                      ref.read(browserProvider).saveFavorite();
                     });
                   }
                 },
@@ -106,14 +104,14 @@ class BrowserScreen extends BaseScreen {
           child: Stack(children: [
             Container(
               padding: DEF_MENU_PADDING,
-              child: ref.watch(epubProvider).downloadCtrl.browser8(),
+              child: ref.read(epubProvider).downloadCtrl.browser8(),
             ),
             Container(
               color: myTheme.scaffoldBackgroundColor,
               padding: DEF_MENU_PADDING,
               child: RefreshIndicator(
                 onRefresh: () async {
-                  ref.watch(browserProvider).readUriList();
+                  ref.read(browserProvider).readUriList();
                 },
                 child: widget1(),
               ),
@@ -134,7 +132,8 @@ class BrowserScreen extends BaseScreen {
         children: [
           Row(children: [
             Expanded(child: SizedBox(width: 1)),
-            Text('${l10n('swipe_to_delete')}', textScaler: TextScaler.linear(myTextScale * 0.7)),
+            Text('${l10n('swipe_to_delete')}',
+                textScaler: TextScaler.linear(myTextScale * 0.7)),
             SizedBox(width: 10),
           ]),
           Expanded(child: getUriList()),
@@ -162,7 +161,8 @@ class BrowserScreen extends BaseScreen {
             List<MetaTag> metaTagList = await webViewController!.getMetaTags();
             for (MetaTag tag in metaTagList) {
               if (tag.attrs!.length > 0) {
-                if (tag.attrs![0].name == 'property' && tag.attrs![0].value == 'og:title') {
+                if (tag.attrs![0].name == 'property' &&
+                    tag.attrs![0].value == 'og:title') {
                   log('onLoadStop og:title = ${tag.content}');
                   siteTitle = tag.content;
                   break;
@@ -194,11 +194,16 @@ class BrowserScreen extends BaseScreen {
       if (url == null) return;
       String? body = await webViewController!.getHtml();
       if (body == null) return;
-      ref.watch(epubProvider).webViewController = webViewController;
+      ref.read(epubProvider).webViewController = webViewController;
       await ref.read(epubProvider).checkHtml(url, body);
     } catch (e) {
       MyLog.err('checkHtml() ${e.toString()}');
     }
+  }
+
+  @override
+  redraw() {
+    ref.read(browserProvider).notifyListeners();
   }
 
   @override
@@ -249,7 +254,9 @@ class BrowserScreen extends BaseScreen {
                     deleteDialog().then((ret) {
                       if (ret) {
                         log('delette');
-                        ref.watch(browserProvider).deleteFavorite(favoList[index].uri);
+                        ref
+                            .read(browserProvider)
+                            .deleteFavorite(favoList[index].uri);
                       }
                     });
                   },
@@ -294,7 +301,8 @@ class BrowserScreen extends BaseScreen {
     Widget child = Row(children: [
       w,
       Expanded(
-        child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+        child:
+            Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
           e,
           wTitle,
           Row(children: [Expanded(child: wUri)]),
@@ -322,6 +330,6 @@ class BrowserScreen extends BaseScreen {
 
   @override
   Future onDownloadFinished() async {
-    ref.watch(booklistProvider).readBookList();
+    ref.read(booklistProvider).readBookList();
   }
 }

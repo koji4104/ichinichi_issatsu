@@ -17,7 +17,7 @@ import '/screens/viewer_screen.dart';
 import '/constants.dart';
 
 /// BookScreen
-class BookListScreen extends BaseScreen {
+class BookListScreen extends DownloadScreen {
   bool isCheckBox = true;
   double _width = 400.0;
   double _height = 800.0;
@@ -26,8 +26,13 @@ class BookListScreen extends BaseScreen {
   InAppWebViewController? webViewController1;
   int selectedFlag = 0;
 
+  BookListController booklistCtrl = BookListController();
+
   @override
-  Future init() async {}
+  Future init() async {
+    booklistCtrl.ref = ref;
+    booklistCtrl.readBookList();
+  }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -44,7 +49,7 @@ class BookListScreen extends BaseScreen {
         leading: IconButton(
           icon: Icon(Icons.refresh),
           onPressed: () async {
-            ref.watch(booklistProvider).readBookList();
+            booklistCtrl.readBookList();
           },
         ),
         actions: [dropdownFlag(), SizedBox(width: 20)],
@@ -53,14 +58,14 @@ class BookListScreen extends BaseScreen {
         child: Stack(children: [
           Container(
             padding: DEF_MENU_PADDING,
-            child: ref.watch(epubProvider).downloadCtrl.browser8(),
+            child: epubCtrl.downloadCtrl.browser8(),
           ),
           Container(
             color: myTheme.scaffoldBackgroundColor,
             padding: DEF_MENU_PADDING,
             child: RefreshIndicator(
               onRefresh: () async {
-                ref.watch(booklistProvider).readBookList();
+                booklistCtrl.readBookList();
               },
               child: getList(),
             ),
@@ -72,9 +77,9 @@ class BookListScreen extends BaseScreen {
   }
 
   Widget getList() {
-    List<BookData> bookListOrg = ref.watch(booklistProvider).bookList;
+    List<BookData> bookListOrg = booklistCtrl.bookList;
     if (bookListOrg.length <= 0) return Container();
-    if (ref.watch(booklistProvider).isReading) return Container();
+    if (booklistCtrl.isReading) return Container();
 
     List<BookData> bookList = [];
     for (BookData b in bookListOrg) {
@@ -103,7 +108,7 @@ class BookListScreen extends BaseScreen {
           child: MyBookListTile(
             data: bookList[index],
             onPressed: () {
-              ref.watch(booklistProvider).saveLastAccess(index);
+              booklistCtrl.saveLastAccess(index);
               MyLog.info('Open ${bookList[index].title}');
               var screen = ViewerScreen(book: bookList[index]);
               NavigatorPush(screen);
@@ -150,9 +155,7 @@ class BookListScreen extends BaseScreen {
                   flagDialog().then((ret) {
                     if (ret >= 0) {
                       bookList[index].prop.flag = ret;
-                      ref
-                          .watch(booklistProvider)
-                          .saveFlag(bookList[index].bookId, ret);
+                      booklistCtrl.saveFlag(bookList[index].bookId, ret);
                     }
                   });
                 },
@@ -172,7 +175,7 @@ class BookListScreen extends BaseScreen {
                       if (Directory(dir).existsSync()) {
                         MyLog.info('Delete ${bookList[index].title}');
                         Directory(dir).deleteSync(recursive: true);
-                        ref.watch(booklistProvider).readBookList();
+                        booklistCtrl.readBookList();
                       }
                     }
                   });
@@ -259,7 +262,7 @@ class BookListScreen extends BaseScreen {
       onChanged: (value) {
         if (selectedFlag != value) {
           selectedFlag = value;
-          ref.read(booklistProvider).notifyListeners();
+          booklistCtrl.redraw();
         }
       },
       dropdownColor: myTheme.cardColor,
@@ -376,17 +379,18 @@ class BookListScreen extends BaseScreen {
     );
   }
 
+  /// 追加ダウンロード
   Future AddDownload(BookData data) async {
-    await ref.watch(epubProvider).checkUri(data.dluri);
+    await epubCtrl.checkUri(data.dluri);
   }
 
   @override
   Future onDownloadFinished() async {
-    ref.watch(booklistProvider).readBookList();
+    booklistCtrl.readBookList();
   }
 
   @override
   Future onPressedCloseButton() async {
-    ref.read(epubProvider).setStatusNone();
+    epubCtrl.setStatusNone();
   }
 }

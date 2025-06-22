@@ -42,8 +42,6 @@ class ViewerController {
   @override
   void dispose() {}
 
-  late WidgetRef ref;
-
   Environment get env {
     return myEnv;
   }
@@ -64,6 +62,8 @@ class ViewerController {
 
   Map<String, String> m = {};
   double jumpMarginPx = 0;
+
+  late WidgetRef ref;
 
   redraw() {
     ref.read(viewerProvider).notifyListeners();

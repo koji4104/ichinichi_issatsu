@@ -94,18 +94,21 @@ class ViewlogScreen extends BaseScreen {
 
   Widget getList() {
     List<Widget> list = [];
-    List<BookData> bookList1 = ref.watch(booklistProvider).bookList;
+    // ログにタイトルも記載のため不要
+    //List<BookData> bookList1 = ref.read(booklistProvider).bookList;
     if (ref.watch(viewlogProvider).list.length == 0) return Container();
 
     for (int i = 0; i < ref.watch(viewlogProvider).list.length; i++) {
       String title = ref.watch(viewlogProvider).list[i].bookId;
-
+/*
+      // ログにタイトルも記載のため不要、本が消されたときを考慮
       for (BookData d in bookList1) {
         if (d.bookId == ref.watch(viewlogProvider).list[i].bookId) {
           title = d.title;
           break;
         }
       }
+*/
       list.add(
         MyReadlogListTile(
           data: ref.watch(viewlogProvider).list[i],

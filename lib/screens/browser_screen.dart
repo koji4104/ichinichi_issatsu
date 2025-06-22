@@ -13,7 +13,7 @@ import '/controllers/browser_controller.dart';
 import '/controllers/booklist_controller.dart';
 import '/controllers/applog_controller.dart';
 
-class BrowserScreen extends BaseScreen {
+class BrowserScreen extends DownloadScreen {
   BrowserScreen() {}
 
   GlobalKey webViewKey = GlobalKey();
@@ -104,7 +104,8 @@ class BrowserScreen extends BaseScreen {
           child: Stack(children: [
             Container(
               padding: DEF_MENU_PADDING,
-              child: ref.read(epubProvider).downloadCtrl.browser8(),
+              //child: ref.read(epubProvider).downloadCtrl.browser8(),
+              child: epubCtrl.downloadCtrl.browser8(),
             ),
             Container(
               color: myTheme.scaffoldBackgroundColor,
@@ -194,8 +195,10 @@ class BrowserScreen extends BaseScreen {
       if (url == null) return;
       String? body = await webViewController!.getHtml();
       if (body == null) return;
-      ref.read(epubProvider).webViewController = webViewController;
-      await ref.read(epubProvider).checkHtml(url, body);
+      //ref.read(epubProvider).webViewController = webViewController;
+      epubCtrl.webViewController = webViewController;
+      //await ref.read(epubProvider).checkHtml(url, body);
+      await epubCtrl.checkHtml(url, body);
     } catch (e) {
       MyLog.err('checkHtml() ${e.toString()}');
     }
@@ -208,7 +211,8 @@ class BrowserScreen extends BaseScreen {
 
   @override
   Future onPressedCloseButton() async {
-    ref.read(epubProvider).setStatusNone();
+    //ref.read(epubProvider).setStatusNone();
+    epubCtrl.setStatusNone();
   }
 
   Widget getUriList() {
@@ -330,6 +334,6 @@ class BrowserScreen extends BaseScreen {
 
   @override
   Future onDownloadFinished() async {
-    ref.read(booklistProvider).readBookList();
+    //ref.read(booklistProvider).readBookList();
   }
 }

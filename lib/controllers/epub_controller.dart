@@ -1,6 +1,5 @@
 import 'dart:convert' as convert;
 import 'dart:convert';
-import 'dart:typed_data'; // Uint8List
 import 'dart:developer';
 import 'dart:io';
 import 'dart:async';
@@ -39,19 +38,30 @@ enum MyEpubStatus {
 final epubProvider = ChangeNotifierProvider((ref) => EpubNotifier(ref));
 
 class EpubNotifier extends ChangeNotifier {
-  EpubNotifier(ref) {
-    if (!Platform.isIOS && !Platform.isAndroid) {
-      //status = MyEpubStatus.downloading;
-      //doneIndex = 2;
-    }
+  EpubNotifier(ref);
+}
+
+class EpubController {
+  EpubController();
+
+  late WidgetRef ref;
+
+  redraw() {
+    ref.read(epubProvider).notifyListeners();
   }
 
-  EpubData epub = new EpubData();
+  EpubData epub = EpubData();
   MyEpubStatus status = MyEpubStatus.none;
   int doneIndex = 0;
-  int existingIndex = 0;
+
+  /// ダウンロード済の目次数
+  int alreadyIndex = 0;
+
+  /// ここまでダウンロードする
   int requiredIndex = 1;
-  bool needtoStopDownloading = false;
+
+  //bool needtoStopDownloading = false;
+  bool cancelDownload = false;
 
   InAppWebViewController? webViewController;
   String? webBody;
@@ -59,8 +69,7 @@ class EpubNotifier extends ChangeNotifier {
 
   Future writeBook() async {
     if (epub.siteId == null) return;
-    if (epub.fileList.length == 0) return;
-
+    if (epub.fileList.isEmpty) return;
     String bookdir = APP_DIR + '/book';
 
     String text0 = '';
@@ -75,13 +84,13 @@ class EpubNotifier extends ChangeNotifier {
     f0.chars = text0.length;
     epub.fileList.insert(0, f0);
 
-    await Directory('${bookdir}/${epub.bookId}').create(recursive: true);
-    await Directory('${bookdir}/${epub.bookId}/text').create(recursive: true);
-    await Directory('${bookdir}/${epub.bookId}/data').create(recursive: true);
+    await Directory('$bookdir/${epub.bookId}').create(recursive: true);
+    await Directory('$bookdir/${epub.bookId}/text').create(recursive: true);
+    await Directory('$bookdir/${epub.bookId}/data').create(recursive: true);
 
     for (EpubFileData f in epub.fileList) {
       List<int> content = convert.utf8.encode(f.text!);
-      final file = File('${bookdir}/${epub.bookId}/${f.fileName}');
+      final file = File('$bookdir/${epub.bookId}/${f.fileName}');
       await file.writeAsBytes(content);
     }
 
@@ -94,7 +103,6 @@ class EpubNotifier extends ChangeNotifier {
     book.chars = 0;
     book.dluri = epub.dluri ?? '';
     book.ctime = DateTime.now();
-
     book.title = EpubData.deleteInvalidStrInJson(book.title);
     book.author = EpubData.deleteInvalidStrInJson(book.author);
 
@@ -124,14 +132,14 @@ class EpubNotifier extends ChangeNotifier {
     book.dlver = APP_VERSION;
 
     String jsonText = json.encode(book.toJson());
-    final boolFile = File('${bookdir}/${epub.bookId}/data/book.json');
+    final boolFile = File('$bookdir/${epub.bookId}/data/book.json');
     await boolFile.writeAsString(jsonText, mode: FileMode.write, flush: true);
 
     String j = json.encode(index.toJson());
-    final indexFile = File('${bookdir}/${epub.bookId}/data/index.json');
+    final indexFile = File('$bookdir/${epub.bookId}/data/index.json');
     await indexFile.writeAsString(j, mode: FileMode.write, flush: true);
 
-    final propFile = File('${bookdir}/${epub.bookId}/data/prop.json');
+    final propFile = File('$bookdir/${epub.bookId}/data/prop.json');
     if (propFile.existsSync() == false) {
       PropData prop = PropData();
       var val = json.encode(prop.toJson());
@@ -139,6 +147,7 @@ class EpubNotifier extends ChangeNotifier {
     }
   }
 
+  /// 目次uriをDLしてcheckHtmlを実行
   Future checkUri(String uri) async {
     String? body = null;
 
@@ -155,13 +164,13 @@ class EpubNotifier extends ChangeNotifier {
 
     if (status == MyEpubStatus.none) {
       status = MyEpubStatus.failed;
-      this.notifyListeners();
+      redraw();
     }
   }
 
   Future checkHtml(String uri, String? body) async {
     epub.reset();
-    existingIndex = 0;
+    alreadyIndex = 0;
 
     if (body != null) {
       if (uri.contains('www.aozora.gr.jp/cards/')) {
@@ -179,18 +188,18 @@ class EpubNotifier extends ChangeNotifier {
       if (uri.contains('www.aozora.gr.jp/cards/')) {
         status = MyEpubStatus.downloadable;
       } else {
-        existingIndex = await getExistingIndex(epub.bookId!);
-        if (existingIndex > epub.uriList.length)
-          existingIndex = epub.uriList.length;
-        if (existingIndex == epub.uriList.length)
+        alreadyIndex = await getExistingIndex(epub.bookId!);
+        if (alreadyIndex > epub.uriList.length)
+          alreadyIndex = epub.uriList.length;
+        if (alreadyIndex == epub.uriList.length)
           status = MyEpubStatus.same;
         else
           status = MyEpubStatus.downloadable;
       }
-      this.notifyListeners();
+      redraw();
     } else if (status != MyEpubStatus.none) {
       status = MyEpubStatus.none;
-      this.notifyListeners();
+      redraw();
     }
   }
 
@@ -199,10 +208,10 @@ class EpubNotifier extends ChangeNotifier {
     if (epub.uriList.length == 0 || epub.dluri == null) {
       log('urlList.length == 0');
       status = MyEpubStatus.failed;
-      this.notifyListeners();
+      redraw();
       return ret;
     }
-    needtoStopDownloading = false;
+    cancelDownload = false;
     requiredIndex = required;
 
     if (epub.dluri.toString().contains('www.aozora.gr.jp/cards/')) {
@@ -219,7 +228,7 @@ class EpubNotifier extends ChangeNotifier {
       ret = true;
     } else {
       status = MyEpubStatus.failed;
-      this.notifyListeners();
+      redraw();
     }
     await Future.delayed(Duration(milliseconds: 500));
     return ret;
@@ -268,10 +277,10 @@ class EpubNotifier extends ChangeNotifier {
 
   setStatusNone() {
     epub.reset();
-    needtoStopDownloading = true;
+    cancelDownload = true;
     if (status != MyEpubStatus.none) {
       status = MyEpubStatus.none;
-      this.notifyListeners();
+      redraw();
     }
   }
 
@@ -311,7 +320,7 @@ class EpubNotifier extends ChangeNotifier {
     String datadir = APP_DIR + '/book';
 
     try {
-      Directory dir = Directory('${datadir}/${bookId}/text');
+      Directory dir = Directory('$datadir/$bookId/text');
 
       if (dir.existsSync()) {
         var plist = dir.listSync();
@@ -392,7 +401,7 @@ class EpubNotifier extends ChangeNotifier {
     MyLog.info('Download ${epub.bookTitle}');
     status = MyEpubStatus.downloading;
     doneIndex = 0;
-    this.notifyListeners();
+    redraw();
 
     String? body = await downloadCtrl.downloadSjis(epub.uriList[0]);
     if (body != null) {
@@ -414,7 +423,7 @@ class EpubNotifier extends ChangeNotifier {
       status = MyEpubStatus.failed;
       MyLog.warn('Download failed');
     }
-    this.notifyListeners();
+    redraw();
   }
 
   Future createAozoraText(String body) async {
@@ -437,7 +446,7 @@ class EpubNotifier extends ChangeNotifier {
       }
     }
     if (epub.bookTitle == null && oldTitle != null) {
-      epub.bookTitle = oldTitle!;
+      epub.bookTitle = oldTitle;
     }
     if (epub.bookTitle == null) {
       epub.bookTitle = epub.bookId!;
@@ -631,7 +640,8 @@ class EpubNotifier extends ChangeNotifier {
             var map = json1['props']['pageProps']['__APOLLO_STATE__'];
 
             // title uriList
-            for (var MapEntry(:key, :value) in map.entries) {
+            //for (var MapEntry(:key, :value) in map.entries) {
+            for (var value in map.entries) {
               if (value['__typename'] != null && value['id'] != null) {
                 if (value['__typename'] == 'Episode') {
                   epub.uriList.add(
@@ -651,7 +661,8 @@ class EpubNotifier extends ChangeNotifier {
 
             // author
             if (userId != '') {
-              for (var MapEntry(:key, :value) in map.entries) {
+              //for (var MapEntry(:key, :value) in map.entries) {
+              for (var value in map.entries) {
                 if (value['__typename'] != null && value['id'] != null) {
                   if (value['__typename'] == 'UserAccount') {
                     if (value['id'] == userId) {
@@ -677,10 +688,10 @@ class EpubNotifier extends ChangeNotifier {
 
     status = MyEpubStatus.downloading;
     doneIndex = 0;
-    needtoStopDownloading = false;
-    this.notifyListeners();
+    cancelDownload = false;
+    redraw();
 
-    for (int i = existingIndex; i < epub.uriList.length; i++) {
+    for (int i = alreadyIndex; i < epub.uriList.length; i++) {
       sleep(Duration(milliseconds: 200));
 
       String? body = await downloadCtrl.download(epub.uriList[i]);
@@ -692,13 +703,13 @@ class EpubNotifier extends ChangeNotifier {
 
       doneIndex = i + 1;
       if (doneIndex % 2 == 0) {
-        this.notifyListeners();
+        redraw();
       }
       if ((i + 1) >= requiredIndex) break;
-      if (needtoStopDownloading == true) break;
+      if (cancelDownload == true) break;
     }
 
-    if (epub.fileList.length >= 1 && needtoStopDownloading == false) {
+    if (epub.fileList.length >= 1 && cancelDownload == false) {
       await writeBook();
       status = MyEpubStatus.succeeded;
       MyLog.info('Download succeeded');
@@ -706,7 +717,7 @@ class EpubNotifier extends ChangeNotifier {
       status = MyEpubStatus.failed;
       MyLog.warn('Download failed');
     }
-    this.notifyListeners();
+    redraw();
   }
 
   Future createKakuyomuText(String body, int chap) async {
@@ -821,11 +832,11 @@ class EpubNotifier extends ChangeNotifier {
 
     status = MyEpubStatus.downloading;
     doneIndex = 0;
-    needtoStopDownloading = false;
-    this.notifyListeners();
+    cancelDownload = false;
+    redraw();
 
     if (epub.uriList.length > 0) {
-      for (int i = existingIndex; i < epub.uriList.length; i++) {
+      for (int i = alreadyIndex; i < epub.uriList.length; i++) {
         sleep(Duration(milliseconds: 200));
 
         String? body = await downloadCtrl.download(epub.uriList[i]);
@@ -837,22 +848,21 @@ class EpubNotifier extends ChangeNotifier {
 
         doneIndex = i + 1;
         if (doneIndex % 2 == 0) {
-          this.notifyListeners();
+          redraw();
         }
         if ((i + 1) >= requiredIndex) break;
-        if (needtoStopDownloading == true) break;
+        if (cancelDownload == true) break;
       }
     }
 
-    if (epub.fileList.length >= 1 && needtoStopDownloading == false) {
+    if (epub.fileList.length >= 1 && cancelDownload == false) {
       await writeBook();
       status = MyEpubStatus.succeeded;
       MyLog.info('Download succeeded');
     } else {
       MyLog.warn('Download failed');
     }
-
-    this.notifyListeners();
+    redraw();
   }
 
   Future<void> downloadNarou8() async {
@@ -860,11 +870,11 @@ class EpubNotifier extends ChangeNotifier {
 
     status = MyEpubStatus.downloading;
     doneIndex = 0;
-    needtoStopDownloading = false;
-    this.notifyListeners();
+    cancelDownload = false;
+    redraw();
 
     if (epub.uriList.length > 0) {
-      for (int i = existingIndex; i < epub.uriList.length; i++) {
+      for (int i = alreadyIndex; i < epub.uriList.length; i++) {
         await Future.delayed(Duration(milliseconds: 200));
 
         // https://ncode.syosetu.com/n6964jl/1/
@@ -878,13 +888,13 @@ class EpubNotifier extends ChangeNotifier {
 
         doneIndex = i + 1;
         if (doneIndex % 2 == 0) {
-          this.notifyListeners();
+          redraw();
         }
         if ((i + 1) >= requiredIndex) break;
-        if (needtoStopDownloading == true) break;
+        if (cancelDownload == true) break;
       }
     }
-    if (epub.fileList.length >= 1 && needtoStopDownloading == false) {
+    if (epub.fileList.length >= 1 && cancelDownload == false) {
       await writeBook();
       status = MyEpubStatus.succeeded;
       MyLog.info('Download succeeded');
@@ -892,7 +902,7 @@ class EpubNotifier extends ChangeNotifier {
       MyLog.warn('Download failed');
     }
 
-    this.notifyListeners();
+    redraw();
   }
 
   Future createNarouText(String body, int chap) async {
@@ -1020,10 +1030,10 @@ class DownloadController {
     return body;
   }
 
-  Future<String?> download8(String uri, EpubNotifier noti) async {
+  Future<String?> download8(String uri, EpubController noti) async {
     webBody = null;
     selectedUri = uri;
-    noti.notifyListeners();
+    noti.redraw();
     try {
       for (int wait = 0; wait < 100; wait++) {
         await Future.delayed(Duration(milliseconds: 200));

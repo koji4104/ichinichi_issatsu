@@ -15,8 +15,18 @@ import '/controllers/applog_controller.dart';
 final booklistProvider = ChangeNotifierProvider((ref) => BookListNotifier(ref));
 
 class BookListNotifier extends ChangeNotifier {
-  BookListNotifier(ref) {
-    readBookList();
+  BookListNotifier(ref);
+}
+
+class BookListController {
+  BookListController() {
+    //readBookList();
+  }
+
+  late WidgetRef ref;
+
+  redraw() {
+    ref.read(booklistProvider).notifyListeners();
   }
 
   BookData? selected;
@@ -25,7 +35,7 @@ class BookListNotifier extends ChangeNotifier {
   List<PropData> propList = [];
   bool isReading = false;
   int selectedFlag = 0;
-  
+
   /// read books.json
   Future readBookList() async {
     if (APP_DIR == '') {
@@ -84,7 +94,8 @@ class BookListNotifier extends ChangeNotifier {
     }
     await Future.delayed(Duration(milliseconds: 500));
     isReading = false;
-    this.notifyListeners();
+    //this.notifyListeners();
+    redraw();
   }
 
   Future saveFlag(String bookId, int flag) async {
@@ -101,7 +112,8 @@ class BookListNotifier extends ChangeNotifier {
         }
         String jsonText = json.encode(prop.toJson());
         await file.writeAsString(jsonText, mode: FileMode.write, flush: true);
-        this.notifyListeners();
+        //this.notifyListeners();
+        redraw();
       }
     } on Exception catch (e) {
       MyLog.err('saveFlag() ${e.toString()}');
@@ -122,7 +134,8 @@ class BookListNotifier extends ChangeNotifier {
         }
         String jsonText = json.encode(prop.toJson());
         file.writeAsString(jsonText, mode: FileMode.write, flush: true);
-        this.notifyListeners();
+        //this.notifyListeners();
+        redraw();
       }
     } on Exception catch (e) {
       MyLog.err('BookList.saveLastAccess() ${e.toString()}');

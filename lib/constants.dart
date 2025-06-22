@@ -1,11 +1,8 @@
-bool IS_TEST_BUTTON = true;
-bool IS_TEST_SITE = false;
-bool IS_TEST_VIEWLOG = false;
-bool IS_SAMPLE = false;
-bool IS_CLIP = true;
-bool IS_DEBUG_LOG = true;
-
-const String DIR_SETTINGS = 'settings';
+const bool IS_TEST_BUTTON = true; // Unused
+const bool IS_TEST_SITE = false;
+const bool IS_TEST_VIEWLOG = false;
+const bool IS_CLIP = true;
+const bool IS_DEBUG_LOG = true;
 
 const APP_VERSION = '2.0.0';
 

@@ -640,8 +640,8 @@ class EpubController {
             var map = json1['props']['pageProps']['__APOLLO_STATE__'];
 
             // title uriList
-            //for (var MapEntry(:key, :value) in map.entries) {
-            for (var value in map.entries) {
+            for (var MapEntry(:key, :value) in map.entries) {
+              //for (var value in map.entries) {
               if (value['__typename'] != null && value['id'] != null) {
                 if (value['__typename'] == 'Episode') {
                   epub.uriList.add(
@@ -661,8 +661,8 @@ class EpubController {
 
             // author
             if (userId != '') {
-              //for (var MapEntry(:key, :value) in map.entries) {
-              for (var value in map.entries) {
+              for (var MapEntry(:key, :value) in map.entries) {
+                //for (var value in map.entries) {
                 if (value['__typename'] != null && value['id'] != null) {
                   if (value['__typename'] == 'UserAccount') {
                     if (value['id'] == userId) {
@@ -934,23 +934,23 @@ class EpubController {
       t1 = t1.replaceAll('&nbsp;', '');
 
       // delete div
-      text = deleteTag(text, '<div');
-      text = text.replaceAll('</div>', '');
+      t1 = deleteTag(t1, '<div');
+      t1 = t1.replaceAll('</div>', '');
 
       // delete <a
-      text = deleteTag(text, '<a ');
-      text = text.replaceAll('</a>', '');
+      t1 = deleteTag(t1, '<a ');
+      t1 = t1.replaceAll('</a>', '');
 
       // delete <img
-      text = deleteTag(text, '<img');
+      t1 = deleteTag(t1, '<img');
 
       // delete <p>
-      text = deleteTag(text, '<p ');
-      text = text.replaceAll('</p>', '<br />');
+      t1 = deleteTag(t1, '<p ');
+      t1 = t1.replaceAll('</p>', '<br />');
 
       // delete <span
-      text = deleteTag(text, '<span');
-      text = text.replaceAll('</span>', '');
+      t1 = deleteTag(t1, '<span');
+      t1 = t1.replaceAll('</span>', '');
 
       if (t1 != '') t1 += '<br />';
       text += t1;

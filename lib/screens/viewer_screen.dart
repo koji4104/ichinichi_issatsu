@@ -60,11 +60,9 @@ class ViewerScreen extends BaseScreen with WidgetsBindingObserver {
       } else if (state == AppLifecycleState.paused) {
         log('paused');
         endReadlog();
-        viewerCtrl.stopSpeaking();
       } else if (state == AppLifecycleState.detached) {
         log('detached');
         endReadlog();
-        viewerCtrl.stopSpeaking();
       }
     }
   }
@@ -94,7 +92,6 @@ class ViewerScreen extends BaseScreen with WidgetsBindingObserver {
       onPopInvokedWithResult: (didPop, result) async {
         log('pop');
         endReadlog();
-        viewerCtrl.stopSpeaking();
       },
       child: Scaffold(
         backgroundColor: env.getBackColor(),
@@ -177,13 +174,13 @@ class ViewerScreen extends BaseScreen with WidgetsBindingObserver {
 
   Future startReadlog() async {
     int nowChars = viewerCtrl.nowChars;
-    ref.watch(viewlogProvider).init(nowChars);
+    ref.read(viewlogProvider).init(nowChars);
   }
 
   Future endReadlog() async {
     int nowChars = viewerCtrl.nowChars;
-    ref.watch(viewlogProvider).save(nowChars, book);
-    viewerCtrl.listText.clear();
+    ref.read(viewlogProvider).save(nowChars, book);
+    viewerCtrl.stopSpeaking();
   }
 
   Widget actionRow() {

@@ -154,9 +154,7 @@ class BrowserScreen extends DownloadScreen {
         onWebViewCreated: (controller) async {
           webViewController = controller;
         },
-        onLoadStart: (controller, url) {
-          MyLog.debug('browser.onLoadStart() ${url}');
-        },
+        onLoadStart: (controller, url) {},
         onLoadStop: (controller, url) async {
           try {
             List<MetaTag> metaTagList = await webViewController!.getMetaTags();
@@ -191,6 +189,7 @@ class BrowserScreen extends DownloadScreen {
   }
 
   checkHtml({String? url}) async {
+    MyLog.debug('checkHtml() ${url}');
     try {
       if (url == null) return;
       String? body = await webViewController!.getHtml();
@@ -198,6 +197,7 @@ class BrowserScreen extends DownloadScreen {
       //ref.read(epubProvider).webViewController = webViewController;
       epubCtrl.webViewController = webViewController;
       //await ref.read(epubProvider).checkHtml(url, body);
+
       await epubCtrl.checkHtml(url, body);
     } catch (e) {
       MyLog.err('checkHtml() ${e.toString()}');

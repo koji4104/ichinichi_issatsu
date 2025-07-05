@@ -15,8 +15,13 @@ final logScreenProvider = ChangeNotifierProvider((ref) => ChangeNotifier());
 
 class ApplogScreen extends BaseScreen {
   @override
+  Future init() async {
+    readLog(ref);
+  }
+
+  @override
   Widget build(BuildContext context, WidgetRef ref) {
-    Future.delayed(Duration.zero, () => readLog(ref));
+    super.build(context, ref);
     List<MyLogData> list = ref.watch(logListProvider);
 
     return Scaffold(
@@ -59,7 +64,8 @@ class ApplogScreen extends BaseScreen {
           spans.add(TextSpan(text: 'error ', style: tsErr));
         else if (d.level.toLowerCase().contains('warn'))
           spans.add(TextSpan(text: 'warn ', style: tsWarn));
-        else if (d.level.toLowerCase().contains('debug')) spans.add(TextSpan(text: 'debug ', style: tsDebug));
+        else if (d.level.toLowerCase().contains('debug'))
+          spans.add(TextSpan(text: 'debug ', style: tsDebug));
 
         spans.add(TextSpan(text: d.msg + '\n', style: tsInfo));
       } on Exception catch (e) {}

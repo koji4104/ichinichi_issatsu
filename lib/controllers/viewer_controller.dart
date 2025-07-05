@@ -745,7 +745,7 @@ line-height: ${env.line_height.val}%;
           int d = dw.toInt();
           int l = listWidth[index].toInt();
           if ((d - l).abs() >= 200) {
-            MyLog.debug('webWidth [${index}] ${l} ${d - l}');
+            MyLog.debug('webWidth d-l [${index}] ${l} ${d - l}');
           }
           listWidth[index] = dw;
         }
@@ -1126,7 +1126,7 @@ line-height: ${env.line_height.val}%;
     isSpeaking = false;
     flutterTts.stop();
     if (oldTag != '') {
-      String ss1 = 'mark1("${oldTag}", "${env.getFrontCss()}");';
+      String ss1 = 'mark0("${oldTag}");';
       await listWebViewCtrl[oldIndex]!.evaluateJavascript(source: ss1);
       oldTag = '';
     }

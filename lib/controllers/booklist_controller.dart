@@ -94,7 +94,6 @@ class BookListController {
     }
     await Future.delayed(Duration(milliseconds: 500));
     isReading = false;
-    //this.notifyListeners();
     redraw();
   }
 
@@ -112,7 +111,6 @@ class BookListController {
         }
         String jsonText = json.encode(prop.toJson());
         await file.writeAsString(jsonText, mode: FileMode.write, flush: true);
-        //this.notifyListeners();
         redraw();
       }
     } on Exception catch (e) {
@@ -134,7 +132,6 @@ class BookListController {
         }
         String jsonText = json.encode(prop.toJson());
         file.writeAsString(jsonText, mode: FileMode.write, flush: true);
-        //this.notifyListeners();
         redraw();
       }
     } on Exception catch (e) {

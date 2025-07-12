@@ -83,8 +83,8 @@ class ViewlogScreen extends BaseScreen {
       children: [
         SizedBox(width: 20),
         Expanded(flex: 1, child: Text('Date', textScaler: sc)),
-        Expanded(flex: 1, child: Text('min', textScaler: sc, textAlign: al)),
         Expanded(flex: 1, child: Text('pages', textScaler: sc, textAlign: al)),
+        Expanded(flex: 1, child: Text('min', textScaler: sc, textAlign: al)),
         Expanded(
             flex: 1, child: Text('pages/h', textScaler: sc, textAlign: al)),
         SizedBox(width: 20),
@@ -95,20 +95,10 @@ class ViewlogScreen extends BaseScreen {
   Widget getList() {
     List<Widget> list = [];
     // ログにタイトルも記載のため不要
-    //List<BookData> bookList1 = ref.read(booklistProvider).bookList;
     if (ref.watch(viewlogProvider).list.length == 0) return Container();
 
     for (int i = 0; i < ref.watch(viewlogProvider).list.length; i++) {
       String title = ref.watch(viewlogProvider).list[i].bookId;
-/*
-      // ログにタイトルも記載のため不要、本が消されたときを考慮
-      for (BookData d in bookList1) {
-        if (d.bookId == ref.watch(viewlogProvider).list[i].bookId) {
-          title = d.title;
-          break;
-        }
-      }
-*/
       list.add(
         MyReadlogListTile(
           data: ref.watch(viewlogProvider).list[i],
@@ -209,8 +199,8 @@ class ViewlogScreen extends BaseScreen {
       Expanded(flex: 1, child: SizedBox(height: 1)),
       Row(children: [
         Expanded(flex: 2, child: wDate),
-        Expanded(flex: 1, child: wMin),
         Expanded(flex: 1, child: wPage),
+        Expanded(flex: 1, child: wMin),
         Expanded(flex: 1, child: wSpeed),
       ]),
       Row(children: [Expanded(child: wTitle)]),

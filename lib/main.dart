@@ -15,8 +15,6 @@ class MyApp extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     myEnv = ref.watch(envProvider).env;
-    //myTheme = ref.watch(envProvider).env.dark_mode.val == 0 ? myLightTheme : myDarkTheme;
-
     myTheme = myEnv.isDarkMode() ? myDarkTheme : myLightTheme;
     myTextScale = (myEnv.ui_text_scale.val / 100).toDouble();
 

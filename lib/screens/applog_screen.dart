@@ -27,7 +27,17 @@ class ApplogScreen extends BaseScreen {
     return Scaffold(
       appBar: AppBar(
         title: Text('Logs'),
-        actions: <Widget>[],
+        actions: [
+          MyIconLabelButton(
+            icon: Icon(Icons.delete_outline),
+            onPressed: () async {
+              alertDialog('delete').then((ret) {
+                MyLog.deleteAll();
+              });
+            },
+          ),
+          SizedBox(width: 16),
+        ],
       ),
       body: SafeArea(
         child: Stack(children: [
@@ -42,7 +52,7 @@ class ApplogScreen extends BaseScreen {
 
   void readLog(WidgetRef ref) async {
     List<MyLogData> list = await MyLog.read();
-    ref.watch(logListProvider.state).state = list;
+    ref.read(logListProvider.state).state = list;
   }
 
   Widget getTable(BuildContext context, WidgetRef ref, List<MyLogData> list) {

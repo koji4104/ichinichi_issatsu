@@ -113,7 +113,6 @@ class ViewerController {
       listWebViewCtrl.clear();
 
       redraw();
-
       await Future.delayed(Duration(milliseconds: 50));
 
       String bookdir = APP_DIR + '/book';
@@ -124,6 +123,8 @@ class ViewerController {
             '${bookdir}/${book!.bookId}/text/ch${(i).toString().padLeft(4, '0')}.txt';
         if (File(path1).existsSync()) {
           String orgText = await File(path1).readAsStringSync();
+
+          orgText = '<br />' + orgText + '<br />';
           String body = orgText;
 
           // chars
@@ -159,7 +160,7 @@ class ViewerController {
           }
           // chars
 
-          // speech
+          // ↓speech
           String text2 = orgText;
 
           // 縦書き
@@ -187,16 +188,17 @@ class ViewerController {
             }
           }
           listSpeak.add(linesTemp);
+          // ↑speech
 
-          text1 = e.head1 + text1 + e.head2;
-          text1 = changeTextStyle(text1);
-          text1 += '<br />';
-          // speech
+          String vtext = '';
+          vtext += changeTextStyle(e.head1);
+          vtext += text1;
+          vtext += e.head2;
 
           listWidth.add(calcWidth);
           listWebViewCtrl.add(null);
           listKey.add(GlobalKey());
-          listText.add(text1);
+          listText.add(vtext);
 
           if (Platform.isIOS) {
             ContextMenu contextMenu = ContextMenu(
@@ -351,7 +353,7 @@ class ViewerController {
   Future jumpToIndex(int index, int ratio) async {
     bool r = await jumpToIndex1(index, ratio);
     if (r == false) {
-      log('jumpToIndex r == false');
+      log('jumpToIndex() r==false retry');
       await jumpToIndex1(index, ratio);
     }
   }
@@ -369,7 +371,7 @@ class ViewerController {
             redraw();
             await Future.delayed(Duration(milliseconds: 100));
           } on Exception catch (_) {
-            log('Exception scrollCtrl!.hasClients == false');
+            log('Exception scrollCtrl!.hasClients==false');
           }
         }
       }
@@ -394,7 +396,7 @@ class ViewerController {
       if (dx > jumpMarginPx) dx -= jumpMarginPx.toInt();
       if ((dx - curdx).abs() < 2000) isJumping = false;
 
-      for (int x = 0; x < 5; x++) {
+      for (int x = 0; x < 10; x++) {
         if (dx >= maxdx && dx > curdx && maxdx > 5000) {
           int dx1 = curdx + (dx - curdx);
           if (dx1 > (curdx + 50000)) dx1 = (curdx + 50000);
@@ -403,15 +405,15 @@ class ViewerController {
           if (scrollCtrl!.hasClients == true) {
             log('jumpTo dx>max [x${x}][${index}] cur=${curdx} dx=${dx} max=${maxdx} dx1=${dx1}');
             await scrollCtrl!.animateTo(dx1.toDouble(),
-                duration: Duration(milliseconds: 500), curve: Curves.linear);
+                duration: Duration(milliseconds: 200), curve: Curves.linear);
           } else {
-            log('jumpTo dx>max [x${x}][${index}] cur=${curdx} dx=${dx} max=${maxdx} dx1=${dx1} hasClients == false');
+            log('jumpTo dx>max [x${x}][${index}] cur=${curdx} dx=${dx} max=${maxdx} dx1=${dx1} hasClients==false');
+            await Future.delayed(Duration(milliseconds: 100));
           }
-          await Future.delayed(Duration(milliseconds: 100));
           if (scrollCtrl!.hasClients == true) {
             curdx = scrollCtrl!.position.pixels.toInt();
             maxdx = scrollCtrl!.position.maxScrollExtent.toInt();
-            log('jumpTo dx>max [x${x}][${index}] cur=${curdx} dx=${dx} max=${maxdx} dx1=${dx1} hasClients == true');
+            log('jumpTo dx>max [x${x}][${index}] cur=${curdx} dx=${dx} max=${maxdx} dx1=${dx1} hasClients==true');
           }
         } else {
           break;
@@ -690,8 +692,8 @@ line-height: ${env.line_height.val}%;
       return Container();
     }
 
-    // now=20 ratio=10% 19は不要
-    // now=20 ratio=10% 21は不要
+    // now=20 19は非表示
+    // now=20 残り2000以上 21は不要
     if (nowIndex - 1 == index) {
       return Container();
     } else if (nowIndex + 1 == index) {
@@ -725,7 +727,6 @@ line-height: ${env.line_height.val}%;
   }
 
   Future getActualWidth(InAppWebViewController controller, int index) async {
-    //if (!Platform.isIOS && !Platform.isAndroid) return;
     try {
       dynamic vw = null;
       if (env.writing_mode.val == 0) {
@@ -738,17 +739,18 @@ line-height: ${env.line_height.val}%;
       if (vw != null && vw != '') {
         double dw = double.parse('${vw}');
         if (dw > 400 && (dw - listWidth[index]).abs() > 10) {
-          if ((dw - listWidth[index]) > 300) {
-            // 隙間が多い不具合
-            dw = listWidth[index] + 300;
+          // ログ
+          int dlw = (dw - listWidth[index]).toInt();
+          if (dlw.abs() >= 200) {
+            MyLog.debug('width [${index}] dw-list ${dlw}');
           }
-          int d = dw.toInt();
-          int l = listWidth[index].toInt();
-          if ((d - l).abs() >= 200) {
-            MyLog.debug('webWidth d-l [${index}] ${l} ${d - l}');
+          // 隙間が多すぎる問題
+          if ((dw - listWidth[index]) > 400) {
+            double dif = dw - listWidth[index];
+            dw = listWidth[index] + 400 + (dif - 400) / 2;
           }
-          listWidth[index] = dw;
         }
+        listWidth[index] = dw;
       }
       redraw();
     } catch (_) {

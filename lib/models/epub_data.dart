@@ -137,7 +137,6 @@ function mark0(tag1) {
   }
 
   static String getRuby(String text1, Map<String, String> m) {
-    //Map<String, String> m = {};
     String tag1 = '<ruby>';
     String tag2 = '</ruby>';
     String text = text1;

@@ -653,9 +653,8 @@ class ViewerScreen extends BaseScreen with WidgetsBindingObserver {
           title1: MyText(txt, maxLength: 24),
           title2: MyText(pages),
           onPressed: () {
-            int ii = i;
-            if (ii > 0) ii--;
-            viewerCtrl.jumpToIndex(ii, 9800);
+            // v2.0 h3を<br>で下げている
+            viewerCtrl.jumpToIndex(i, 0);
             startReadlog();
           },
         ),

@@ -27,6 +27,7 @@ class MyLog {
     if (IS_DEBUG_LOG == true) await MyLog.write('debug', 'app', msg);
   }
 
+  /// write
   static write(String level, String event, String msg) async {
     try {
       log('${level} ${msg}');
@@ -54,11 +55,8 @@ class MyLog {
 
       // length byte 100kb
       if (await File(path).exists() && File(path).lengthSync() > 100 * 1024) {
-        if (await File(path + '.2').exists()) {
-          File(path + '.2').deleteSync();
-        }
         if (await File(path + '.1').exists()) {
-          File(path + '.1').renameSync(path + '.2');
+          File(path + '.1').deleteSync();
         }
         File(path).renameSync(path + '.1');
       }
@@ -84,9 +82,6 @@ class MyLog {
       await Directory('${logdir}').create(recursive: true);
       final String path = '${logdir}/$_fname';
 
-      if (await File(path + '.2').exists()) {
-        txt += await File(path + '.2').readAsString();
-      }
       if (await File(path + '.1').exists()) {
         txt += await File(path + '.1').readAsString();
       }
@@ -97,7 +92,8 @@ class MyLog {
       for (String line in txt.split('\n')) {
         List r = line.split('\t');
         if (r.length >= 5) {
-          MyLogData d = MyLogData(date: r[0], user: r[1], level: r[2], event: r[3], msg: r[4]);
+          MyLogData d = MyLogData(
+              date: r[0], user: r[1], level: r[2], event: r[3], msg: r[4]);
           list.add(d);
         }
       }
@@ -106,6 +102,36 @@ class MyLog {
       });
     } on Exception catch (e) {
       log('MyLog read() Exception ' + e.toString());
+    }
+    return list;
+  }
+
+  /// deleteAll
+  static Future deleteAll() async {
+    List<MyLogData> list = [];
+    try {
+      String txt = '';
+      if (APP_DIR == '') {
+        APP_DIR = (await getApplicationDocumentsDirectory()).path;
+        if (!Platform.isIOS && !Platform.isAndroid) {
+          APP_DIR = APP_DIR + '/test';
+        }
+      }
+      String logdir = APP_DIR + '/data';
+      await Directory('${logdir}').create(recursive: true);
+      final String path = '${logdir}/$_fname';
+
+      if (await File(path + '.2').exists()) {
+        File(path + '.2').deleteSync();
+      }
+      if (await File(path + '.1').exists()) {
+        File(path + '.1').deleteSync();
+      }
+      if (await File(path).exists()) {
+        File(path).deleteSync();
+      }
+    } on Exception catch (e) {
+      log('MyLog.delete() ' + e.toString());
     }
     return list;
   }

@@ -36,11 +36,22 @@ class ViewlogScreen extends BaseScreen {
             icon: Icon(Icons.refresh),
             onPressed: () async {
               await ref.watch(viewlogProvider).read();
-              ref.watch(viewlogProvider).notifyListeners();
+              ref.read(viewlogProvider).notifyListeners();
             },
           ),
         ]),
-        actions: <Widget>[],
+        actions: <Widget>[
+          MyIconLabelButton(
+            icon: Icon(Icons.delete_outline),
+            onPressed: () async {
+              alertDialog('delete').then((ret) {
+                ref.read(viewlogProvider).deleteAll();
+                ref.read(viewlogProvider).notifyListeners();
+              });
+            },
+          ),
+          SizedBox(width: 16),
+        ],
       ),
       body: SafeArea(
         child: Stack(children: [
@@ -106,7 +117,7 @@ class ViewlogScreen extends BaseScreen {
           onPressed: () async {
             deleteDialog().then((ret) async {
               if (ret) {
-                await ref.watch(viewlogProvider).delete(i);
+                await ref.watch(viewlogProvider).deleteOne(i);
                 ref.watch(viewlogProvider).notifyListeners();
               }
             });
@@ -132,7 +143,7 @@ class ViewlogScreen extends BaseScreen {
                   deleteDialog().then((ret) {
                     if (ret) {
                       log('delete');
-                      ref.watch(viewlogProvider).delete(index).then((ret) {
+                      ref.watch(viewlogProvider).deleteOne(index).then((ret) {
                         ref.watch(viewlogProvider).notifyListeners();
                       });
                     }

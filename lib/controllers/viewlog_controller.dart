@@ -3,6 +3,7 @@ import 'package:intl/intl.dart';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
+import 'dart:math' as math;
 
 import '/constants.dart';
 import '/models/log_data.dart';
@@ -42,14 +43,6 @@ class ViewlogNotifier extends ChangeNotifier {
     int sec = DateTime.now().difference(startDate).inSeconds;
     int defChars = chars - startChars;
 
-    // キャプチャー用・テスト用
-    if (IS_TEST_VIEWLOG == true) {
-      sec = DateTime.now().second * 60 + 1;
-      sec = (sec / ((sec % 3) + 1)).toInt();
-      defChars = (sec / 60).toInt() * 400 + DateTime.now().second;
-      log('IS_TEST save sec=${sec} defChars=${defChars}');
-    }
-
     int temp_per_hour = (defChars * 3600 / sec / CHARS_PAGE).toInt();
     if (temp_per_hour <= 900) {
       if (sec >= 60 && defChars >= CHARS_PAGE) {
@@ -64,21 +57,38 @@ class ViewlogNotifier extends ChangeNotifier {
   Future read() async {
     list.clear();
 
-    String logdir = APP_DIR + '/data';
-    await Directory('${logdir}').create(recursive: true);
-    final String path = '${logdir}/${logfile}';
+    // キャプチャー用・テスト用
+    if (IS_TEST_VIEWLOG == true) {
+      var random = math.Random();
+      for (int i = 0; i < 5; i++) {
+        int ran1 = random.nextInt(10);
+        int ran2 = random.nextInt(10);
+        ViewlogData d = ViewlogData();
+        d.date = DateTime(2025, 7, 1 + ran1, 8 + ran2, 0, 0);
+        d.bookId = 'A776';
+        d.bookTitle = '草枕';
+        // chars * 8 / sec = 50;
+        d.sec = 120 + (60 * ran1);
+        d.chars = d.sec * 6 + (ran2 * 100);
+        list.add(d);
+      }
+    } else {
+      String logdir = APP_DIR + '/data';
+      await Directory('${logdir}').create(recursive: true);
+      final String path = '${logdir}/${logfile}';
 
-    String txt = '';
-    if (await File(path).exists()) {
-      txt += await File(path).readAsString();
-    }
-    if (await File(path + '.1').exists()) {
-      txt += await File(path + '.1').readAsString();
-    }
+      String txt = '';
+      if (await File(path).exists()) {
+        txt += await File(path).readAsString();
+      }
+      if (await File(path + '.1').exists()) {
+        txt += await File(path + '.1').readAsString();
+      }
 
-    for (String line in txt.split('\n')) {
-      ViewlogData? d = ViewlogData.fromTsv(line);
-      if (d != null) list.add(d);
+      for (String line in txt.split('\n')) {
+        ViewlogData? d = ViewlogData.fromTsv(line);
+        if (d != null) list.add(d);
+      }
     }
 
     list.sort((a, b) {
@@ -95,11 +105,11 @@ class ViewlogNotifier extends ChangeNotifier {
     this.notifyListeners();
   }
 
-  Future delete(int i) async {
+  Future deleteOne(int index) async {
     String logdir = APP_DIR + '/data';
     await Directory('${logdir}').create(recursive: true);
 
-    DateTime date = list[i].date;
+    DateTime date = list[index].date;
     String sDate = DateFormat("yyyy-MM-dd HH:mm:ss").format(date);
 
     bool done = false;
@@ -148,6 +158,29 @@ class ViewlogNotifier extends ChangeNotifier {
       }
     }
     if (done) read();
+  }
+
+  /// deleteAll
+  Future deleteAll() async {
+    try {
+      String logdir = APP_DIR + '/data';
+      await Directory('${logdir}').create(recursive: true);
+      final String path = '${logdir}/${logfile}';
+
+      String txt = '';
+      if (await File(path).exists()) {
+        File(path).deleteSync();
+      }
+      if (await File(path + '.1').exists()) {
+        File(path + '.1').deleteSync();
+      }
+      if (await File(path + '.2').exists()) {
+        File(path + '.2').deleteSync();
+      }
+      list.clear();
+    } on Exception catch (e) {
+      log('viewlog.deleteAll() ' + e.toString());
+    }
   }
 
   String listToTsv(List<ViewlogData> tempList) {

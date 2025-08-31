@@ -48,6 +48,7 @@ class EpubData {
 function mark1(tag1, col1) {
   var p1 = document.getElementById(tag1);
   p1.style.color = col1;
+  return p1.offsetTop;
 }  
 function mark0(tag1) {
   var p1 = document.getElementById(tag1);
@@ -123,7 +124,7 @@ function mark0(tag1) {
     return str;
   }
 
-  // ひとつだけ返す
+  /// ひとつだけ返す
   static String getInner(String text, String tag1, String tag2) {
     // <rb> /rb>
     // 獅子　← <ruby><rb>獅子</rb><rp>（</rp><rt>しし</rt><rp>）</rp></ruby>
@@ -136,6 +137,7 @@ function mark0(tag1) {
     return ret;
   }
 
+  /// ルビを残す（漢字とrbタグを消す）
   static String getRuby(String text1, Map<String, String> m) {
     String tag1 = '<ruby>';
     String tag2 = '</ruby>';

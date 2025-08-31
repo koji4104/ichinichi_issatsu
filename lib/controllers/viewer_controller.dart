@@ -163,14 +163,9 @@ class ViewerController {
           // ↓speech
           String text2 = orgText;
 
-          // 縦書き
-          if (env.writing_mode.val == 1) {
-            VerticalRotated.map.forEach((String key, String value) {
-              text2 = text2.replaceAll(key, value);
-            });
-          }
-
+          text2 = text2.replaceAll('。」', '」');
           text2 = text2.replaceAll('\n', '');
+
           List<String> lines2 = text2.split('<br />');
           String text1 = "";
           int ii = 0;
@@ -181,12 +176,33 @@ class ViewerController {
               linesTemp.add("");
               ii++;
             } else {
+              List<String> s2 = s.split('。');
+              for (String s3 in s2) {
+                if (s3 != '') {
+                  if (s2.length >= 2) s3 += '。';
+                  text1 += "<span id='p${ii}'>${s3}</span>";
+                  ii++;
+                  s3 = EpubData.getRuby(s3, m);
+                  linesTemp.add(s3);
+                }
+              }
+              text1 += "<br />";
+
+              /*
               text1 += "<p id='p${ii}'>${s}</p>";
               ii++;
               s = EpubData.getRuby(s, m);
               linesTemp.add(s);
+              */
             }
           }
+          // 縦書き
+          if (env.writing_mode.val == 1) {
+            VerticalRotated.map.forEach((String key, String value) {
+              text1 = text1.replaceAll(key, value);
+            });
+          }
+
           listSpeak.add(linesTemp);
           // ↑speech
 
@@ -389,13 +405,14 @@ class ViewerController {
       int maxdx = scrollCtrl!.position.maxScrollExtent.toInt();
 
       int dx = 0;
-      for (int i = 0; i < index + 1; i++) {
-        if (i < index) dx += listWidth[i].toInt();
+      for (int i = 0; i < index; i++) {
+        dx += listWidth[i].toInt();
       }
       dx += (listWidth[index] * ratio / 10000).toInt();
       if (dx > jumpMarginPx) dx -= jumpMarginPx.toInt();
       if ((dx - curdx).abs() < 2000) isJumping = false;
 
+      // スクロールが伸びきっていないとき少しスクロールさせる
       for (int x = 0; x < 10; x++) {
         if (dx >= maxdx && dx > curdx && maxdx > 5000) {
           int dx1 = curdx + (dx - curdx);
@@ -869,6 +886,11 @@ line-height: ${env.line_height.val}%;
   int speak2Index = 0;
   List<String> listSpeak2 = [];
 
+  completeSpeaking() {
+    speak2Index++;
+    speak2();
+  }
+
   Future startSpeaking() async {
     if (isSpeaking) return;
     if (initialized == false) {
@@ -879,8 +901,7 @@ line-height: ${env.line_height.val}%;
 
       // コールバック設定
       flutterTts.setCompletionHandler(() async {
-        speak2Index++;
-        speak2();
+        completeSpeaking();
       });
     }
 
@@ -923,6 +944,8 @@ line-height: ${env.line_height.val}%;
     await flutterTts.setPitch(pitch);
 
     // ボイス
+    //var voices = await flutterTts.getVoices;
+    //log('${voices}');
     //[log] voices O-ren
     //[log] voices Kyoko
     //[log] voices Hattori
@@ -989,10 +1012,12 @@ line-height: ${env.line_height.val}%;
 
   Future<String> getSpeakText1() async {
     String text = '';
-    if (speakIndex < listSpeak.length &&
-        speakLine >= listSpeak[speakIndex].length) {
-      speakIndex++;
-      speakLine = 0;
+    if (speakIndex < listSpeak.length) {
+      if (speakLine >= listSpeak[speakIndex].length) {
+        // 次の章へ
+        speakIndex++;
+        speakLine = 0;
+      }
     }
     if (speakIndex < listSpeak.length) {
       text = listSpeak[speakIndex][speakLine];
@@ -1008,6 +1033,7 @@ line-height: ${env.line_height.val}%;
     if (isSpeaking) {
       String text = await getSpeakText1();
       if (text != '') {
+        // 一度出たルビを適応
         m.forEach((String key, String value) {
           text = text.replaceAll(key, value);
         });
@@ -1017,21 +1043,29 @@ line-height: ${env.line_height.val}%;
           await listWebViewCtrl[oldIndex]!.evaluateJavascript(source: ss1);
           oldTag = '';
         }
-        String ss2 = 'mark1("p${speakLine}", "${env.getH3Css()}");';
-        await listWebViewCtrl[speakIndex]!.evaluateJavascript(source: ss2);
-        oldTag = 'p${speakLine}';
+        String newTag = "p${speakLine}";
+        String ss2 = 'mark1("${newTag}", "${env.getH3Css()}");';
+        var pos =
+            await listWebViewCtrl[speakIndex]!.evaluateJavascript(source: ss2);
+        oldTag = newTag;
         oldIndex = speakIndex;
         redraw();
+
+        // ページスクロール
+        int ratio = (pos * 10000 / listWidth[nowIndex]).toInt() - 180;
+        if (ratio - nowRatio > 180) {
+          jumpToIndex(speakIndex, ratio);
+        }
 
         text = text.replaceAll('<h3>', '');
         text = text.replaceAll('</h3>', '<br />');
         text = text.replaceAll('<h2>', '');
         text = text.replaceAll('</h2>', '<br />');
 
-        text = text.replaceAll('。」', '」');
-        text = text.replaceAll('。', '。<br />');
-        text = text.replaceAll('「', '<br />「<br />');
-        text = text.replaceAll('」', '<br />」<br />');
+        //text = text.replaceAll('。」', '」'); 既に変換済み 08/23
+        //text = text.replaceAll('。', '。<br />');
+        text = text.replaceAll('「', '「<br />');
+        text = text.replaceAll('」', '<br />」');
 
         listSpeak2.clear();
         List<String> list = text.split('<br />');
@@ -1042,34 +1076,6 @@ line-height: ${env.line_height.val}%;
         speak2Index = 0;
         log('[${nowIndex}]=[${speakIndex}] [${nowRatio}] mark1("p${speakLine}"); ${text}');
         speak2();
-
-        // ジャンプ長さ
-        int all = 0;
-        int sum = 0;
-        for (int i = 0; i < listSpeak[speakIndex].length; i++) {
-          int fsize = env.font_size.val;
-          double w = (env.writing_mode.val == 0)
-              ? (width - _widthPad)
-              : (height - _heightPad);
-          int chars = (w / fsize).toInt();
-          double dh = env.line_height.val / 100.0;
-
-          String s = listSpeak[speakIndex][i].replaceAll('<br />', '');
-          int lineCount = (s.length / chars).toInt() + 1;
-          int len = (lineCount * (fsize * dh)).toInt();
-
-          if (i < speakLine) sum += len;
-          all += len;
-        }
-
-        int ratio = (sum * 10000.0 / all).toInt();
-
-        bool isJump = true;
-        if (speakIndex == listWidth.length - 1) {
-          double rest = listWidth[speakIndex] * (10000 - ratio) / 10000;
-          if (rest < height) isJump = false;
-        }
-        if (isJump) jumpToIndex(speakIndex, ratio);
       } else {
         log('speak1() stop');
         stopSpeaking();
@@ -1079,8 +1085,12 @@ line-height: ${env.line_height.val}%;
 
   String getSpeakText2() {
     String text = '';
-    if (speak2Index < listSpeak2.length) {
-      text = listSpeak2[speak2Index];
+    for (int i = 0; i < 3; i++) {
+      if (text == '') {
+        if (speak2Index < listSpeak2.length) {
+          text = listSpeak2[speak2Index];
+        }
+      }
     }
     return text;
   }
@@ -1114,7 +1124,12 @@ line-height: ${env.line_height.val}%;
       }
       if (text != '') {
         await Future.delayed(Duration(milliseconds: speakWait));
-        await flutterTts.speak(text);
+        if (!Platform.isIOS && !Platform.isAndroid) {
+          await Future.delayed(Duration(milliseconds: 1000));
+          completeSpeaking();
+        } else {
+          await flutterTts.speak(text);
+        }
       } else {
         speakLine++;
         speak1();

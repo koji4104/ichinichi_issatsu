@@ -28,8 +28,7 @@ enum ViewerBarType {
   speakSettingsBar,
 }
 
-final viewerProvider =
-    ChangeNotifierProvider.autoDispose((ref) => ViewerNotifier(ref));
+final viewerProvider = ChangeNotifierProvider.autoDispose((ref) => ViewerNotifier(ref));
 
 class ViewerNotifier extends ChangeNotifier {
   ViewerNotifier(ref) {}
@@ -119,8 +118,7 @@ class ViewerController {
       EpubData e = new EpubData();
 
       for (int i = 0; i < 10000; i++) {
-        String path1 =
-            '${bookdir}/${book!.bookId}/text/ch${(i).toString().padLeft(4, '0')}.txt';
+        String path1 = '${bookdir}/${book!.bookId}/text/ch${(i).toString().padLeft(4, '0')}.txt';
         if (File(path1).existsSync()) {
           String orgText = await File(path1).readAsStringSync();
 
@@ -129,9 +127,7 @@ class ViewerController {
 
           // chars
           int fsize = env.font_size.val;
-          double w = (env.writing_mode.val == 0)
-              ? (width - _widthPad)
-              : (height - _heightPad);
+          double w = (env.writing_mode.val == 0) ? (width - _widthPad) : (height - _heightPad);
           int chars = ((w / fsize) - 0.0).toInt();
           body = body.replaceAll('\n', '');
           body = body.replaceAll('<h3>', '');
@@ -218,8 +214,7 @@ class ViewerController {
 
           if (Platform.isIOS) {
             ContextMenu contextMenu = ContextMenu(
-                settings: ContextMenuSettings(
-                    hideDefaultSystemContextMenuItems: true),
+                settings: ContextMenuSettings(hideDefaultSystemContextMenuItems: true),
                 menuItems: [],
                 onCreateContextMenu: (hitTestResult) async {
                   print("onCreateContextMenu");
@@ -228,8 +223,7 @@ class ViewerController {
                 onHideContextMenu: () {
                   print("onHideContextMenu");
                 },
-                onContextMenuActionItemClicked:
-                    (contextMenuItemClicked) async {});
+                onContextMenuActionItemClicked: (contextMenuItemClicked) async {});
             listContextMenu.add(contextMenu);
           } else {
             listContextMenu.add(null);
@@ -278,9 +272,7 @@ class ViewerController {
       await Future.delayed(Duration(milliseconds: 100));
 
       int ni = nowIndex;
-      if (listWebViewCtrl.length > ni &&
-          listWebViewCtrl[ni] != null &&
-          listText.length > ni) {
+      if (listWebViewCtrl.length > ni && listWebViewCtrl[ni] != null && listText.length > ni) {
         try {
           await listWebViewCtrl[ni]!.loadData(data: listText[ni]);
         } on Exception catch (e) {
@@ -358,8 +350,7 @@ class ViewerController {
         int i = nowIndex;
         await listWebViewCtrl[i]!.clearFocus();
         if (i - 1 >= 0) await listWebViewCtrl[i - 1]!.clearFocus();
-        if (i + 1 < listWebViewCtrl.length)
-          await listWebViewCtrl[i + 1]!.clearFocus();
+        if (i + 1 < listWebViewCtrl.length) await listWebViewCtrl[i + 1]!.clearFocus();
       }
     } catch (_) {
       log('err clearFocus() [${nowIndex}]');
@@ -399,6 +390,7 @@ class ViewerController {
       if (listWidth.length == 0) return true;
       if (index >= listWidth.length) index = listWidth.length - 1;
       if ((nowIndex - index).abs() >= 2) isLoading = true;
+
       nowIndex = index;
       nowRatio = ratio;
 
@@ -412,14 +404,13 @@ class ViewerController {
       dx += (listWidth[index] * ratio / 10000).toInt();
       if (dx > jumpMarginPx) dx -= jumpMarginPx.toInt();
       if ((dx - curdx).abs() < 2000) isJumping = false;
-      if (dx > maxdx - height.toInt()) dx = maxdx - height.toInt();
 
       // スクロールが伸びきっていないとき少しスクロールさせる
       for (int x = 0; x < 10; x++) {
         if (dx >= maxdx && dx > curdx && maxdx > 5000) {
-          int dx1 = curdx + (dx - curdx);
+          int dx1 = dx;
           if (dx1 > (curdx + 50000)) dx1 = (curdx + 50000);
-          if (dx1 > (maxdx - 5000)) dx1 = (maxdx - 5000);
+          if (dx1 > (maxdx - 1000)) dx1 = (maxdx - 1000);
 
           if (scrollCtrl!.hasClients == true) {
             log('jumpTo dx>max [x${x}][${index}] cur=${curdx} dx=${dx} max=${maxdx} dx1=${dx1}');
@@ -441,8 +432,8 @@ class ViewerController {
 
       if (dx < maxdx && scrollCtrl!.hasClients == true) {
         log('jumpTo start [${index}][${(ratio / 100).toInt()}%] cur=${curdx} dx=${dx} max=${maxdx}');
-        await scrollCtrl!.animateTo(dx.toDouble(),
-            duration: Duration(milliseconds: 500), curve: Curves.linear);
+        await scrollCtrl!
+            .animateTo(dx.toDouble(), duration: Duration(milliseconds: 500), curve: Curves.linear);
         log('jumpTo end');
       } else {
         log('jumpTo else [${index}][${(ratio / 100).toInt()}%] cur=${curdx} dx=${dx} max=${maxdx}');
@@ -668,14 +659,12 @@ line-height: ${env.line_height.val}%;
     if (isLoading) return Container();
 
     PlatformInAppWebViewController.debugLoggingSettings.enabled = false;
-    ScrollPhysics physics = (barType == ViewerBarType.clipTextBar)
-        ? NeverScrollableScrollPhysics()
-        : ScrollPhysics();
+    ScrollPhysics physics =
+        (barType == ViewerBarType.clipTextBar) ? NeverScrollableScrollPhysics() : ScrollPhysics();
 
     try {
       return ListView.builder(
-        scrollDirection:
-            (env.writing_mode.val == 0) ? Axis.vertical : Axis.horizontal,
+        scrollDirection: (env.writing_mode.val == 0) ? Axis.vertical : Axis.horizontal,
         reverse: (env.writing_mode.val == 0) ? false : true,
         shrinkWrap: true,
         controller: scrollCtrl,
@@ -730,8 +719,7 @@ line-height: ${env.line_height.val}%;
         findInteractionController: null,
         contextMenu: listContextMenu[index],
         onWebViewCreated: (controller) async {
-          if (listWebViewCtrl.length > index)
-            listWebViewCtrl[index] = controller;
+          if (listWebViewCtrl.length > index) listWebViewCtrl[index] = controller;
         },
         onLoadStart: (controller, url) async {},
         onLoadStop: (controller, url) async {
@@ -749,11 +737,11 @@ line-height: ${env.line_height.val}%;
     try {
       dynamic vw = null;
       if (env.writing_mode.val == 0) {
-        vw = await controller.evaluateJavascript(
-            source: '''(() => { return document.body.scrollHeight; })()''');
+        vw = await controller
+            .evaluateJavascript(source: '''(() => { return document.body.scrollHeight; })()''');
       } else {
-        vw = await controller.evaluateJavascript(
-            source: '''(() => { return document.body.scrollWidth; })()''');
+        vw = await controller
+            .evaluateJavascript(source: '''(() => { return document.body.scrollWidth; })()''');
       }
       if (vw != null && vw != '') {
         double dw = double.parse('${vw}');
@@ -973,9 +961,7 @@ line-height: ${env.line_height.val}%;
     }
 
     int fsize = env.font_size.val;
-    double w = (env.writing_mode.val == 0)
-        ? (width - _widthPad)
-        : (height - _heightPad);
+    double w = (env.writing_mode.val == 0) ? (width - _widthPad) : (height - _heightPad);
     int chars = (w / fsize).toInt();
     double dh = env.line_height.val / 100.0;
 
@@ -1049,21 +1035,24 @@ line-height: ${env.line_height.val}%;
         }
         String newTag = "p${speakLine}";
         String ss2 = 'mark1("${newTag}", "${env.getH3Css()}");';
-        var pos =
-            await listWebViewCtrl[speakIndex]!.evaluateJavascript(source: ss2);
+        var pos = await listWebViewCtrl[speakIndex]!.evaluateJavascript(source: ss2);
         oldTag = newTag;
         oldIndex = speakIndex;
         redraw();
 
         // ページスクロール
         if (pos != null) {
-          int ratio = (pos * 10000 / listWidth[speakIndex]).toInt() - 150;
-          if (ratio - nowRatio > 150) {
-            jumpToIndex(speakIndex, ratio);
+          int rest = (listWidth[speakIndex] - pos).toInt();
+          if (speakIndex >= listWidth.length - 1 && rest < (height + 100).toInt()) {
+            log('no scroll');
+          } else {
+            int ratio = (pos * 10000 / listWidth[speakIndex]).toInt() - 150;
+            if (ratio - nowRatio > 150) {
+              jumpToIndex(speakIndex, ratio);
+            }
           }
         } else if (env.writing_mode.val == 1) {
-          int ratio =
-              (speakLine * 10000 / listSpeak[speakIndex].length).toInt();
+          int ratio = (speakLine * 10000 / listSpeak[speakIndex].length).toInt();
           if (ratio - nowRatio > 150) {
             jumpToIndex(speakIndex, ratio);
           }
@@ -1163,8 +1152,7 @@ line-height: ${env.line_height.val}%;
   }
 
   Future test() async {
-    await listWebViewCtrl[nowIndex]!
-        .evaluateJavascript(source: 'location.href="#p2"');
+    await listWebViewCtrl[nowIndex]!.evaluateJavascript(source: 'location.href="#p2"');
     redraw();
   }
 }

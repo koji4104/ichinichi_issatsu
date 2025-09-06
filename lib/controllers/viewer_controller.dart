@@ -366,6 +366,7 @@ class ViewerController {
     }
   }
 
+  /// index=章　ratio=章内の1万分率
   Future jumpToIndex(int index, int ratio) async {
     bool r = await jumpToIndex1(index, ratio);
     if (r == false) {
@@ -396,7 +397,7 @@ class ViewerController {
         return true;
       }
       if (listWidth.length == 0) return true;
-      if (index > listWidth.length - 1) index = listWidth.length - 1;
+      if (index >= listWidth.length) index = listWidth.length - 1;
       if ((nowIndex - index).abs() >= 2) isLoading = true;
       nowIndex = index;
       nowRatio = ratio;
@@ -411,6 +412,7 @@ class ViewerController {
       dx += (listWidth[index] * ratio / 10000).toInt();
       if (dx > jumpMarginPx) dx -= jumpMarginPx.toInt();
       if ((dx - curdx).abs() < 2000) isJumping = false;
+      if (dx > maxdx - height.toInt()) dx = maxdx - height.toInt();
 
       // スクロールが伸びきっていないとき少しスクロールさせる
       for (int x = 0; x < 10; x++) {
@@ -1017,6 +1019,8 @@ line-height: ${env.line_height.val}%;
         // 次の章へ
         speakIndex++;
         speakLine = 0;
+        nowIndex = speakIndex;
+        nowRatio = 0;
       }
     }
     if (speakIndex < listSpeak.length) {
@@ -1052,9 +1056,17 @@ line-height: ${env.line_height.val}%;
         redraw();
 
         // ページスクロール
-        int ratio = (pos * 10000 / listWidth[nowIndex]).toInt() - 180;
-        if (ratio - nowRatio > 180) {
-          jumpToIndex(speakIndex, ratio);
+        if (pos != null) {
+          int ratio = (pos * 10000 / listWidth[speakIndex]).toInt() - 150;
+          if (ratio - nowRatio > 150) {
+            jumpToIndex(speakIndex, ratio);
+          }
+        } else if (env.writing_mode.val == 1) {
+          int ratio =
+              (speakLine * 10000 / listSpeak[speakIndex].length).toInt();
+          if (ratio - nowRatio > 150) {
+            jumpToIndex(speakIndex, ratio);
+          }
         }
 
         text = text.replaceAll('<h3>', '');

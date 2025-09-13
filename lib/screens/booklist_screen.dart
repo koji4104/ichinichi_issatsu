@@ -8,6 +8,7 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 
 import '/commons/base_screen.dart';
+import '/commons/download_screen.dart';
 import '/commons/widgets.dart';
 import '/controllers/applog_controller.dart';
 import '/controllers/epub_controller.dart';
@@ -131,8 +132,8 @@ class BookListScreen extends DownloadScreen {
                   backgroundColor: Color(0xFF444488),
                   icon: Icons.download,
                   label: l10n('download'),
-                  spacing: 0,
-                  padding: EdgeInsets.fromLTRB(0, 0, 0, 0),
+                  //spacing: 0,
+                  //padding: EdgeInsets.fromLTRB(0, 0, 0, 0),
                 ),
               if (isAddDownload == true)
                 MySlidableAction(
@@ -147,8 +148,8 @@ class BookListScreen extends DownloadScreen {
                   backgroundColor: Color(0xFF444488),
                   icon: Icons.download,
                   label: l10n('download'),
-                  spacing: 0,
-                  padding: EdgeInsets.fromLTRB(0, 0, 0, 0),
+                  //spacing: 0,
+                  //padding: EdgeInsets.fromLTRB(0, 0, 0, 0),
                 ),
               MySlidableAction(
                 onPressed: (_) {
@@ -163,8 +164,8 @@ class BookListScreen extends DownloadScreen {
                 backgroundColor: Color(0xFF558866),
                 icon: Icons.circle_outlined,
                 label: l10n('tag'),
-                spacing: 0,
-                padding: EdgeInsets.fromLTRB(0, 0, 0, 0),
+                //spacing: 0,
+                //padding: EdgeInsets.fromLTRB(0, 0, 0, 0),
               ),
               MySlidableAction(
                 onPressed: (_) {
@@ -184,8 +185,8 @@ class BookListScreen extends DownloadScreen {
                 backgroundColor: Colors.redAccent,
                 icon: Icons.delete,
                 label: l10n('delete'),
-                spacing: 0,
-                padding: EdgeInsets.fromLTRB(0, 0, 0, 0),
+                //spacing: 0,
+                //padding: EdgeInsets.fromLTRB(0, 0, 0, 0),
               ),
             ],
           ),

@@ -224,10 +224,13 @@ class MyPageTransitionsTheme extends PageTransitionsTheme {
 }
 
 Widget MyText(String text,
-    {int? maxLength, int? maxLines, bool? noScale, bool? center}) {
+    {int? maxLength, int? maxLines, bool? noScale, bool? center, bool? small}) {
   double scale = myTextScale;
   if (noScale != null && scale > 1.3) {
     scale = 1.3;
+  }
+  if (small != null) {
+    scale *= 0.8;
   }
   if (maxLength == null) maxLength = 40;
   if (maxLines == null) maxLines = 2;
@@ -449,8 +452,8 @@ class MySlidableAction extends StatelessWidget {
     this.icon,
     this.label,
     this.borderRadius = BorderRadius.zero,
-    this.spacing = 1.0,
-    this.padding,
+    //this.spacing = 0,
+    //this.padding,
   });
 
   final int flex = 1;
@@ -458,10 +461,11 @@ class MySlidableAction extends StatelessWidget {
   final Color? foregroundColor;
   final SlidableActionCallback? onPressed;
   final IconData? icon;
-  final double spacing;
   final String? label;
-  final EdgeInsets? padding;
   final BorderRadius borderRadius;
+
+  //final double spacing;
+  //final EdgeInsets? padding;
 
   @override
   Widget build(BuildContext context) {

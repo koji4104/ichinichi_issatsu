@@ -7,6 +7,7 @@ import 'package:flutter/gestures.dart';
 
 import '/models/book_data.dart';
 import '/commons/base_screen.dart';
+import '/commons/download_screen.dart';
 import '/commons/widgets.dart';
 import '/controllers/epub_controller.dart';
 import '/controllers/browser_controller.dart';
@@ -268,8 +269,8 @@ class BrowserScreen extends DownloadScreen {
                   backgroundColor: Colors.redAccent,
                   icon: Icons.delete,
                   label: l10n('delete'),
-                  spacing: 0,
-                  padding: EdgeInsets.fromLTRB(0, 0, 0, 0),
+                  //spacing: 0,
+                  //padding: EdgeInsets.fromLTRB(0, 0, 0, 0),
                 ),
             ],
           ),

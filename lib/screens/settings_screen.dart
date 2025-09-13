@@ -16,7 +16,6 @@ class SettingsScreen extends BaseScreen {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     super.build(context, ref);
-
     return Scaffold(
       appBar: AppBar(
         title: Text(l10n("option")),
@@ -47,6 +46,7 @@ class SettingsScreen extends BaseScreen {
     list.add(SizedBox(height: 16));
     list.add(MySettingsTile(data: env.speak_voice));
     list.add(MySettingsTile(data: env.speak_speed));
+    list.add(MyText(l10n('speaking_is_only_horizontal_text'), small: true));
 
     String sph = l10n('per_hour');
     String spage = l10n('page');

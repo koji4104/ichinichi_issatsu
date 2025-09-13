@@ -1000,7 +1000,7 @@ line-height: ${env.line_height.val}%;
 
   Future<String> getSpeakText1() async {
     String text = '';
-    if (speakIndex < listSpeak.length) {
+    if (speakIndex < listSpeak.length - 1) {
       if (speakLine >= listSpeak[speakIndex].length) {
         // 次の章へ
         speakIndex++;
@@ -1010,10 +1010,12 @@ line-height: ${env.line_height.val}%;
       }
     }
     if (speakIndex < listSpeak.length) {
-      text = listSpeak[speakIndex][speakLine];
-      if (text == '') {
-        speakLine++;
-        text = await getSpeakText1();
+      if (speakLine < listSpeak[speakIndex].length) {
+        text = listSpeak[speakIndex][speakLine];
+        if (text == '') {
+          speakLine++;
+          text = await getSpeakText1();
+        }
       }
     }
     return text;
@@ -1043,11 +1045,11 @@ line-height: ${env.line_height.val}%;
         // ページスクロール
         if (pos != null) {
           int rest = (listWidth[speakIndex] - pos).toInt();
-          if (speakIndex >= listWidth.length - 1 && rest < (height + 100).toInt()) {
+          if (speakIndex >= listWidth.length - 1 && rest < (height - 100).toInt()) {
             log('no scroll');
           } else {
             int ratio = (pos * 10000 / listWidth[speakIndex]).toInt() - 150;
-            if (ratio - nowRatio > 150) {
+            if (ratio - nowRatio > 100) {
               jumpToIndex(speakIndex, ratio);
             }
           }
@@ -1135,8 +1137,6 @@ line-height: ${env.line_height.val}%;
         speakLine++;
         speak1();
       }
-    } else {
-      stopSpeaking();
     }
   }
 

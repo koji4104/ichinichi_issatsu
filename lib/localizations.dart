@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'dart:developer';
 
 String myLanguageCode = '';
-String defaultLanguageCode = 'en';
+String defaultLanguageCode = 'ja';
 
 class SampleLocalizationsDelegate extends LocalizationsDelegate<Localized> {
   const SampleLocalizationsDelegate();
@@ -72,6 +72,7 @@ class Localized {
       'speak_speed': 'Speed',
       'speak_voice': 'Voice',
       'speak_volume': 'Volume',
+      'speaking_is_only_horizontal_text': 'Speaking is only horizontal text',
       // ICON
       'toc': 'TOC',
       'jump': 'Jump',
@@ -137,6 +138,7 @@ class Localized {
       'speak_speed': '速さ',
       'speak_voice': '声',
       'speak_volume': '音量',
+      'speaking_is_only_horizontal_text': '読み上げ機能は横書きのみです',
       // ICON
       'toc': '目次',
       'jump': '最後',
@@ -165,55 +167,6 @@ class Localized {
         s = _localizedValues["ja"]?[text];
       else
         s = _localizedValues["en"]?[text];
-    } on Exception catch (e) {
-      log('Localized.text() ${e.toString()}');
-    }
-    if (s == null && text.contains('_desc') == false)
-      s = text;
-    else if (s == null && text.contains('_desc') == true) s = '';
-    return s != null ? s : text;
-  }
-
-  static Map<String, Map<String, String>> _manualValues = {
-    'en': {
-      'home': 'Home',
-      'search': 'Brow',
-      'settings': 'Settings',
-      'list': '',
-      'bookmark_border_outlined': '',
-      'edit_outlined': '',
-      'article_outlined': '',
-      'settings': '',
-      'circle_outlined': '',
-      'download': '',
-      'delete': '',
-    },
-    'ja': {
-      'home': 'ホーム',
-      'search': '探す',
-      'settings': '設定',
-      'list': '目次',
-      'bookmark_border_outlined': '',
-      'edit_outlined': '',
-      'article_outlined': '',
-      'settings': '',
-      'circle_outlined': '',
-      'download': '',
-      'delete': '',
-    },
-  };
-
-  static String manual(String text) {
-    String? s;
-    try {
-      if (myLanguageCode == 'ja')
-        s = _manualValues["ja"]?[text];
-      else if (myLanguageCode == 'en')
-        s = _manualValues["en"]?[text];
-      else if (myLanguageCode == '' && defaultLanguageCode == "ja")
-        s = _manualValues["ja"]?[text];
-      else
-        s = _manualValues["en"]?[text];
     } on Exception catch (e) {
       log('Localized.text() ${e.toString()}');
     }

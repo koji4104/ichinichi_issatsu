@@ -329,7 +329,9 @@ class ViewerScreen extends BaseScreen with WidgetsBindingObserver {
     double barHeight = 200;
     double ffBottom = 40 - barHeight; // -160
     bool isSpeaking = viewerCtrl.isSpeaking;
-    if (barType == ViewerBarType.speakSettingsBar) {
+    if (barType == ViewerBarType.speakSettingsBar &&
+        env.writing_mode.val == 0) {
+      // 読み上げは横書きのみ
       ffBottom = 0;
     }
 
@@ -377,10 +379,20 @@ class ViewerScreen extends BaseScreen with WidgetsBindingObserver {
       },
     );
 
-    Widget leftBtn = SizedBox(width: iconSize + 24, height: iconSize + 24);
-    if (isSpeaking)
+    Widget space = SizedBox(width: iconSize + 24, height: iconSize + 24);
+    Widget e = Expanded(child: SizedBox(width: 1));
+
+    Widget leftBtn = space;
+    if (env.writing_mode.val == 1)
+      leftBtn = space;
+    else if (isSpeaking)
       leftBtn = btnStop;
     else if (isActionBar() && !isSpeaking) leftBtn = btnStart;
+
+    Widget rightBtn = space;
+    if (env.writing_mode.val == 1)
+      rightBtn = space;
+    else if (isActionBar()) rightBtn = btnSettings;
 
     Widget bar = Container(
       color: env.getBackColor(),
@@ -390,12 +402,10 @@ class ViewerScreen extends BaseScreen with WidgetsBindingObserver {
           children: [
             SizedBox(width: 20, height: iconSize),
             leftBtn,
-            Expanded(child: SizedBox(width: 1)),
+            e,
             wText,
-            Expanded(child: SizedBox(width: 1)),
-            isActionBar()
-                ? btnSettings
-                : SizedBox(width: iconSize + 24, height: iconSize + 24),
+            e,
+            rightBtn,
             SizedBox(width: 20),
           ],
         ),
@@ -582,6 +592,7 @@ class ViewerScreen extends BaseScreen with WidgetsBindingObserver {
     list.add(SizedBox(height: 10));
     list.add(MySettingsTile(data: env.speak_voice));
     list.add(MySettingsTile(data: env.speak_speed));
+    list.add(MyText(l10n('speaking_is_only_horizontal_text'), small: true));
 
     Widget bar = Container(
       color: myTheme.cardColor,
@@ -789,8 +800,8 @@ class ViewerScreen extends BaseScreen with WidgetsBindingObserver {
                           backgroundColor: Colors.redAccent,
                           icon: Icons.delete,
                           label: null,
-                          spacing: 0,
-                          padding: EdgeInsets.fromLTRB(0, 0, 0, 0),
+                          //spacing: 0,
+                          //padding: EdgeInsets.fromLTRB(0, 0, 0, 0),
                         ),
                       ],
                     ),

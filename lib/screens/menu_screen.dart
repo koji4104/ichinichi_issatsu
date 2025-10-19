@@ -41,14 +41,11 @@ class MenuScreen extends BaseScreen {
         onTap: _onItemTapped,
         items: [
           BottomNavigationBarItem(
-              icon: Icon(Icons.home_outlined, size: ICON_BUTTON_SIZE),
-              label: l10n('home')),
+              icon: Icon(Icons.home_outlined, size: ICON_BUTTON_SIZE), label: l10n('home')),
           BottomNavigationBarItem(
-              icon: Icon(Icons.search, size: ICON_BUTTON_SIZE),
-              label: l10n('brows')),
+              icon: Icon(Icons.search, size: ICON_BUTTON_SIZE), label: l10n('brows')),
           BottomNavigationBarItem(
-              icon: Icon(Icons.settings_outlined, size: ICON_BUTTON_SIZE),
-              label: l10n('option')),
+              icon: Icon(Icons.settings_outlined, size: ICON_BUTTON_SIZE), label: l10n('option')),
         ],
         type: BottomNavigationBarType.fixed,
       ),

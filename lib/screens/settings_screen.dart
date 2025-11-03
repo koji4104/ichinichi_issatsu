@@ -40,8 +40,8 @@ class SettingsScreen extends BaseScreen {
     list.add(MySettingsTile(data: env.font_family));
 
     list.add(SizedBox(height: 16));
-    list.add(MySettingsTile(data: env.language_code));
     list.add(MySettingsTile(data: env.ui_text_scale));
+    list.add(MySettingsTile(data: env.language_code));
 
     list.add(SizedBox(height: 16));
     list.add(MySettingsTile(data: env.speak_voice));
@@ -94,10 +94,7 @@ class SettingsScreen extends BaseScreen {
                 applicationVersion: info.version,
                 applicationIcon: Container(
                   padding: EdgeInsets.all(8),
-                  child: Image(
-                      image: AssetImage('lib/assets/appicon.png'),
-                      width: 64,
-                      height: 64),
+                  child: Image(image: AssetImage('lib/assets/appicon.png'), width: 64, height: 64),
                 ),
               );
             }),

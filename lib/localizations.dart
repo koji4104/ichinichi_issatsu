@@ -90,8 +90,8 @@ class Localized {
     },
     'ja': {
       'app_name': '一日一冊',
-      'language_code': 'アプリ 言語',
-      'font_size': '文字サイズ',
+      'language_code': '表示言語',
+      'font_size': '本文 文字サイズ',
       'font_family': 'フォント',
       'sans_serif': 'ゴシック',
       'serif': '明朝',

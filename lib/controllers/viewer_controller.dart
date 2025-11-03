@@ -989,7 +989,10 @@ line-height: ${env.line_height.val}%;
       }
       speakLine = i;
     }
-
+    if (IS_TEST_SS) {
+      speakIndex = 1;
+      speakLine = 7;
+    }
     isSpeaking = true;
     speak1();
     redraw();
@@ -1127,7 +1130,8 @@ line-height: ${env.line_height.val}%;
       }
       if (text != '') {
         await Future.delayed(Duration(milliseconds: speakWait));
-        if (!Platform.isIOS && !Platform.isAndroid) {
+        if (IS_TEST_SS) {
+        } else if (!Platform.isIOS && !Platform.isAndroid) {
           await Future.delayed(Duration(milliseconds: 1000));
           completeSpeaking();
         } else {

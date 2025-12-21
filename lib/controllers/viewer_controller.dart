@@ -160,6 +160,7 @@ class ViewerController {
           String text2 = orgText;
 
           text2 = text2.replaceAll('。」', '」');
+          text2 = text2.replaceAll('」。', '」');
           text2 = text2.replaceAll('\n', '');
 
           List<String> lines2 = text2.split('<br />');

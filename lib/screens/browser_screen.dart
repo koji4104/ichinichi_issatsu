@@ -91,9 +91,10 @@ class BrowserScreen extends DownloadScreen {
                   if (webViewController != null) {
                     String? title = await webViewController!.getTitle();
                     alertDialog('save', msg: title).then((ret) {
-                      ref.read(browserProvider).webViewController =
-                          webViewController;
-                      ref.read(browserProvider).saveFavorite();
+                      if (ret == true) {
+                        ref.read(browserProvider).webViewController = webViewController;
+                        ref.read(browserProvider).saveFavorite();
+                      }
                     });
                   }
                 },
@@ -134,8 +135,7 @@ class BrowserScreen extends DownloadScreen {
         children: [
           Row(children: [
             Expanded(child: SizedBox(width: 1)),
-            Text('${l10n('swipe_to_delete')}',
-                textScaler: TextScaler.linear(myTextScale * 0.7)),
+            Text('${l10n('swipe_to_delete')}', textScaler: TextScaler.linear(myTextScale * 0.7)),
             SizedBox(width: 10),
           ]),
           Expanded(child: getUriList()),
@@ -161,8 +161,7 @@ class BrowserScreen extends DownloadScreen {
             List<MetaTag> metaTagList = await webViewController!.getMetaTags();
             for (MetaTag tag in metaTagList) {
               if (tag.attrs!.length > 0) {
-                if (tag.attrs![0].name == 'property' &&
-                    tag.attrs![0].value == 'og:title') {
+                if (tag.attrs![0].name == 'property' && tag.attrs![0].value == 'og:title') {
                   log('onLoadStop og:title = ${tag.content}');
                   siteTitle = tag.content;
                   break;
@@ -259,9 +258,7 @@ class BrowserScreen extends DownloadScreen {
                     deleteDialog().then((ret) {
                       if (ret) {
                         log('delette');
-                        ref
-                            .read(browserProvider)
-                            .deleteFavorite(favoList[index].uri);
+                        ref.read(browserProvider).deleteFavorite(favoList[index].uri);
                       }
                     });
                   },
@@ -306,8 +303,7 @@ class BrowserScreen extends DownloadScreen {
     Widget child = Row(children: [
       w,
       Expanded(
-        child:
-            Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+        child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
           e,
           wTitle,
           Row(children: [Expanded(child: wUri)]),

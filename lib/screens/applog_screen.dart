@@ -32,7 +32,9 @@ class ApplogScreen extends BaseScreen {
             icon: Icon(Icons.delete_outline),
             onPressed: () async {
               alertDialog('delete').then((ret) {
-                MyLog.deleteAll();
+                if (ret == true) {
+                  MyLog.deleteAll();
+                }
               });
             },
           ),

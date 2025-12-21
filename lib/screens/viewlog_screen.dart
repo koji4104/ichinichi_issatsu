@@ -45,8 +45,10 @@ class ViewlogScreen extends BaseScreen {
             icon: Icon(Icons.delete_outline),
             onPressed: () async {
               alertDialog('delete').then((ret) {
-                ref.read(viewlogProvider).deleteAll();
-                ref.read(viewlogProvider).notifyListeners();
+                if (ret == true) {
+                  ref.read(viewlogProvider).deleteAll();
+                  ref.read(viewlogProvider).notifyListeners();
+                }
               });
             },
           ),
@@ -81,8 +83,7 @@ class ViewlogScreen extends BaseScreen {
     return Row(
       children: [
         Expanded(child: SizedBox(width: 1)),
-        Text('${l10n('swipe_to_delete')}',
-            textScaler: TextScaler.linear(myTextScale * 0.7)),
+        Text('${l10n('swipe_to_delete')}', textScaler: TextScaler.linear(myTextScale * 0.7)),
       ],
     );
   }
@@ -96,8 +97,7 @@ class ViewlogScreen extends BaseScreen {
         Expanded(flex: 1, child: Text('Date', textScaler: sc)),
         Expanded(flex: 1, child: Text('pages', textScaler: sc, textAlign: al)),
         Expanded(flex: 1, child: Text('min', textScaler: sc, textAlign: al)),
-        Expanded(
-            flex: 1, child: Text('pages/h', textScaler: sc, textAlign: al)),
+        Expanded(flex: 1, child: Text('pages/h', textScaler: sc, textAlign: al)),
         SizedBox(width: 20),
       ],
     );

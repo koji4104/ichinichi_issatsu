@@ -176,7 +176,10 @@ class ViewerController {
               List<String> s2 = s.split('。');
               for (String s3 in s2) {
                 if (s3 != '') {
-                  if (s2.length >= 2) s3 += '。';
+                  if (s2.length >= 2) {
+                    s3 += '。';
+                    s3 = s3.replaceAll('」。', '」');
+                  }
                   text1 += "<span id='p${ii}'>${s3}</span>";
                   ii++;
                   s3 = EpubData.getRuby(s3, m);

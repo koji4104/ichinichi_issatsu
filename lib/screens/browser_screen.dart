@@ -85,7 +85,6 @@ class BrowserScreen extends DownloadScreen {
           actions: [
             if (isActionButton())
               MyIconLabelButton(
-                //label: l10n('bookmark'),
                 icon: Icon(Icons.star_border),
                 onPressed: () async {
                   if (webViewController != null) {
@@ -106,7 +105,6 @@ class BrowserScreen extends DownloadScreen {
           child: Stack(children: [
             Container(
               padding: DEF_MENU_PADDING,
-              //child: ref.read(epubProvider).downloadCtrl.browser8(),
               child: epubCtrl.downloadCtrl.browser8(),
             ),
             Container(
@@ -165,8 +163,7 @@ class BrowserScreen extends DownloadScreen {
                   log('onLoadStop og:title = ${tag.content}');
                   siteTitle = tag.content;
                   break;
-                } else if (tag.attrs![0].name == 'property' &&
-                    tag.attrs![0].value == 'twitter:title') {
+                } else if (tag.attrs![0].name == 'property' && tag.attrs![0].value == 'twitter:title') {
                   log('onLoadStop twitter:title = ${tag.content}');
                   siteTitle = tag.content;
                   break;
@@ -194,9 +191,7 @@ class BrowserScreen extends DownloadScreen {
       if (url == null) return;
       String? body = await webViewController!.getHtml();
       if (body == null) return;
-      //ref.read(epubProvider).webViewController = webViewController;
       epubCtrl.webViewController = webViewController;
-      //await ref.read(epubProvider).checkHtml(url, body);
 
       await epubCtrl.checkHtml(url, body);
     } catch (e) {
@@ -211,7 +206,6 @@ class BrowserScreen extends DownloadScreen {
 
   @override
   Future onPressedCloseButton() async {
-    //ref.read(epubProvider).setStatusNone();
     epubCtrl.setStatusNone();
   }
 
@@ -330,7 +324,5 @@ class BrowserScreen extends DownloadScreen {
   }
 
   @override
-  Future onDownloadFinished() async {
-    //ref.read(booklistProvider).readBookList();
-  }
+  Future onDownloadFinished() async {}
 }

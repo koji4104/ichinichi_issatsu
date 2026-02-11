@@ -5,6 +5,8 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:flutter/services.dart';
+import 'package:airplane_mode_checker/airplane_mode_checker.dart'; // airplane
+//import 'package:is_airplane_mode/is_airplane_mode.dart';
 
 import '/commons/base_screen.dart';
 import '/commons/widgets.dart';
@@ -24,6 +26,8 @@ class ViewerScreen extends BaseScreen with WidgetsBindingObserver {
   ViewerBarType barType = ViewerBarType.none;
 
   ViewerController viewerCtrl = ViewerController();
+
+  bool isAirplane = false;
 
   bool isActionBar() {
     return barType != ViewerBarType.none;
@@ -98,9 +102,7 @@ class ViewerScreen extends BaseScreen with WidgetsBindingObserver {
         body: SafeArea(
           child: Stack(children: [
             Container(
-              padding: env.writing_mode.val == 0
-                  ? DEF_VIEW_PADDING_TB
-                  : DEF_VIEW_PADDING_RL,
+              padding: env.writing_mode.val == 0 ? DEF_VIEW_PADDING_TB : DEF_VIEW_PADDING_RL,
               color: env.getBackColor(),
               child: Widget1(),
             ),
@@ -111,19 +113,17 @@ class ViewerScreen extends BaseScreen with WidgetsBindingObserver {
                 child: RawGestureDetector(
                   behavior: HitTestBehavior.translucent,
                   gestures: {
-                    TapGestureRecognizer: GestureRecognizerFactoryWithHandlers<
-                        TapGestureRecognizer>(
+                    TapGestureRecognizer:
+                        GestureRecognizerFactoryWithHandlers<TapGestureRecognizer>(
                       () => TapGestureRecognizer(),
                       (TapGestureRecognizer instance) {
                         instance
                           ..onTapUp = (TapUpDetails details) {
                             if (barType != ViewerBarType.actionBar) {
-                              ref.read(viewerProvider).barType =
-                                  ViewerBarType.actionBar;
+                              ref.read(viewerProvider).barType = ViewerBarType.actionBar;
                               redraw();
                             } else {
-                              ref.read(viewerProvider).barType =
-                                  ViewerBarType.none;
+                              ref.read(viewerProvider).barType = ViewerBarType.none;
                               redraw();
                             }
                           }
@@ -261,22 +261,27 @@ class ViewerScreen extends BaseScreen with WidgetsBindingObserver {
             redraw();
           },
         ),
-      if (isActionBar()) SizedBox(width: pad)
+      if (isAirplane) SizedBox(width: 10),
+      if (isAirplane) Icon(Icons.airplanemode_active, size: 30),
+      if (isActionBar()) SizedBox(width: 20)
     ]);
   }
 
-  // トップバー
+  //-------------------------------------------------------
+  /// トップバー
+  //-------------------------------------------------------
   Widget topBar() {
-    double barHeight = 70;
-    double ffTop = -30;
+    double barHeight = 60;
+    double ffTop = -25;
     if (isActionBar()) {
       ffTop = 0;
     }
+    ffTop = 0;
 
     Widget wText = Text(
       viewerCtrl.getTitle(),
       overflow: TextOverflow.ellipsis,
-      maxLines: 1,
+      maxLines: 2,
       textAlign: TextAlign.center,
       textScaler: TextScaler.linear(0.9),
       style: TextStyle(color: env.getFrontColor()),
@@ -305,9 +310,12 @@ class ViewerScreen extends BaseScreen with WidgetsBindingObserver {
             Row(children: [
               SizedBox(width: 4),
               Expanded(child: wText),
-              SizedBox(width: 4),
+              SizedBox(width: 10),
+              if (isAirplane) Icon(Icons.airplanemode_active, size: 30),
+              if (isAirplane) SizedBox(width: 20),
             ]),
-            SizedBox(height: 6),
+            //SizedBox(height: 6),
+            Expanded(child: SizedBox(height: 1)),
           ],
         ),
       );
@@ -324,14 +332,16 @@ class ViewerScreen extends BaseScreen with WidgetsBindingObserver {
     );
   }
 
-  // ボトムバー
+  //-------------------------------------------------------
+  /// ボトムバー
+  //-------------------------------------------------------
   Widget bottomBar() {
     double barHeight = 200;
     double ffBottom = 40 - barHeight; // -160
     bool isSpeaking = viewerCtrl.isSpeaking;
-    if (barType == ViewerBarType.speakSettingsBar &&
-        env.writing_mode.val == 0) {
-      // 読み上げは横書きのみ
+
+    // 読み上げ機能　横書き(0)のみ
+    if (barType == ViewerBarType.speakSettingsBar && env.writing_mode.val == 0) {
       ffBottom = 0;
     }
 
@@ -400,13 +410,13 @@ class ViewerScreen extends BaseScreen with WidgetsBindingObserver {
         SizedBox(height: 4),
         Row(
           children: [
-            SizedBox(width: 20, height: iconSize),
+            SizedBox(width: 50, height: iconSize),
             leftBtn,
             e,
             wText,
             e,
             rightBtn,
-            SizedBox(width: 20),
+            SizedBox(width: 50),
           ],
         ),
         SizedBox(height: 16),
@@ -428,7 +438,9 @@ class ViewerScreen extends BaseScreen with WidgetsBindingObserver {
     );
   }
 
+  //-------------------------------------------------------
   // 最後のページバー
+  //-------------------------------------------------------
   Widget maxpageBar() {
     double barHeight = 300;
     double ffBottom = -1.0 * barHeight;
@@ -503,7 +515,9 @@ class ViewerScreen extends BaseScreen with WidgetsBindingObserver {
     );
   }
 
-  /// コピーして保存バー
+  //-------------------------------------------------------
+  /// 選択バー　選択を保存
+  //-------------------------------------------------------
   Widget clipTextBar() {
     double barHeight = 200;
     double ffBottom = -1.0 * barHeight;
@@ -572,7 +586,9 @@ class ViewerScreen extends BaseScreen with WidgetsBindingObserver {
     redraw();
   }
 
-  /// settingsBar
+  //-------------------------------------------------------
+  /// 設定バー
+  //-------------------------------------------------------
   Widget settingsBar() {
     double barHeight = 300;
     barHeight += env.ui_text_scale.val;
@@ -636,10 +652,11 @@ class ViewerScreen extends BaseScreen with WidgetsBindingObserver {
     viewerCtrl.refresh();
   }
 
-  // 目次バー
+  //-------------------------------------------------------
+  /// 目次バー
+  //-------------------------------------------------------
   Widget tocBar() {
-    double barHeight =
-        book.index.list.length > 20 ? _height * 3 / 5 : _height / 2;
+    double barHeight = book.index.list.length > 20 ? _height * 3 / 5 : _height / 2;
     double ffBottom = -1.0 * barHeight;
     if (barType == ViewerBarType.tocBar) {
       ffBottom = 0;
@@ -698,7 +715,9 @@ class ViewerScreen extends BaseScreen with WidgetsBindingObserver {
     );
   }
 
-  // クリップバー（保存した文章）
+  //-------------------------------------------------------
+  /// リストバー（保存した文章）
+  //-------------------------------------------------------
   Widget clipListBar() {
     double barHeight = _height * 2 / 3;
     double ffBottom = -1.0 * barHeight;
@@ -748,8 +767,7 @@ class ViewerScreen extends BaseScreen with WidgetsBindingObserver {
     Widget w2 = Row(
       children: [
         Expanded(child: SizedBox(width: 1)),
-        Text('${l10n('swipe_to_delete')}',
-            textScaler: TextScaler.linear(myTextScale * 0.7)),
+        Text('${l10n('swipe_to_delete')}', textScaler: TextScaler.linear(myTextScale * 0.7)),
         SizedBox(width: 20),
       ],
     );

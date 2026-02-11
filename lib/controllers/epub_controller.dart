@@ -19,8 +19,7 @@ import '/constants.dart';
 class PermitInvalidCertification extends HttpOverrides {
   @override
   HttpClient createHttpClient(SecurityContext? context) {
-    return super.createHttpClient(context)
-      ..badCertificateCallback = (cert, host, port) => true;
+    return super.createHttpClient(context)..badCertificateCallback = (cert, host, port) => true;
   }
 }
 
@@ -147,7 +146,8 @@ class EpubController {
     }
   }
 
-  /// 目次uriをDLしてcheckHtmlを実行
+  /// 目次 uri をDLしてcheckHtmlを実行
+  /// booklist_screen の追加DLで呼ばれる
   Future checkUri(String uri) async {
     String? body = null;
 
@@ -168,6 +168,7 @@ class EpubController {
     }
   }
 
+  /// browser_screen から呼ばれる
   Future checkHtml(String uri, String? body) async {
     epub.reset();
     alreadyIndex = 0;
@@ -181,16 +182,19 @@ class EpubController {
         await checkNarou(uri, body);
       } else if (uri.contains('novel18.syosetu.com/n')) {
         await checkNarou(uri, body);
+      } else if (uri.contains('www.gutenberg.org/ebooks')) {
+        await checkGutenberg(uri, body);
       }
     }
 
     if (epub.bookId != null && epub.uriList.isNotEmpty) {
       if (uri.contains('www.aozora.gr.jp/cards/')) {
         status = MyEpubStatus.downloadable;
+      } else if (uri.contains('www.gutenberg.org/ebooks')) {
+        status = MyEpubStatus.downloadable;
       } else {
         alreadyIndex = await getExistingIndex(epub.bookId!);
-        if (alreadyIndex > epub.uriList.length)
-          alreadyIndex = epub.uriList.length;
+        if (alreadyIndex > epub.uriList.length) alreadyIndex = epub.uriList.length;
         if (alreadyIndex == epub.uriList.length)
           status = MyEpubStatus.same;
         else
@@ -203,6 +207,8 @@ class EpubController {
     }
   }
 
+  /// ダウンロード
+  /// - required 話数
   Future<bool> download(int required) async {
     bool ret = false;
     if (epub.uriList.length == 0 || epub.dluri == null) {
@@ -225,6 +231,9 @@ class EpubController {
       ret = true;
     } else if (epub.dluri.toString().contains('novel18.syosetu.com/n')) {
       await downloadNarou8();
+      ret = true;
+    } else if (epub.dluri.toString().contains('www.gutenberg.org/ebooks')) {
+      await downloadGutenberg();
       ret = true;
     } else {
       status = MyEpubStatus.failed;
@@ -502,8 +511,7 @@ class EpubController {
 
     // </div> を消してから
     text = text.replaceAll('</h3><br />', '</h3>');
-    text = text.replaceAll(
-        '</h3>\n<br />\n<br />\n<br />', '</h3>\n<br />\n<br />');
+    text = text.replaceAll('</h3>\n<br />\n<br />\n<br />', '</h3>\n<br />\n<br />');
 
     // delete class <h3
     text = deleteClassAttr(text, '<h3');
@@ -556,7 +564,7 @@ class EpubController {
         // int count1 = 15000 len>100 20000
         // int count2 = 10000 len>100 15000
 
-        for (int i = 0; i < 100; i++) {
+        for (int k = 0; k < 100; k++) {
           int count1 = 15000;
           int count2 = 10000;
           if (t1.split('<ruby>').length > 100) {
@@ -644,16 +652,13 @@ class EpubController {
               //for (var value in map.entries) {
               if (value['__typename'] != null && value['id'] != null) {
                 if (value['__typename'] == 'Episode') {
-                  epub.uriList.add(
-                      'https://kakuyomu.jp/works/${epub.siteId}/episodes/${value['id']}');
+                  epub.uriList.add('https://kakuyomu.jp/works/${epub.siteId}/episodes/${value['id']}');
                 } else if (value['__typename'] == 'Work') {
                   if (value['id'] == epub.siteId) {
                     epub.bookTitle = value['title'];
                     var aut = value['author'];
                     var ref = aut['__ref'] ?? '';
-                    userId = ref
-                        .toString()
-                        .substring(ref.toString().indexOf('UserAccount:') + 12);
+                    userId = ref.toString().substring(ref.toString().indexOf('UserAccount:') + 12);
                   }
                 }
               }
@@ -733,8 +738,7 @@ class EpubController {
       if (eAuthor != null) epub.bookAuthor = eAuthor.innerHtml;
     }
 
-    Bs4Element? ec =
-        bs.find('div', class_: 'widget-episodeBody js-episode-body');
+    Bs4Element? ec = bs.find('div', class_: 'widget-episodeBody js-episode-body');
     if (ec != null) {
       String text = ec.innerHtml;
       text = text.replaceAll('<br>', '<br />');
@@ -878,8 +882,7 @@ class EpubController {
         await Future.delayed(Duration(milliseconds: 200));
 
         // https://ncode.syosetu.com/n6964jl/1/
-        String? body =
-            await downloadCtrl.download8(epub.uriList[i], this); // waiting
+        String? body = await downloadCtrl.download8(epub.uriList[i], this); // waiting
         if (body != null) {
           await createNarouText(body, i + 1);
         } else {
@@ -915,8 +918,7 @@ class EpubController {
       if (el != null) f.title = el.innerHtml;
     }
     if (f.title == null) {
-      Bs4Element? el =
-          bs.find('h1', class_: 'p-novel__title p-novel__title--rensai');
+      Bs4Element? el = bs.find('h1', class_: 'p-novel__title p-novel__title--rensai');
       if (el != null) f.title = el.innerHtml;
     }
     if (f.title == null) {
@@ -926,8 +928,7 @@ class EpubController {
 
     String text = '';
     //<div class="js-novel-text p-novel__text">
-    List<Bs4Element> els =
-        bs.findAll('div', class_: 'js-novel-text p-novel__text');
+    List<Bs4Element> els = bs.findAll('div', class_: 'js-novel-text p-novel__text');
     for (Bs4Element el in els) {
       String t1 = el.innerHtml;
       t1 = t1.replaceAll('<br>', '<br />');
@@ -968,6 +969,228 @@ class EpubController {
   }
 
   //-------------------------------------------------------
+  // Gutenberg
+  //-------------------------------------------------------
+
+  Future checkGutenberg(String url, String body) async {
+    epub.dluri = url;
+
+    //https://www.aozora.gr.jp/cards/000148/card773.html
+    //https://www.aozora.gr.jp/cards/000148/files/773_14560.html
+
+    //https://www.gutenberg.org/ebooks/11
+    //https://www.gutenberg.org/cache/epub/11/pg11.txt
+
+    //https://www.gutenberg.org/ebooks/11
+    //https://www.gutenberg.org/ebooks/11.html.images
+    //https://www.gutenberg.org/ebooks/11.txt.utf-8
+    //https://www.gutenberg.org/ebooks/11.kf8.images
+    //href=/ebooks/84.txt.utf-8
+
+    try {
+      String fname = url.substring(url.lastIndexOf('/'));
+      fname = fname.replaceAll('/', '');
+      epub.siteId = fname;
+      epub.bookId = 'G' + epub.siteId!;
+
+      String dl = 'https://www.gutenberg.org/cache/epub/${fname}/pg${fname}.txt';
+      epub.uriList.add(dl);
+      await MyLog.debug('dluri=${dl}');
+    } catch (_) {}
+
+    BeautifulSoup bs = BeautifulSoup(body);
+
+    //<meta property="og:title" content="Alice's Adventures in Wonderland by Lewis Carroll">
+    Bs4Element? elTitle = bs.find('meta', attrs: {'property': 'og:title'});
+    if (elTitle != null) {
+      MyLog.debug('elTitle=${elTitle['content']}');
+      epub.bookTitle = elTitle['content'] ?? epub.bookId;
+    }
+  }
+
+  Future downloadGutenberg() async {
+    if (epub.uriList.length == 0) return;
+    if (epub.bookId == null) return;
+
+    await MyLog.info('Download ${epub.bookTitle}');
+    status = MyEpubStatus.downloading;
+    doneIndex = 0;
+    redraw();
+
+    String? body = await downloadCtrl.download(epub.uriList[0]);
+
+    if (body != null) {
+      await MyLog.debug('download ok');
+      try {
+        await createGutenbergText(body);
+        if (epub.fileList.length >= 1) {
+          await writeBook();
+          doneIndex = 1;
+          status = MyEpubStatus.succeeded;
+        }
+      } catch (_) {}
+    } else {
+      await MyLog.warn('download() failed ${epub.uriList[0]}');
+    }
+
+    if (status == MyEpubStatus.succeeded) {
+      await MyLog.info('Download succeeded');
+    } else {
+      status = MyEpubStatus.failed;
+      await MyLog.warn('Download failed');
+    }
+    redraw();
+  }
+
+  Future createGutenbergText(String body) async {
+    if (epub.bookId == null) return;
+
+    String text = body;
+    text = text.replaceAll('\r\n', '\n');
+
+    text = text.replaceAllMapped(RegExp('([\\w,])\n(\\w)', caseSensitive: false), (Match m) {
+      return "${m[1]} ${m[2]}";
+    });
+
+    text = text.replaceAll('\n', '<br />\n');
+
+    text = text.replaceAllMapped(RegExp('([^A-Za-z0-9])_([A-Za-z0-9])', caseSensitive: false), (Match m) {
+      return "${m[1]}<i>${m[2]}";
+    });
+
+    text = text.replaceAllMapped(RegExp('_([^A-Za-z0-9])', caseSensitive: false), (Match m) {
+      return "</i>${m[1]}";
+    });
+
+    String hd = 'h3';
+
+    // 改行４つでチャプターを区切る
+    List<String> listText1 = text.split('<br />\n<br />\n<br />\n<br />\n');
+
+    // ゼロ文字目の改行を消す
+    for (int j = 0; j < listText1.length; j++) {
+      String t1 = listText1[j];
+      for (int j = 0; j < 5; j++) {
+        if (t1.indexOf('<br />') == 0) {
+          t1 = t1.replaceFirst('<br />', '');
+        }
+        if (t1.indexOf('\n') == 0) {
+          t1 = t1.replaceFirst('\n', '');
+        }
+      }
+      listText1[j] = t1;
+    }
+
+    List<String> listText = [];
+    if (listText1.length == 1) {
+      List<String> listTemp = [];
+      listTemp.add('dummy');
+      String temp = listText1[0];
+      listTemp.add(temp);
+      listText1 = listTemp;
+    }
+
+    if (listText1.length > 1) {
+      for (int i = 0; i < listText1.length; i++) {
+        String t1 = listText1[i];
+        t1 += '<br />\n<br />\n<br />\n<br />\n';
+
+        // 次が100文字以下は連結
+        if (i + 1 < listText1.length && listText1[i + 1].length < 100) {
+          t1 += listText1[i + 1];
+          t1 += '<br />\n<br />\n<br />\n<br />\n';
+          i += 1;
+        }
+
+        for (int k = 0; k < 100; k++) {
+          // ゼロ文字目の改行を消す
+          for (int j = 0; j < 5; j++) {
+            if (t1.indexOf('<br />') == 0) {
+              t1 = t1.replaceFirst('<br />', '');
+            }
+            if (t1.indexOf('\n') == 0) {
+              t1 = t1.replaceFirst('\n', '');
+            }
+          }
+
+          int count1 = 15000;
+          int count2 = 10000;
+          if (t1.length < count1) {
+            listText.add(t1);
+            break;
+          }
+          int s1 = t1.indexOf('<br />', count2);
+          if (s1 > 0 && t1.length - s1 > 1000) {
+            String t2 = t1.substring(0, s1 + 6);
+
+            // ゼロ文字目の改行を消す
+            for (int j = 0; j < 5; j++) {
+              if (t2.indexOf('<br />') == 0) {
+                t2 = t2.replaceFirst('<br />', '');
+              }
+              if (t2.indexOf('\n') == 0) {
+                t2 = t2.replaceFirst('\n', '');
+              }
+            }
+
+            listText.add(t2);
+            t1 = t1.substring(s1 + 6);
+          } else {
+            listText.add(t1);
+            break;
+          }
+        }
+      }
+    }
+
+    if (listText.length == 1) {
+      EpubFileData f = EpubFileData();
+      f.chapNo = 1;
+      f.fileName = 'text/ch${f.chapNo0000}.txt';
+      f.text = text;
+      f.title = epub.bookTitle;
+      f.chars = text.length;
+      epub.fileList.add(f);
+    } else if (listText.length > 1) {
+      //for (int i = 1; i < listText.length; i++) {
+      for (int i = 0; i < listText.length; i++) {
+        String text = listText[i];
+
+        String title = '${i}';
+
+        //BeautifulSoup bs1 = BeautifulSoup(text);
+        //Bs4Element? el1 = bs1.find(hd);
+        //if (el1 != null) {
+        //  title = el1.innerHtml;
+        //}
+
+        int s1 = text.indexOf("<br />");
+        String subtitle = "";
+        if (s1 > 0) {
+          subtitle = text.substring(0, s1);
+          if (subtitle.length > 40) {
+            subtitle = subtitle.substring(0, 40);
+            int s2 = subtitle.lastIndexOf(" ");
+            if (s2 > 0) {
+              subtitle = subtitle.substring(0, s2);
+            }
+          }
+          subtitle = subtitle.trim();
+        }
+        if (subtitle != "") title += " " + subtitle;
+
+        EpubFileData f = EpubFileData();
+        f.chapNo = i;
+        f.fileName = 'text/ch${f.chapNo0000}.txt';
+        f.text = text;
+        f.title = title;
+        f.chars = calcChars(text);
+        epub.fileList.add(f);
+      }
+    }
+  }
+
+  //-------------------------------------------------------
   // Hamel
   //-------------------------------------------------------
 
@@ -995,19 +1218,23 @@ class DownloadController {
   String? selectedUri;
 
   Future<String?> download(String uri) async {
-    HttpOverrides.global = PermitInvalidCertification();
-    Map<String, String> headers = {
-      'user-agent':
-          'Mozilla/5.0 (iPhone; CPU iPhone OS 15_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148'
-    };
+    await MyLog.debug('download uri = ${uri}');
     String? body = null;
+
     try {
+      HttpOverrides.global = PermitInvalidCertification();
+      Map<String, String> headers = {
+        'user-agent':
+            'Mozilla/5.0 (iPhone; CPU iPhone OS 15_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148'
+      };
       http.Response res = await http.get(Uri.parse(uri), headers: headers);
       if (res.statusCode == 200) {
         body = utf8.decode(res.bodyBytes);
+      } else {
+        await MyLog.debug('download res = ${res.statusCode}');
       }
     } catch (e) {
-      MyLog.err('DownloadController.download() ${e.toString()}');
+      await MyLog.err('DownloadController.download() ${e.toString()}');
     }
     return body;
   }

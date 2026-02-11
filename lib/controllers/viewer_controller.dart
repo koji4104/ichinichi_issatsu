@@ -125,15 +125,22 @@ class ViewerController {
           orgText = '<br />' + orgText + '<br />';
           String body = orgText;
 
-          // chars
+          // ↓chars
           int fsize = env.font_size.val;
           double w = (env.writing_mode.val == 0) ? (width - _widthPad) : (height - _heightPad);
-          int chars = ((w / fsize) - 0.0).toInt();
+
+          int chars = (w / fsize).toInt();
+          if (book!.isEnglish() == true) {
+            chars = (w / (fsize * 5 / 10)).toInt();
+          }
+
           body = body.replaceAll('\n', '');
           body = body.replaceAll('<h3>', '');
           body = body.replaceAll('</h3>', '<br />');
           body = body.replaceAll('<h2>', '');
           body = body.replaceAll('</h2>', '<br />');
+          body = body.replaceAll('<i>', '');
+          body = body.replaceAll('</i>', '');
           int rubyCount = body.split('<ruby>').length;
 
           // delete ruby
@@ -147,14 +154,14 @@ class ViewerController {
           lineCount += 1;
           lineCount += (rubyCount / (40 + fsize * 2)).toInt();
 
-          double dh = (env.line_height.val - 3) / 100.0;
+          double dh = (env.line_height.val - 2) / 100.0;
           double calcWidth = lineCount.toDouble() * fsize * dh;
           calcWidth += scrollWidth;
           if (calcWidth < 400) calcWidth = 400;
           if (!Platform.isIOS && !Platform.isAndroid) {
             //if (calcWidth > 3000) calcWidth = 3000;
           }
-          // chars
+          // ↑chars
 
           // ↓speech
           String text2 = orgText;
@@ -173,11 +180,20 @@ class ViewerController {
               linesTemp.add("");
               ii++;
             } else {
-              List<String> s2 = s.split('。');
+              List<String> s2;
+              if (book!.isEnglish()) {
+                s2 = s.split('.');
+              } else {
+                s2 = s.split('。');
+              }
               for (String s3 in s2) {
                 if (s3 != '') {
                   if (s2.length >= 2) {
-                    s3 += '。';
+                    if (book!.isEnglish()) {
+                      s3 += '.';
+                    } else {
+                      s3 += '。';
+                    }
                     s3 = s3.replaceAll('」。', '」');
                   }
                   text1 += "<span id='p${ii}'>${s3}</span>";
@@ -187,13 +203,6 @@ class ViewerController {
                 }
               }
               text1 += "<br />";
-
-              /*
-              text1 += "<p id='p${ii}'>${s}</p>";
-              ii++;
-              s = EpubData.getRuby(s, m);
-              linesTemp.add(s);
-              */
             }
           }
           // 縦書き
@@ -379,7 +388,7 @@ class ViewerController {
       for (int x = 0; x < 5; x++) {
         if (scrollCtrl!.hasClients == false) {
           try {
-            log('scrollCtrl.hasClients==false nowIndex=${index} [x${x}]');
+            log('scrollCtrl.hasClients==false nowIndex=${index} [x${x}/5]');
             redraw();
             await Future.delayed(Duration(milliseconds: 100));
           } on Exception catch (_) {
@@ -749,16 +758,17 @@ line-height: ${env.line_height.val}%;
       }
       if (vw != null && vw != '') {
         double dw = double.parse('${vw}');
-        if (dw > 400 && (dw - listWidth[index]).abs() > 10) {
-          // ログ
-          int dlw = (dw - listWidth[index]).toInt();
-          if (dlw.abs() >= 200) {
-            MyLog.debug('width [${index}] dw-list ${dlw}');
-          }
+        double dif = dw - listWidth[index];
+        if (dw > 400 && dif.abs() > 10) {
           // 隙間が多すぎる問題
-          if ((dw - listWidth[index]) > 400) {
-            double dif = dw - listWidth[index];
-            dw = listWidth[index] + 400 + (dif - 400) / 2;
+          if (dif > 400.0) {
+            dw = listWidth[index] + 200.0 + (dif / 2);
+          } else if (dif < 400.0) {
+            dw = listWidth[index] - (dif / 2);
+          }
+          // ログ
+          if (dif.abs() >= 200) {
+            MyLog.debug('width [${index}] Actual-Calc= ${dif.toInt()}');
           }
         }
         listWidth[index] = dw;
@@ -938,11 +948,29 @@ line-height: ${env.line_height.val}%;
     await flutterTts.setPitch(pitch);
 
     // ボイス
-    //var voices = await flutterTts.getVoices;
-    //log('${voices}');
-    //[log] voices O-ren
-    //[log] voices Kyoko
-    //[log] voices Hattori
+    /*
+    List voices = await flutterTts.getVoices;
+    for (var item in voices) {
+      var map = item as Map<Object?, Object?>;
+      if (map["gender"].toString() != "unspecified") {
+        if (map["locale"].toString() == "ja-JP") {
+          log('${map["name"]}  ${map["locale"]}  ${map["gender"]}  ${map["quality"]}');
+        }
+        if (map["locale"].toString().contains("en-US")) {
+          log('${map["name"]}  ${map["locale"]}  ${map["gender"]}  ${map["quality"]}');
+        }
+      }
+    }
+    */
+
+    //[log] Fred  en-US  male  default
+    //[log] Nicky  en-US  female  default
+    //[log] Aaron  en-US  male  default *
+    //[log] Samantha  en-US  female  default *
+    //[log] Hattori  ja-JP  male  default
+    //[log] Kyoko  ja-JP  female  default
+    //[log] O-ren  ja-JP  female  default *
+
     String v = 'O-ren';
     switch (env.speak_voice.val) {
       case 1:
@@ -952,7 +980,14 @@ line-height: ${env.line_height.val}%;
       case 3:
         v = 'Hattori';
     }
-    await flutterTts.setVoice({"name": v, "locale": "ja-JP"});
+
+    if (book!.isEnglish()) {
+      await flutterTts.setLanguage("en-US");
+      await flutterTts.setVoice({"name": v, "locale": "en-US"});
+    } else {
+      await flutterTts.setLanguage("ja-JP");
+      await flutterTts.setVoice({"name": v, "locale": "ja-JP"});
+    }
 
     speakIndex = nowIndex;
     if (speakIndex > listSpeak.length - 1) speakIndex = listSpeak.length - 1;
@@ -975,7 +1010,6 @@ line-height: ${env.line_height.val}%;
       String s = listSpeak[speakIndex][i].replaceAll('<br />', ' ');
       int lineCount = (s.length / chars).toInt() + 1;
       int len = (lineCount * (fsize * dh)).toInt();
-
       all += len;
     }
 
@@ -1072,10 +1106,17 @@ line-height: ${env.line_height.val}%;
         text = text.replaceAll('<h2>', '');
         text = text.replaceAll('</h2>', '<br />');
 
+        text = text.replaceAll('<i>', '');
+        text = text.replaceAll('</i>', '');
+
         //text = text.replaceAll('。」', '」'); 既に変換済み 08/23
         //text = text.replaceAll('。', '。<br />');
         text = text.replaceAll('「', '「<br />');
         text = text.replaceAll('」', '<br />」');
+
+        // “arrum.”
+        text = text.replaceAll('“', '“<br />');
+        text = text.replaceAll('”', '<br />”');
 
         listSpeak2.clear();
         List<String> list = text.split('<br />');
@@ -1108,17 +1149,18 @@ line-height: ${env.line_height.val}%;
   Future speak2() async {
     if (isSpeaking) {
       String text = getSpeakText2();
-      if (text == '「') {
+      // 「 “  」 ”
+      if (text == '「' || text == '“') {
         speak2Index++;
         text = getSpeakText2();
         if (pitch != pitch2) {
           pitch = pitch2;
           await flutterTts.setPitch(pitch);
         }
-      } else if (text == '」') {
+      } else if (text == '」' || text == '”') {
         speak2Index++;
         text = getSpeakText2();
-        if (text == '「') {
+        if (text == '「' || text == '“') {
           speak2Index++;
           text = getSpeakText2();
           if (pitch != pitch2) {

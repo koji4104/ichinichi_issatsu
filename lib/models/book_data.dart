@@ -8,17 +8,28 @@ class CacheData {
 
 class BookData {
   BookData() {}
+
+  /// A776 K N G11
   String bookId = '1';
+
   String title = '';
   String author = '';
   int chars = 0;
+
+  /// 776 11
   String siteId = '';
+
   String dluri = '';
   String dlver = '1.0.0';
   DateTime ctime = DateTime(2000, 1, 1);
 
   IndexData index = IndexData();
   PropData prop = PropData();
+
+  bool isEnglish() {
+    String type = bookId.substring(0, 1);
+    return (type == 'G') ? true : false;
+  }
 
   Map<String, dynamic> toJson() => {
         'bookId': bookId,

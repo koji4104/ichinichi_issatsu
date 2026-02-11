@@ -16,9 +16,15 @@ class EpubFileData {
 
 class EpubData {
   EpubData() {}
+
+  /// A776 K N G11
   String? bookId;
+
   String? bookTitle;
+
   String? bookAuthor;
+
+  /// 776 11
   String? siteId;
 
   List<EpubFileData> fileList = [];

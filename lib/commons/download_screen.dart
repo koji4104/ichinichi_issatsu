@@ -46,17 +46,11 @@ class DownloadScreen extends BaseScreen {
     bool isClose = false;
     String label1 = '';
     String label2 = '';
-    //int already = ref.watch(epubProvider).existingIndex;
     int already = epubCtrl.alreadyIndex;
-    //int done = ref.watch(epubProvider).doneIndex;
     int done = epubCtrl.doneIndex;
-    //int all = ref.watch(epubProvider).epub.uriList.length;
     int all = epubCtrl.epub.uriList.length;
     int req1 = 0;
     int req2 = 0;
-
-    //label1 =
-    //    '${ref.watch(epubProvider).epub.bookTitle ?? ref.watch(epubProvider).epub.bookId}';
     label1 = '${epubCtrl.epub.bookTitle ?? epubCtrl.epub.bookId}';
 
     if (status == MyEpubStatus.downloadable) {
@@ -125,18 +119,15 @@ class DownloadScreen extends BaseScreen {
           width: btnWidth,
           title: l10n('close'),
           onPressed: () {
-            //ref.read(epubProvider).setStatusNone();
             epubCtrl.setStatusNone();
           },
         ),
       ]);
     } else if (req1 > 0) {
       // 10 話 まで ダウンロード
-      String btnTitle1 =
-          '${req1} ${l10n('episode')} ${l10n('up_to')} ${l10n('download')}';
+      String btnTitle1 = '${req1} ${l10n('episode')} ${l10n('up_to')} ${l10n('download')}';
       if (req1 == 1) btnTitle1 = '${l10n('download')}';
-      String btnTitle2 =
-          '${req2} ${l10n('episode')} ${l10n('up_to')} ${l10n('download')}';
+      String btnTitle2 = '${req2} ${l10n('episode')} ${l10n('up_to')} ${l10n('download')}';
 
       btn = Column(children: [
         MyTextButton(
@@ -145,7 +136,6 @@ class DownloadScreen extends BaseScreen {
           commit: true,
           title: btnTitle1,
           onPressed: () {
-            //ref.read(epubProvider).download(req1).then((ret) {
             epubCtrl.download(req1).then((ret) {
               if (ret) {
                 onDownloadFinished();
@@ -161,7 +151,6 @@ class DownloadScreen extends BaseScreen {
             commit: true,
             title: btnTitle2,
             onPressed: () {
-              //ref.read(epubProvider).download(req2).then((ret) {
               epubCtrl.download(req2).then((ret) {
                 if (ret) {
                   onDownloadFinished();
@@ -175,7 +164,6 @@ class DownloadScreen extends BaseScreen {
           width: btnWidth,
           title: l10n('cancel'),
           onPressed: () {
-            //ref.read(epubProvider).setStatusNone();
             epubCtrl.setStatusNone();
           },
         ),

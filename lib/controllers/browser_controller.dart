@@ -12,6 +12,7 @@ import '/constants.dart';
 List<String> initUriList = [
   'https://www.aozora.gr.jp/index.html',
   'https://www.aozora.gr.jp/access_ranking/2022_xhtml.html',
+  'https://www.gutenberg.org/',
   'https://yomou.syosetu.com',
   'https://syosetu.com/site/group/',
   'https://kakuyomu.jp',
@@ -19,6 +20,7 @@ List<String> initUriList = [
 List<String> initTitleList = [
   'aozora_top',
   'aozora_ranking',
+  'gutenberg',
   '',
   '',
   '',

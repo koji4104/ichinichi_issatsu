@@ -228,8 +228,7 @@ class BookListScreen extends DownloadScreen {
           buttonPadding: EdgeInsets.all(0.0),
           iconPadding: EdgeInsets.all(0.0),
           backgroundColor: myTheme.cardColor,
-          title:
-              Text(l10n('flag_changes'), style: myTheme.textTheme.bodyMedium!),
+          title: Text(l10n('flag_changes'), style: myTheme.textTheme.bodyMedium!),
           actions: [w1, w2, w3],
         );
       },
@@ -285,8 +284,7 @@ class BookListScreen extends DownloadScreen {
     }
     Widget flagIcon = Container(width: 16);
     if (1 <= data.prop.flag && data.prop.flag <= 6) {
-      flagIcon =
-          Icon(Icons.circle, size: 16.0, color: COL_FLAG_LIST[data.prop.flag]);
+      flagIcon = Icon(Icons.circle, size: 16.0, color: COL_FLAG_LIST[data.prop.flag]);
     }
 
     double scale = myTextScale;
@@ -311,8 +309,15 @@ class BookListScreen extends DownloadScreen {
       textScaler: TextScaler.linear(myTextScale - 0.2),
     );
 
+    int nPage = 0;
+    if (data.isEnglish()) {
+      nPage = (data.chars / CHARS_PAGE_EN).toInt();
+    } else {
+      nPage = (data.chars / CHARS_PAGE).toInt();
+    }
+
     Widget wPages = Text(
-      '${(data.chars / CHARS_PAGE).toInt()} ${l10n('page')}',
+      '${nPage} ${l10n('page')}',
       overflow: TextOverflow.ellipsis,
       maxLines: 1,
       textScaler: TextScaler.linear(myTextScale - 0.2),

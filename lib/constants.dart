@@ -16,5 +16,6 @@ const DEFAULT_RADIUS = 6.0;
 
 ///
 const CHARS_PAGE = 450;
+const CHARS_PAGE_EN = 900;
 
 String APP_DIR = '';

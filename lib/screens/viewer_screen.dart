@@ -5,7 +5,8 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:flutter/services.dart';
-import 'package:airplane_mode_checker/airplane_mode_checker.dart'; // airplane
+
+//import 'package:airplane_mode_checker/airplane_mode_checker.dart'; // airplane
 //import 'package:is_airplane_mode/is_airplane_mode.dart';
 
 import '/commons/base_screen.dart';
@@ -113,8 +114,7 @@ class ViewerScreen extends BaseScreen with WidgetsBindingObserver {
                 child: RawGestureDetector(
                   behavior: HitTestBehavior.translucent,
                   gestures: {
-                    TapGestureRecognizer:
-                        GestureRecognizerFactoryWithHandlers<TapGestureRecognizer>(
+                    TapGestureRecognizer: GestureRecognizerFactoryWithHandlers<TapGestureRecognizer>(
                       () => TapGestureRecognizer(),
                       (TapGestureRecognizer instance) {
                         instance
@@ -311,8 +311,6 @@ class ViewerScreen extends BaseScreen with WidgetsBindingObserver {
               SizedBox(width: 4),
               Expanded(child: wText),
               SizedBox(width: 10),
-              if (isAirplane) Icon(Icons.airplanemode_active, size: 30),
-              if (isAirplane) SizedBox(width: 20),
             ]),
             //SizedBox(height: 6),
             Expanded(child: SizedBox(height: 1)),
@@ -336,8 +334,8 @@ class ViewerScreen extends BaseScreen with WidgetsBindingObserver {
   /// ボトムバー
   //-------------------------------------------------------
   Widget bottomBar() {
-    double barHeight = 200;
-    double ffBottom = 40 - barHeight; // -160
+    double barHeight = 180;
+    double ffBottom = 40 - barHeight; // -140
     bool isSpeaking = viewerCtrl.isSpeaking;
 
     // 読み上げ機能　横書き(0)のみ
@@ -356,7 +354,7 @@ class ViewerScreen extends BaseScreen with WidgetsBindingObserver {
       ),
     );
 
-    double iconSize = ICON_BUTTON_SIZE;
+    double iconSize = ICON_BUTTON_SIZE_BOTTOM;
     Widget btnStart = IconButton(
       iconSize: iconSize,
       icon: Icon(Icons.volume_up_outlined),
@@ -377,7 +375,7 @@ class ViewerScreen extends BaseScreen with WidgetsBindingObserver {
 
     Widget btnSettings = IconButton(
       iconSize: iconSize,
-      icon: Icon(Icons.settings_outlined),
+      icon: (barType == ViewerBarType.speakSettingsBar) ? Icon(Icons.close) : Icon(Icons.settings_outlined),
       color: env.getFrontColor(),
       onPressed: () {
         if (barType == ViewerBarType.speakSettingsBar) {
@@ -410,13 +408,13 @@ class ViewerScreen extends BaseScreen with WidgetsBindingObserver {
         SizedBox(height: 4),
         Row(
           children: [
-            SizedBox(width: 50, height: iconSize),
+            SizedBox(width: 80, height: iconSize),
             leftBtn,
             e,
             wText,
             e,
             rightBtn,
-            SizedBox(width: 50),
+            SizedBox(width: 80),
           ],
         ),
         SizedBox(height: 16),
@@ -442,7 +440,7 @@ class ViewerScreen extends BaseScreen with WidgetsBindingObserver {
   // 最後のページバー
   //-------------------------------------------------------
   Widget maxpageBar() {
-    double barHeight = 300;
+    double barHeight = 240;
     double ffBottom = -1.0 * barHeight;
     if (barType == ViewerBarType.maxpageBar) {
       ffBottom = 0;
@@ -519,7 +517,7 @@ class ViewerScreen extends BaseScreen with WidgetsBindingObserver {
   /// 選択バー　選択を保存
   //-------------------------------------------------------
   Widget clipTextBar() {
-    double barHeight = 200;
+    double barHeight = 180;
     double ffBottom = -1.0 * barHeight;
     if (barType == ViewerBarType.clipTextBar) {
       ffBottom = 0;
@@ -590,7 +588,7 @@ class ViewerScreen extends BaseScreen with WidgetsBindingObserver {
   /// 設定バー
   //-------------------------------------------------------
   Widget settingsBar() {
-    double barHeight = 300;
+    double barHeight = 260;
     barHeight += env.ui_text_scale.val;
 
     double ffBottom = -1.0 * barHeight;

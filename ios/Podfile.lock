@@ -1,6 +1,4 @@
 PODS:
-  - airplane_mode_checker (3.2.0):
-    - Flutter
   - charset_converter (0.0.1):
     - Flutter
   - Flutter (1.0.0)
@@ -16,7 +14,6 @@ PODS:
   - OrderedSet (6.0.3)
 
 DEPENDENCIES:
-  - airplane_mode_checker (from `.symlinks/plugins/airplane_mode_checker/ios`)
   - charset_converter (from `.symlinks/plugins/charset_converter/ios`)
   - Flutter (from `Flutter`)
   - flutter_inappwebview_ios (from `.symlinks/plugins/flutter_inappwebview_ios/ios`)
@@ -27,8 +24,6 @@ SPEC REPOS:
     - OrderedSet
 
 EXTERNAL SOURCES:
-  airplane_mode_checker:
-    :path: ".symlinks/plugins/airplane_mode_checker/ios"
   charset_converter:
     :path: ".symlinks/plugins/charset_converter/ios"
   Flutter:
@@ -39,7 +34,6 @@ EXTERNAL SOURCES:
     :path: ".symlinks/plugins/flutter_tts/ios"
 
 SPEC CHECKSUMS:
-  airplane_mode_checker: 219cb4e382d3c8afaa5192fd31829e0472e0559a
   charset_converter: 215c7b04932ec2b9ba43be96a9bc34afed3e5322
   Flutter: cabc95a1d2626b1b06e7179b784ebcf0c0cde467
   flutter_inappwebview_ios: 6f63631e2c62a7c350263b13fa5427aedefe81d4

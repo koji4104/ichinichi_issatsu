@@ -73,6 +73,9 @@ class Localized {
       'speak_voice': 'Voice',
       'speak_volume': 'Volume',
       'speaking_is_only_horizontal_text': 'Speaking is only horizontal text',
+      'male': 'Male',
+      'female1': 'Female 1',
+      'female2': 'Female 2',
       // ICON
       'toc': 'TOC',
       'jump': 'Jump',
@@ -139,6 +142,9 @@ class Localized {
       'speak_voice': '声',
       'speak_volume': '音量',
       'speaking_is_only_horizontal_text': '読み上げ機能は横書きのみです',
+      'male': '男性',
+      'female1': '女性 1',
+      'female2': '女性 2',
       // ICON
       'toc': '目次',
       'jump': '最後',

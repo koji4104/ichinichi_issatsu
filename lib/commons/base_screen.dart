@@ -126,8 +126,7 @@ class BaseScreen extends ConsumerWidget {
       child: TextButton(
         style: TextButton.styleFrom(
           backgroundColor: bgcol,
-          shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.all(Radius.circular(DEF_RADIUS))),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(DEF_RADIUS))),
           side: bdcol != null ? BorderSide(color: bdcol) : null,
         ),
         child: Text(
@@ -207,7 +206,7 @@ class BaseScreen extends ConsumerWidget {
       icon: Icon(Icons.close),
       iconSize: 20,
       constraints: BoxConstraints(minWidth: 0.0, minHeight: 0.0),
-      padding: EdgeInsets.all(2),
+      padding: EdgeInsets.all(4),
       onPressed: () async {
         onPressedCloseButton();
       },
@@ -219,11 +218,11 @@ class BaseScreen extends ConsumerWidget {
       child: Column(children: [
         SizedBox(height: 2),
         Row(children: [
-          SizedBox(width: 2),
+          SizedBox(width: 10),
           closeButton(),
           Expanded(flex: 1, child: SizedBox(width: 1)),
           closeButton(),
-          SizedBox(width: 2),
+          SizedBox(width: 10),
         ]),
       ]),
     );

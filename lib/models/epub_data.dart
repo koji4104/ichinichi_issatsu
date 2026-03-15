@@ -117,7 +117,7 @@ function mark0(tag1) {
     return text;
   }
 
-  static String extractRuby(String str) {
+  static String extractRuby_TEST(String str) {
     // <ruby><rb>獅子</rb><rp>（</rp><rt>しし</rt><rp>）</rp></ruby>
     // <ruby><rb>卍<rb><rp>（<rp><rt>まんじ<rt><rp>）<rp><ruby>
     // <ruby><rb>嵐の雷竜</rb><rp>（</rp><rt>ストーム・サンダードラゴン</rt><rp>）</rp></ruby>
@@ -143,8 +143,9 @@ function mark0(tag1) {
     return ret;
   }
 
-  /// ルビを残す（漢字とrbタグを消す）
-  static String getRuby(String text1, Map<String, String> m) {
+  /// ルビのひらがなを残す（＜ruby＞タグと漢字を消す）
+  static String extractRuby(String text1, Map<String, String> m) {
+    // '<ruby><rb>獅子</rb><rp>（</rp><rt>しし</rt><rp>）</rp></ruby>'
     String tag1 = '<ruby>';
     String tag2 = '</ruby>';
     String text = text1;

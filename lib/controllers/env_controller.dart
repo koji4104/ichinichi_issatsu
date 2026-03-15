@@ -167,19 +167,22 @@ class Environment {
     name: 'ui_text_scale',
   );
 
-  // Voice
+  /// Voice
+  /// - 1 女性1　O-ren  ja-JP  female Samantha  en-US  female
+  /// - 2 女性2　Kyoko  ja-JP  female  Nicky  en-US  female
+  /// - 3 男性　 Hattori  ja-JP  male  Aaron  en-US  male
   EnvData speak_voice = EnvData(
     val: 1,
     vals: [1, 2, 3],
-    keys: ['O-Ren', 'Kyoko', 'Hattori'],
+    keys: ['female1', 'female2', 'male'],
     name: 'speak_voice',
   );
 
   // Speak-Speed
   EnvData speak_speed = EnvData(
     val: 100,
-    vals: [80, 90, 100, 110, 120, 130, 140],
-    keys: ['80', '90', '100', '110', '120', '130', '140'],
+    vals: [60, 70, 80, 90, 100, 110, 120, 130, 140],
+    keys: ['60', '70', '80', '90', '100', '110', '120', '130', '140'],
     name: 'speak_speed',
   );
 

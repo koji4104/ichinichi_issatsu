@@ -129,9 +129,10 @@ class ViewerController {
           int fsize = env.font_size.val;
           double w = (env.writing_mode.val == 0) ? (width - _widthPad) : (height - _heightPad);
 
+          // 一行の文字数
           int chars = (w / fsize).toInt();
           if (book!.isEnglish() == true) {
-            chars = (w / (fsize * 5 / 10)).toInt();
+            chars = ((w / fsize) * (10 / 5)).toInt();
           }
 
           body = body.replaceAll('\n', '');
@@ -145,6 +146,7 @@ class ViewerController {
 
           // delete ruby
           body = EpubData.deleteRuby(body);
+
           List<String> list1 = body.split('<br />');
           int lineCount = 0;
           for (String s in list1) {
@@ -176,9 +178,11 @@ class ViewerController {
           List<String> linesTemp = [];
           for (String s in lines2) {
             if (s == "") {
-              text1 += "<br />";
-              linesTemp.add("");
-              ii++;
+              if (linesTemp.length > 0) {
+                text1 += "<br />";
+                linesTemp.add("");
+                ii++;
+              }
             } else {
               List<String> s2;
               if (book!.isEnglish()) {
@@ -186,32 +190,39 @@ class ViewerController {
               } else {
                 s2 = s.split('。');
               }
-              for (String s3 in s2) {
-                if (s3 != '') {
+              for (int i3 = 0; i3 < s2.length; i3++) {
+                String s3 = s2[i3];
+                if (s3 == '') continue;
+                //if (s2.length >= 2) {
+                if (book!.isEnglish()) {
                   if (s2.length >= 2) {
-                    if (book!.isEnglish()) {
-                      s3 += '.';
-                    } else {
-                      s3 += '。';
-                    }
-                    s3 = s3.replaceAll('」。', '」');
+                    s3 += '.';
                   }
                   text1 += "<span id='p${ii}'>${s3}</span>";
-                  ii++;
-                  s3 = EpubData.getRuby(s3, m);
-                  linesTemp.add(s3);
+                } else {
+                  if (s2.length >= 2) {
+                    s3 += '。';
+                  }
+
+                  s3 = s3.replaceAll('」。', '」');
+                  text1 += "<span id='p${ii}'>${s3}</span>";
+                  s3 = EpubData.extractRuby(s3, m);
                 }
+
+                ii++;
+                linesTemp.add(s3);
+                //}
               }
               text1 += "<br />";
             }
           }
+
           // 縦書き
           if (env.writing_mode.val == 1) {
             VerticalRotated.map.forEach((String key, String value) {
               text1 = text1.replaceAll(key, value);
             });
           }
-
           listSpeak.add(linesTemp);
           // ↑speech
 
@@ -947,46 +958,50 @@ line-height: ${env.line_height.val}%;
     pitch = pitch1;
     await flutterTts.setPitch(pitch);
 
-    // ボイス
+    // ボイス一覧
     /*
     List voices = await flutterTts.getVoices;
     for (var item in voices) {
       var map = item as Map<Object?, Object?>;
       if (map["gender"].toString() != "unspecified") {
         if (map["locale"].toString() == "ja-JP") {
-          log('${map["name"]}  ${map["locale"]}  ${map["gender"]}  ${map["quality"]}');
+          print('${map["name"]}  ${map["locale"]}  ${map["gender"]}');
         }
         if (map["locale"].toString().contains("en-US")) {
-          log('${map["name"]}  ${map["locale"]}  ${map["gender"]}  ${map["quality"]}');
+          print('${map["name"]}  ${map["locale"]}  ${map["gender"]}');
         }
       }
     }
     */
 
-    //[log] Fred  en-US  male  default
-    //[log] Nicky  en-US  female  default
-    //[log] Aaron  en-US  male  default *
-    //[log] Samantha  en-US  female  default *
-    //[log] Hattori  ja-JP  male  default
-    //[log] Kyoko  ja-JP  female  default
-    //[log] O-ren  ja-JP  female  default *
+    // Fred  en-US  male
+    // Nicky  en-US  female
+    // Aaron  en-US  male   *
+    // Samantha  en-US  female   *
+    // Hattori  ja-JP  male
+    // Kyoko  ja-JP  female
+    // O-ren  ja-JP  female   *
 
-    String v = 'O-ren';
+    String vja = 'O-ren';
+    String ven = 'Samantha';
     switch (env.speak_voice.val) {
       case 1:
-        v = 'O-ren';
+        vja = 'O-ren';
+        ven = 'Samantha';
       case 2:
-        v = 'Kyoko';
+        vja = 'Kyoko';
+        ven = 'Nicky';
       case 3:
-        v = 'Hattori';
+        vja = 'Hattori';
+        ven = 'Aaron';
     }
 
     if (book!.isEnglish()) {
       await flutterTts.setLanguage("en-US");
-      await flutterTts.setVoice({"name": v, "locale": "en-US"});
+      await flutterTts.setVoice({"name": ven, "locale": "en-US"});
     } else {
       await flutterTts.setLanguage("ja-JP");
-      await flutterTts.setVoice({"name": v, "locale": "ja-JP"});
+      await flutterTts.setVoice({"name": vja, "locale": "ja-JP"});
     }
 
     speakIndex = nowIndex;
@@ -1004,8 +1019,8 @@ line-height: ${env.line_height.val}%;
     int chars = (w / fsize).toInt();
     double dh = env.line_height.val / 100.0;
 
-    int all = 0;
     // allを計算
+    int all = 0;
     for (int i = 0; i < listSpeak[speakIndex].length; i++) {
       String s = listSpeak[speakIndex][i].replaceAll('<br />', ' ');
       int lineCount = (s.length / chars).toInt() + 1;

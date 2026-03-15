@@ -573,7 +573,7 @@ class EpubController {
           }
           if (t1.length < count1) {
             if (i >= 1) {
-              t1 = '<h3>${listText.length}</h3>' + t1;
+              //t1 = '<h3>${listText.length}</h3>' + t1;
             }
             listText.add(t1);
             break;
@@ -582,13 +582,13 @@ class EpubController {
           if (s1 > 0 && t1.length - s1 > 1000) {
             String t2 = t1.substring(0, s1 + 6);
             if (i >= 1) {
-              t2 = '<h3>${listText.length}</h3>' + t2;
+              //t2 = '<h3>${listText.length}</h3>' + t2;
             }
             listText.add(t2);
             t1 = t1.substring(s1 + 6);
           } else {
             if (i >= 1) {
-              t1 = '<h3>${listText.length}</h3>' + t1;
+              //t1 = '<h3>${listText.length}</h3>' + t1;
             }
             listText.add(t1);
             break;
@@ -611,9 +611,9 @@ class EpubController {
 
         String title = '${i}';
         BeautifulSoup bs1 = BeautifulSoup(text);
-        Bs4Element? el1 = bs1.find(hd);
+        Bs4Element? el1 = bs1.find('h3');
         if (el1 != null) {
-          title = el1.innerHtml;
+          title += " " + el1.innerHtml;
         }
 
         EpubFileData f = EpubFileData();
@@ -652,7 +652,8 @@ class EpubController {
               //for (var value in map.entries) {
               if (value['__typename'] != null && value['id'] != null) {
                 if (value['__typename'] == 'Episode') {
-                  epub.uriList.add('https://kakuyomu.jp/works/${epub.siteId}/episodes/${value['id']}');
+                  epub.uriList
+                      .add('https://kakuyomu.jp/works/${epub.siteId}/episodes/${value['id']}');
                 } else if (value['__typename'] == 'Work') {
                   if (value['id'] == epub.siteId) {
                     epub.bookTitle = value['title'];
@@ -975,9 +976,6 @@ class EpubController {
   Future checkGutenberg(String url, String body) async {
     epub.dluri = url;
 
-    //https://www.aozora.gr.jp/cards/000148/card773.html
-    //https://www.aozora.gr.jp/cards/000148/files/773_14560.html
-
     //https://www.gutenberg.org/ebooks/11
     //https://www.gutenberg.org/cache/epub/11/pg11.txt
 
@@ -1054,7 +1052,8 @@ class EpubController {
 
     text = text.replaceAll('\n', '<br />\n');
 
-    text = text.replaceAllMapped(RegExp('([^A-Za-z0-9])_([A-Za-z0-9])', caseSensitive: false), (Match m) {
+    text = text.replaceAllMapped(RegExp('([^A-Za-z0-9])_([A-Za-z0-9])', caseSensitive: false),
+        (Match m) {
       return "${m[1]}<i>${m[2]}";
     });
 
@@ -1113,8 +1112,9 @@ class EpubController {
             }
           }
 
-          int count1 = 15000;
-          int count2 = 10000;
+          // 日本語 15000,10000
+          int count1 = 20000;
+          int count2 = 15000;
           if (t1.length < count1) {
             listText.add(t1);
             break;

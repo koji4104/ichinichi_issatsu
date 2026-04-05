@@ -102,7 +102,7 @@ class DownloadScreen extends BaseScreen {
       isClose = true;
     } else if (status == MyEpubStatus.downloading) {
       // ダウンロード中
-      label1 = 'Downloading';
+      label1 = '${l10n('downloading')}';
       if (done > 0) {
         label1 += ' ${done} / ${all}';
       }

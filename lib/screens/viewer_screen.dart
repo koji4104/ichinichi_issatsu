@@ -25,9 +25,7 @@ class ViewerScreen extends BaseScreen with WidgetsBindingObserver {
   double _width = 1000.0;
   double _height = 1000.0;
   ViewerBarType barType = ViewerBarType.none;
-
   ViewerController viewerCtrl = ViewerController();
-
   bool isAirplane = false;
 
   bool isActionBar() {
@@ -107,14 +105,14 @@ class ViewerScreen extends BaseScreen with WidgetsBindingObserver {
               color: env.getBackColor(),
               child: Widget1(),
             ),
-            //if (ref.watch(viewerProvider).isLoading) loadingWidget(),
             if (this.barType != ViewerBarType.clipTextBar)
               Container(
                 padding: EdgeInsets.fromLTRB(1, 1, 1, 1),
                 child: RawGestureDetector(
                   behavior: HitTestBehavior.translucent,
                   gestures: {
-                    TapGestureRecognizer: GestureRecognizerFactoryWithHandlers<TapGestureRecognizer>(
+                    TapGestureRecognizer:
+                        GestureRecognizerFactoryWithHandlers<TapGestureRecognizer>(
                       () => TapGestureRecognizer(),
                       (TapGestureRecognizer instance) {
                         instance
@@ -334,8 +332,8 @@ class ViewerScreen extends BaseScreen with WidgetsBindingObserver {
   /// ボトムバー
   //-------------------------------------------------------
   Widget bottomBar() {
-    double barHeight = 180;
-    double ffBottom = 40 - barHeight; // -140
+    double barHeight = 160;
+    double ffBottom = 40 - barHeight; // -120
     bool isSpeaking = viewerCtrl.isSpeaking;
 
     // 読み上げ機能　横書き(0)のみ
@@ -375,7 +373,9 @@ class ViewerScreen extends BaseScreen with WidgetsBindingObserver {
 
     Widget btnSettings = IconButton(
       iconSize: iconSize,
-      icon: (barType == ViewerBarType.speakSettingsBar) ? Icon(Icons.close) : Icon(Icons.settings_outlined),
+      icon: (barType == ViewerBarType.speakSettingsBar)
+          ? Icon(Icons.close)
+          : Icon(Icons.settings_outlined),
       color: env.getFrontColor(),
       onPressed: () {
         if (barType == ViewerBarType.speakSettingsBar) {
@@ -387,8 +387,8 @@ class ViewerScreen extends BaseScreen with WidgetsBindingObserver {
       },
     );
 
-    Widget space = SizedBox(width: iconSize + 24, height: iconSize + 24);
-    Widget e = Expanded(child: SizedBox(width: 1));
+    Widget space = SizedBox(width: iconSize + 8, height: iconSize + 8);
+    Widget e = Expanded(child: SizedBox(width: 1, height: 1));
 
     Widget leftBtn = space;
     if (env.writing_mode.val == 1)
@@ -406,21 +406,19 @@ class ViewerScreen extends BaseScreen with WidgetsBindingObserver {
       color: env.getBackColor(),
       child: Column(children: [
         SizedBox(height: 4),
-        Row(
-          children: [
-            SizedBox(width: 80, height: iconSize),
-            leftBtn,
-            e,
-            wText,
-            e,
-            rightBtn,
-            SizedBox(width: 80),
-          ],
-        ),
+        Row(children: [
+          SizedBox(width: 80, height: iconSize),
+          leftBtn,
+          e,
+          wText,
+          e,
+          rightBtn,
+          SizedBox(width: 80),
+        ]),
         SizedBox(height: 16),
-        MySettingsTile(data: env.speak_voice),
+        //MySettingsTile(data: env.speak_voice),
         MySettingsTile(data: env.speak_speed),
-        Expanded(child: SizedBox(height: 1)),
+        e,
       ]),
     );
 
@@ -603,8 +601,8 @@ class ViewerScreen extends BaseScreen with WidgetsBindingObserver {
     list.add(MySettingsTile(data: env.writing_mode));
     list.add(MySettingsTile(data: env.font_family));
     //list.add(MySettingsTile(data: env.dark_mode));
-    list.add(SizedBox(height: 10));
-    list.add(MySettingsTile(data: env.speak_voice));
+    //list.add(SizedBox(height: 10));
+    //list.add(MySettingsTile(data: env.speak_voice));
     list.add(MySettingsTile(data: env.speak_speed));
     list.add(MyText(l10n('speaking_is_only_horizontal_text'), small: true));
 
@@ -816,8 +814,6 @@ class ViewerScreen extends BaseScreen with WidgetsBindingObserver {
                           backgroundColor: Colors.redAccent,
                           icon: Icons.delete,
                           label: null,
-                          //spacing: 0,
-                          //padding: EdgeInsets.fromLTRB(0, 0, 0, 0),
                         ),
                       ],
                     ),

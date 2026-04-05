@@ -59,7 +59,6 @@ class EpubController {
   /// ここまでダウンロードする
   int requiredIndex = 1;
 
-  //bool needtoStopDownloading = false;
   bool cancelDownload = false;
 
   InAppWebViewController? webViewController;
@@ -652,8 +651,7 @@ class EpubController {
               //for (var value in map.entries) {
               if (value['__typename'] != null && value['id'] != null) {
                 if (value['__typename'] == 'Episode') {
-                  epub.uriList
-                      .add('https://kakuyomu.jp/works/${epub.siteId}/episodes/${value['id']}');
+                  epub.uriList.add('https://kakuyomu.jp/works/${epub.siteId}/episodes/${value['id']}');
                 } else if (value['__typename'] == 'Work') {
                   if (value['id'] == epub.siteId) {
                     epub.bookTitle = value['title'];
@@ -1052,8 +1050,7 @@ class EpubController {
 
     text = text.replaceAll('\n', '<br />\n');
 
-    text = text.replaceAllMapped(RegExp('([^A-Za-z0-9])_([A-Za-z0-9])', caseSensitive: false),
-        (Match m) {
+    text = text.replaceAllMapped(RegExp('([^A-Za-z0-9])_([A-Za-z0-9])', caseSensitive: false), (Match m) {
       return "${m[1]}<i>${m[2]}";
     });
 

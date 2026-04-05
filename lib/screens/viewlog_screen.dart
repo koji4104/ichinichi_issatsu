@@ -153,8 +153,6 @@ class ViewlogScreen extends BaseScreen {
                 backgroundColor: Colors.redAccent,
                 icon: Icons.delete,
                 label: l10n('delete'),
-                //spacing: 0,
-                //padding: EdgeInsets.fromLTRB(0, 0, 0, 0),
               ),
             ],
           ),

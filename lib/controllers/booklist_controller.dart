@@ -19,9 +19,7 @@ class BookListNotifier extends ChangeNotifier {
 }
 
 class BookListController {
-  BookListController() {
-    //readBookList();
-  }
+  BookListController() {}
 
   late WidgetRef ref;
 

@@ -160,9 +160,6 @@ class ViewerController {
           double calcWidth = lineCount.toDouble() * fsize * dh;
           calcWidth += scrollWidth;
           if (calcWidth < 400) calcWidth = 400;
-          if (!Platform.isIOS && !Platform.isAndroid) {
-            //if (calcWidth > 3000) calcWidth = 3000;
-          }
           // ↑chars
 
           // ↓speech
@@ -184,34 +181,31 @@ class ViewerController {
                 ii++;
               }
             } else {
-              List<String> s2;
+              // 改行の中に。が2個あるとき
               if (book!.isEnglish()) {
+                // 英語
+                List<String> s2;
                 s2 = s.split('.');
-              } else {
-                s2 = s.split('。');
-              }
-              for (int i3 = 0; i3 < s2.length; i3++) {
-                String s3 = s2[i3];
-                if (s3 == '') continue;
-                //if (s2.length >= 2) {
-                if (book!.isEnglish()) {
-                  if (s2.length >= 2) {
-                    s3 += '.';
-                  }
+                for (String s3 in s2) {
+                  if (s3 == '') continue;
+                  if (s2.length >= 2) s3 += '.';
                   text1 += "<span id='p${ii}'>${s3}</span>";
-                } else {
-                  if (s2.length >= 2) {
-                    s3 += '。';
-                  }
-
+                  ii++;
+                  linesTemp.add(s3);
+                }
+              } else {
+                // 日本語
+                List<String> s2;
+                s2 = s.split('。');
+                for (String s3 in s2) {
+                  if (s3 == '') continue;
+                  if (s2.length >= 2) s3 += '。';
                   s3 = s3.replaceAll('」。', '」');
                   text1 += "<span id='p${ii}'>${s3}</span>";
                   s3 = EpubData.extractRuby(s3, m);
+                  ii++;
+                  linesTemp.add(s3);
                 }
-
-                ii++;
-                linesTemp.add(s3);
-                //}
               }
               text1 += "<br />";
             }
@@ -923,6 +917,12 @@ line-height: ${env.line_height.val}%;
     // 速さ
     double sp = 0.5;
     switch (env.speak_speed.val) {
+      case 60:
+        sp = 0.30;
+        speakWait = 1000;
+      case 70:
+        sp = 0.35;
+        speakWait = 1000;
       case 80:
         sp = 0.40;
         speakWait = 1000;
@@ -959,7 +959,7 @@ line-height: ${env.line_height.val}%;
     await flutterTts.setPitch(pitch);
 
     // ボイス一覧
-    /*
+/*
     List voices = await flutterTts.getVoices;
     for (var item in voices) {
       var map = item as Map<Object?, Object?>;
@@ -972,8 +972,7 @@ line-height: ${env.line_height.val}%;
         }
       }
     }
-    */
-
+*/
     // Fred  en-US  male
     // Nicky  en-US  female
     // Aaron  en-US  male   *
@@ -984,24 +983,28 @@ line-height: ${env.line_height.val}%;
 
     String vja = 'O-ren';
     String ven = 'Samantha';
+    String gen = "female";
     switch (env.speak_voice.val) {
       case 1:
         vja = 'O-ren';
         ven = 'Samantha';
+        gen = "female";
       case 2:
         vja = 'Kyoko';
         ven = 'Nicky';
+        gen = "female";
       case 3:
         vja = 'Hattori';
         ven = 'Aaron';
+        gen = "male";
     }
 
     if (book!.isEnglish()) {
       await flutterTts.setLanguage("en-US");
-      await flutterTts.setVoice({"name": ven, "locale": "en-US"});
+      //await flutterTts.setVoice({"name": ven, "gender": gen, "locale": "en-US"});
     } else {
       await flutterTts.setLanguage("ja-JP");
-      await flutterTts.setVoice({"name": vja, "locale": "ja-JP"});
+      //await flutterTts.setVoice({"name": vja, "gender": gen, "locale": "ja-JP"});
     }
 
     speakIndex = nowIndex;
@@ -1035,12 +1038,12 @@ line-height: ${env.line_height.val}%;
       String s = listSpeak[speakIndex][i].replaceAll('<br />', ' ');
       int lineCount = (s.length / chars).toInt() + 1;
       int len = (lineCount * (fsize * dh)).toInt();
-
       sum += len;
+
+      speakLine = i;
       if ((sum * 10000 / all) > ratio) {
         break;
       }
-      speakLine = i;
     }
     if (IS_TEST_SS) {
       speakIndex = 1;

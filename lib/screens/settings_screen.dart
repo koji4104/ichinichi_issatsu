@@ -44,7 +44,7 @@ class SettingsScreen extends BaseScreen {
     list.add(MySettingsTile(data: env.language_code));
 
     list.add(SizedBox(height: 16));
-    list.add(MySettingsTile(data: env.speak_voice));
+    //list.add(MySettingsTile(data: env.speak_voice));
     list.add(MySettingsTile(data: env.speak_speed));
     list.add(MyText(l10n('speaking_is_only_horizontal_text'), small: true));
 

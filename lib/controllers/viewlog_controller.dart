@@ -109,7 +109,6 @@ class ViewlogNotifier extends ChangeNotifier {
     await Directory('${logdir}').create(recursive: true);
 
     DateTime date = list[index].date;
-    String sDate = DateFormat("yyyy-MM-dd HH:mm:ss").format(date);
 
     bool done = false;
     if (done == false) {

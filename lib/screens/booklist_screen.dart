@@ -132,8 +132,6 @@ class BookListScreen extends DownloadScreen {
                   backgroundColor: Color(0xFF444488),
                   icon: Icons.download,
                   label: l10n('download'),
-                  //spacing: 0,
-                  //padding: EdgeInsets.fromLTRB(0, 0, 0, 0),
                 ),
               if (isAddDownload == true)
                 MySlidableAction(
@@ -148,8 +146,6 @@ class BookListScreen extends DownloadScreen {
                   backgroundColor: Color(0xFF444488),
                   icon: Icons.download,
                   label: l10n('download'),
-                  //spacing: 0,
-                  //padding: EdgeInsets.fromLTRB(0, 0, 0, 0),
                 ),
               MySlidableAction(
                 onPressed: (_) {
@@ -164,8 +160,6 @@ class BookListScreen extends DownloadScreen {
                 backgroundColor: Color(0xFF558866),
                 icon: Icons.circle_outlined,
                 label: l10n('tag'),
-                //spacing: 0,
-                //padding: EdgeInsets.fromLTRB(0, 0, 0, 0),
               ),
               MySlidableAction(
                 onPressed: (_) {
@@ -185,8 +179,6 @@ class BookListScreen extends DownloadScreen {
                 backgroundColor: Colors.redAccent,
                 icon: Icons.delete,
                 label: l10n('delete'),
-                //spacing: 0,
-                //padding: EdgeInsets.fromLTRB(0, 0, 0, 0),
               ),
             ],
           ),
@@ -348,7 +340,6 @@ class BookListScreen extends DownloadScreen {
       isKakuyomu ? wNumIndex : wPages,
       SizedBox(width: 10),
       wProg,
-      //SizedBox(width: 8),
     ]);
 
     Widget child = Row(children: [
